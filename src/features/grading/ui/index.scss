@@ -1,0 +1,90 @@
+.custom-tabs {
+  padding: 0 46px 0 25px;
+  line-height: 24px;
+
+  .ant-tabs-tab {
+    padding: 15px 0 !important;
+    margin: 0 !important;
+  }
+  .ant-tabs-nav {
+    margin: 0 !important;
+  }
+  .ant-tabs-nav-list {
+    gap: 40px;
+  }
+  .ant-tabs-tab-btn {
+    font-size: 16px !important;
+    color: #637381 !important;
+  }
+  .ant-tabs-tab-active .ant-tabs-tab-btn {
+    @apply text-primaryColor !important;
+  }
+  .ant-tabs-ink-bar {
+    @apply bg-primaryColor !important;
+  }
+}
+
+.ant-tabs .ant-tabs-tab + .ant-tabs-tab {
+  margin-left: 0 !important;
+}
+
+.ant-table-wrapper .ant-table {
+  scrollbar-color: rgb(0, 48, 135) rgba(0, 0, 0, 0) !important;
+}
+
+.ant-input-number-input {
+  padding: 0 !important;
+}
+
+.ant-input-number-input {
+  text-align: center !important;
+  font-weight: bold !important;
+  padding: 10px 48px !important;
+  line-height: 30px !important;
+  font-size: 24px !important;
+}
+.custom-tabs-2 {
+  line-height: 24px;
+  display: flex;
+  flex-direction: row-reverse;
+  margin-top: 63px;
+  width: auto;
+  height: 63px;
+  border-bottom-width: 2px;
+
+  .ant-tabs-tab {
+    margin: 0 !important;
+    width: 185px;
+    display: flex;
+    justify-content: center;
+    border: #637381;
+  }
+  .ant-tabs-nav {
+    margin: 0 !important;
+  }
+  .ant-tabs-tab-btn {
+    font-size: 16px !important;
+    color: #637381 !important;
+  }
+  .ant-tabs-tab-active {
+    background-color: #e6f0fa !important;
+  }
+  .ant-tabs-tab-active .ant-tabs-tab-btn {
+    color: #003087 !important;
+  }
+  .ant-tabs-ink-bar {
+    background-color: #003087 !important;
+    height: 2px !important;
+  }
+}
+
+.ant-form-item-label {
+  font-size: 16px !important;
+  line-height: 24px !important;
+  color: #111928 !important;
+  padding: 0 !important;
+}
+
+#grading-participants-table .ant-table-cell-scrollbar {
+  background-color: transparent !important;
+}

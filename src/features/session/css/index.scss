@@ -1,0 +1,84 @@
+$scrollbar-width: 14px;
+$scrollbar-track-bg: #f1f1f1;
+$scrollbar-thumb-bg: #888;
+$scrollbar-thumb-hover-bg: #555;
+$scrollbar-border-radius: 5px;
+
+// Mixin for cross-browser scrollbar styling
+@mixin scrollbar {
+  &::-webkit-scrollbar {
+    width: $scrollbar-width;
+    height: $scrollbar-width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: $scrollbar-track-bg;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $scrollbar-thumb-bg;
+    border-radius: $scrollbar-border-radius;
+
+    &:hover {
+      background: $scrollbar-thumb-hover-bg;
+    }
+  }
+
+  // Firefox support
+  scrollbar-width: thin;
+  scrollbar-color: $scrollbar-thumb-bg $scrollbar-track-bg;
+}
+.session-container {
+  .ant-table-body {
+    @include scrollbar;
+
+    // Optional: Ensure the table body is scrollable
+    max-height: 300px; // Matches scroll.y value
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+
+  // If you have a fixed header or columns, you might need to target .ant-table-content
+  .ant-table-content {
+    @include scrollbar;
+  }
+  .ant-tabs-nav .ant-tabs-nav-wrap {
+    @apply flex-row-reverse;
+  }
+
+  .ant-table-wrapper .ant-table-cell {
+    @apply p-2;
+  }
+
+  .ant-tabs-tab {
+    @apply md:px-[40px] px-[20px] md:py-[18px] py-[9px] bg-[#f9fafb] text-primaryTextColor md:text-[16px] text-[14px];
+  }
+
+  .ant-tabs-tab:hover {
+    @apply md:px-[40px] px-[20px] md:py-[18px] py-[9px] text-primaryColor bg-tableHeadColor md:text-[16px] text-[14px];
+  }
+
+  .ant-tabs-tab-active .ant-tabs-tab-btn {
+    @apply flex justify-center items-center text-primaryColor bg-tableHeadColor md:text-[16px] text-[14px];
+  }
+
+  .ant-tabs-tab + .ant-tabs-tab {
+    @apply ml-0;
+  }
+
+  .ant-tabs-tab.ant-tabs-tab-active {
+    @apply md:px-[40px] px-[20px] md:py-[18px] py-[9px] text-primaryColor bg-tableHeadColor md:text-[16px] text-[14px];
+  }
+
+  .ant-tabs .ant-tabs-tab.ant-tabs-tab-active .ant-tabs-tab-btn {
+    @apply text-primaryColor md:text-[16px] text-[14px];
+  }
+
+  .ant-tabs .ant-tabs-ink-bar {
+    @apply bg-primaryColor;
+  }
+
+  .ant-input-search-large .ant-input-search-button {
+    @apply h-[39px];
+  }
+}
