@@ -18,10 +18,8 @@ export const handleFileChange = async (e, queryClient, setImportLoading) => {
     const response = await ExcelApi.importExcel(file);
 
     const result = response.data;
-    console.log(result);
 
     if (result?.status === 200) {
-      console.log(result);
       message.success(result?.message || "Import successful");
     }
   } catch (error) {
