@@ -28,10 +28,12 @@ const StudentSessionTable = ({
     type === TableType.SESSION
       ? useSessionParticipants(id, { page: currentPage, limit: pageSize })
       : useStudentParticipants(studentId, {
-          page: currentPage,
-          limit: pageSize,
-        });
+        page: currentPage,
+        limit: pageSize,
+      });
+
   const processedData = data?.data || [];
+
 
   useEffect(() => {
     if (processedData.length) {
@@ -253,7 +255,7 @@ const StudentSessionTable = ({
         pagination={{
           current: currentPage,
           pageSize: pageSize,
-          total: processedData?.pagination?.totalItems || 0,
+          total: data?.pagination?.totalItems || 0,
           showSizeChanger: true,
           pageSizeOptions: ["5", "10", "15", "20"],
           showTotal: (total, range) =>
