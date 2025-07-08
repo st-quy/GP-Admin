@@ -6,7 +6,7 @@ const { Text } = Typography;
 
 const statusTag = (status) => {
   const statusMap = {
-    COMPLETED: { color: "green", text: "Completed" },
+    COMPLETE: { color: "green", text: "Completed" },
     ON_GOING: { color: "blue", text: "On Going" },
     NOT_STARTED: { color: "gray", text: "Not Started" },
   };
