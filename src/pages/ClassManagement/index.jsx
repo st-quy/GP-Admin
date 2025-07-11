@@ -6,6 +6,7 @@ import {
   handleFileChange,
   fileInputRef,
   handleExportExcel,
+  handlePreviewFile,
 } from "@features/classManagement/hooks";
 import CreateClassModal from "@features/classManagement/ui/Modal/CreateClass";
 import TableSearch from "@shared/ui/TableSearch";
@@ -15,8 +16,12 @@ import UpdateClassModal from "@features/classManagement/ui/Modal/UpdateClass";
 import DeleteClassModal from "@features/classManagement/ui/Modal/DeleteClass";
 import { useSelector } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
+import PreviewExam from "@shared/ui/PreviewExam";
 
 const ClassManagement = () => {
+  const [dataExam, setDataExam] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fileData, setFileData] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const queryClient = useQueryClient();
@@ -125,7 +130,10 @@ const ClassManagement = () => {
             type="file"
             accept=".xlsx, .xls"
             ref={fileInputRef}
-            onChange={(e) => handleFileChange(e, queryClient, setImportLoading)}
+            onChange={(e) => {
+              setFileData(e.target.files[0]);
+              handlePreviewFile(e.target.files[0], setIsModalOpen, setDataExam);
+            }}
             style={{ display: "none" }}
           />
           <Button
@@ -159,6 +167,15 @@ const ClassManagement = () => {
         onClose={() => setIsOpen(null)}
         classId={dataClass?.ID}
       />
+      {dataExam && (
+        <PreviewExam
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          dataExam={dataExam}
+          fileData={fileData}
+          setDataExam={setDataExam}
+        />
+      )}
     </div>
   );
 };

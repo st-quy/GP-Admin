@@ -2,6 +2,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClassApi, ExcelApi } from "../api";
 import { message } from "antd";
 import { useSelector } from "react-redux";
+import * as XLSX from "xlsx";
+import { transformExcelDataToStructuredJSON } from "@shared/lib/utils/transformExcelDataToStructuredJSON";
 
 export const fileInputRef = { current: null };
 
@@ -9,18 +11,44 @@ export const handleImportClick = () => {
   fileInputRef.current?.click();
 };
 
-export const handleFileChange = async (e, queryClient, setImportLoading) => {
-  const file = e.target.files[0];
+export const handlePreviewFile = (file, setIsModalOpen, setDataExam) => {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    // @ts-ignore
+    const data = new Uint8Array(e.target.result);
+    const workbook = XLSX.read(data, { type: "array" });
+
+    const worksheetName = workbook.SheetNames[0];
+    const worksheet = workbook.Sheets[worksheetName];
+
+    // Dòng dữ liệu thô: mảng 2 chiều
+    const rawData = XLSX.utils.sheet_to_json(worksheet, {
+      header: 1,
+      defval: "",
+      range: "A1:M76", // CHỈ ĐỌC A1->M76, không lấy cột N, O, ...
+    });
+
+    // Chỉ giữ lại các cột từ A đến M (index 0 -> 12)
+    const trimmedData = rawData.map((row) => row.slice(0, 13));
+    const dataReal = transformExcelDataToStructuredJSON(trimmedData);
+    setDataExam(dataReal);
+    setIsModalOpen(true);
+  };
+
+  reader.readAsArrayBuffer(file);
+};
+
+export const handleFileChange = async (e) => {
+  const file = e;
   if (!file) return;
 
-  setImportLoading(true);
   try {
     const response = await ExcelApi.importExcel(file);
 
     const result = response.data;
 
     if (result?.status === 200) {
-      message.success(result?.message || "Import successful");
+      message.success("Import successfully");
     }
   } catch (error) {
     const status = error?.response?.status;
@@ -31,9 +59,6 @@ export const handleFileChange = async (e, queryClient, setImportLoading) => {
     } else {
       message.error("Import failed: " + messageText);
     }
-  } finally {
-    setImportLoading(false);
-    e.target.value = "";
   }
 };
 
