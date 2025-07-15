@@ -28,12 +28,11 @@ const StudentSessionTable = ({
     type === TableType.SESSION
       ? useSessionParticipants(id, { page: currentPage, limit: pageSize })
       : useStudentParticipants(studentId, {
-        page: currentPage,
-        limit: pageSize,
-      });
+          page: currentPage,
+          limit: pageSize,
+        });
 
   const processedData = data?.data || [];
-
 
   useEffect(() => {
     if (processedData.length) {
@@ -72,13 +71,27 @@ const StudentSessionTable = ({
       checkIsAllQuestionGraded();
     }
   }, [type, status, checkIsAllQuestionGraded]); // Updated dependency array to include stable dependencies
-
+  const isAllScoresPresent = (result) => {
+    const requiredScores = [
+      "GrammarVocab",
+      "Reading",
+      "Speaking",
+      "Writing",
+      "Listening",
+    ];
+    return requiredScores.every(
+      (key) => result[key] !== null && result[key] !== undefined
+    );
+  };
   const onLevelChange = (key, value) => {
     setLevels((prev) => ({ ...prev, [key]: value }));
-    updateLevel({
-      id: key,
-      value,
-    });
+    updateLevel(
+      // @ts-ignore
+      {
+        id: key,
+        value,
+      }
+    );
   };
 
   const commonColumns = [
@@ -181,7 +194,7 @@ const StudentSessionTable = ({
           <Select
             value={levels[record.ID]}
             placeholder="Level"
-            disabled={isPublished}
+            disabled={!isAllScoresPresent(record) || record.IsPublished}
             onChange={(value) => onLevelChange(record.ID, value)}
             className="p-0"
           >
