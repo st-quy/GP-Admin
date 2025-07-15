@@ -64,7 +64,6 @@ const CustomMatchingQuestionEquals = ({
                     dropdownMatchSelectWidth={false}
                     optionLabelProp="label"
                     getPopupContainer={(triggerNode) => triggerNode.parentNode}
-                    disabled
                   >
                     {rightItems.map((rightItem, rightIndex) => (
                       <Option
@@ -142,7 +141,6 @@ const CustomMatchingQuestionPlus = ({
                     dropdownMatchSelectWidth={false}
                     optionLabelProp="label"
                     getPopupContainer={(triggerNode) => triggerNode.parentNode}
-                    disabled
                   >
                     {rightItems.map((rightItem, rightIndex) => (
                       <Option

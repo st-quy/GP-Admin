@@ -92,7 +92,6 @@ const MatchingQuestion = ({
                 style={{ width: "100%" }}
                 optionLabelProp="label"
                 getPopupContainer={(triggerNode) => triggerNode.parentNode}
-                disabled
               >
                 {rightItems.map((rightItem, rightIndex) => (
                   <Option

@@ -192,7 +192,6 @@ const DropdownQuestion = ({
                   style={{ width: "100%" }}
                   optionLabelProp="label"
                   getPopupContainer={(triggerNode) => triggerNode.parentNode}
-                  disabled
                 >
                   {processedData.rightItems.map((rightItem) => (
                     <Option

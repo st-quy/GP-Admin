@@ -99,11 +99,10 @@ const ReadingTest = ({ dataExam }) => {
                     <span className="font-bold">{index + 1}.</span>
                     <Select
                       value={processedData.correctAnswers?.[index].right || ""}
-                      className="w-80"
+                      className="w-full"
                       placeholder="Select a heading"
                       size="large"
                       style={{ fontSize: "16px" }}
-                      disabled
                     >
                       {processedData.rightItems.map((rightItem) => {
                         const displayText = rightItem.replace(/^[A-Z]\. /, "");
@@ -159,11 +158,11 @@ const ReadingTest = ({ dataExam }) => {
                           ? processedData.answers[0]?.[0]
                           : processedData.correctAnswers?.[number].value
                       }
-                      className="mx-2 my-2 inline-block"
+                      className="mx-2 my-2 w-full"
                       size="large"
                       style={{ fontSize: "16px", minWidth: 100 }}
                       dropdownStyle={{ maxWidth: "max-content" }}
-                      disabled
+                      disabled={number === "0"}
                     >
                       {processedData.answers[number]?.map((option) => {
                         const displayText = option.replace(/^[A-Z]\. /, "");
@@ -207,7 +206,6 @@ const ReadingTest = ({ dataExam }) => {
                       className="w-full"
                       size="large"
                       style={{ fontSize: "16px" }}
-                      disabled
                     >
                       {processedData.rightItems.map((rightItem) => {
                         const displayText = rightItem.replace(/^[A-Z]\. /, "");
