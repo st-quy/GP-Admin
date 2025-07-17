@@ -50,7 +50,10 @@ const PreviewExam = ({
     <Drawer
       title={<Steps current={current} items={items} className="my-4" />}
       //   closable={false}
-      onClose={() => setIsModalOpen(false)}
+      onClose={() => {
+        setDataExam(null);
+        setIsModalOpen(false);
+      }}
       open={isModalOpen}
       placement="bottom"
       height={"100vh"}

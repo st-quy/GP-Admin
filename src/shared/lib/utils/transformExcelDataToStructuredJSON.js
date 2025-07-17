@@ -100,14 +100,17 @@ export const transformListeningData = (data) => {
   // 1. MULTIPLE CHOICE
   // ------------------------
   function extractOptionMap(answerText) {
-    const lines = answerText?.split("\n") || [];
+    // Chuẩn hóa linebreak: thay tất cả \r\n, \r, \n → \n
+    const normalized = answerText?.replace(/\r\n|\r|\n/g, "\n") || "";
+
+    const lines = normalized.split("\n");
     const map = {};
     lines.forEach((line) => {
       const match = line.match(/^([A-Z])\.\s*(.+)$/);
       if (match) {
         const key = match[1];
         const value = match[2].trim();
-        map[key] = value;
+        map[key] = value; // hoặc `${key}. ${value}` nếu bạn muốn giữ A./B./C.
       }
     });
     return map;
@@ -609,7 +612,7 @@ export const transformReadingData = (data) => {
         PartID: part.ID,
         Sequence: q.Sequence,
         Content: q.Content,
-        SubContent: q.SubContent ?? null,
+        SubContent: part.SubContent ?? null,
         GroupContent: q.GroupContent ?? null,
         createdAt: q.createdAt ?? new Date().toISOString(),
         updatedAt: q.updatedAt ?? new Date().toISOString(),

@@ -6,6 +6,8 @@ const { Option } = Select;
 const { Title, Text } = Typography;
 
 const ReadingTest = ({ dataExam }) => {
+  console.log(dataExam, "dataExam");
+
   const testData = transformReadingData(dataExam);
 
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
@@ -158,7 +160,7 @@ const ReadingTest = ({ dataExam }) => {
                           ? processedData.answers[0]?.[0]
                           : processedData.correctAnswers?.[number].value
                       }
-                      className="mx-2 my-2 w-full"
+                      className="mx-2 my-2 inline-block"
                       size="large"
                       style={{ fontSize: "16px", minWidth: 100 }}
                       dropdownStyle={{ maxWidth: "max-content" }}
@@ -170,10 +172,17 @@ const ReadingTest = ({ dataExam }) => {
                           <Option
                             key={option}
                             value={option}
-                            style={{ whiteSpace: "normal" }}
-                            className="!text-base"
+                            style={{
+                              whiteSpace: "normal",
+                            }}
                           >
-                            {displayText}
+                            <div
+                              className={
+                                number === "0" ? "!text-black" : "!text-base"
+                              }
+                            >
+                              {displayText}
+                            </div>
                           </Option>
                         );
                       })}
@@ -296,6 +305,8 @@ const ReadingTest = ({ dataExam }) => {
         return renderDropdownQuestion(currentQuestion);
       }
       case "ordering": {
+        console.log(currentQuestion);
+
         const options = (() => {
           try {
             if (Array.isArray(currentQuestion.AnswerContent)) {

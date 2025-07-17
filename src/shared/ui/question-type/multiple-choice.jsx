@@ -1,4 +1,3 @@
-import { multipleChoiceAnswerSchema } from "../model/questionType/multipleQuestion.schemas";
 import { Typography } from "antd";
 import { useState, useMemo } from "react";
 const { Text } = Typography;
@@ -19,8 +18,6 @@ const MultipleChoice = ({
       const parsedContent = Array.isArray(questionData.AnswerContent)
         ? questionData.AnswerContent[0]
         : JSON.parse(questionData.AnswerContent)[0];
-
-      multipleChoiceAnswerSchema.validateSync(parsedContent);
 
       return {
         options: parsedContent.options,
