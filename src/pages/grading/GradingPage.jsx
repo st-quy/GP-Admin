@@ -12,6 +12,7 @@ import {
   useGetSpeakingQuestionsAnswers,
   useGetWritingQuestionsAnswers,
   useAudioFileName,
+  useGetParticipantDetail,
 } from "@features/grading/hooks";
 
 const GradingPage = () => {
@@ -27,7 +28,8 @@ const GradingPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [speakingComments, setSpeakingComments] = useState([]);
   const [writingComments, setWritingComments] = useState([]);
-
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(9999); // Set a large page size to fetch all participants
   const [isChangingParticipant, setIsChangingParticipant] = useState(false);
 
   const [editedCommentIds, setEditedCommentIds] = useState(new Set());
@@ -43,7 +45,9 @@ const GradingPage = () => {
     refetch: refetchSpeaking,
   } = useGetSpeakingQuestionsAnswers(participantId);
   const { isPending: isParticipantsPending, data: participantsData } =
-    useGetParticipants(sessionId);
+    useGetParticipants(sessionId, { page: currentPage, limit: pageSize });
+
+  const { data: participantDetail } = useGetParticipantDetail(participantId);
 
   const onTabChange = (key) => {
     const searchParams = new URLSearchParams(location.search);
@@ -342,9 +346,7 @@ const GradingPage = () => {
     }
   };
 
-  const userData = participantsData?.data.data.find(
-    (item) => item.ID === participantId
-  );
+  const userData = participantDetail || {};
 
   if (isWritingPending || isSpeakingPending || isParticipantsPending)
     return (
