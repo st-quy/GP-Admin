@@ -2,10 +2,24 @@ import { useQueryClient, useMutation, useQuery } from "@tanstack/react-query";
 import { GradeApi, ParticipantApi, getAudioFileName } from "../api";
 import { message } from "antd";
 
-export const useGetParticipants = (sessionId) => {
+export const useGetParticipants = (
+  sessionId,
+  { page = 1, limit = 10 } = {}
+) => {
   return useQuery({
-    queryKey: ["participants"],
-    queryFn: async () => await ParticipantApi.getParticipants(sessionId),
+    queryKey: ["participants", sessionId, page, limit],
+    queryFn: async () =>
+      await ParticipantApi.getParticipants(sessionId, { page, limit }),
+  });
+};
+
+export const useGetParticipantDetail = (participantId) => {
+  return useQuery({
+    queryKey: ["participantDetail", participantId],
+    queryFn: async () => {
+      const response = await ParticipantApi.getParticipantDetail(participantId);
+      return response.data.data;
+    },
   });
 };
 

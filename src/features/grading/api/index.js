@@ -1,11 +1,13 @@
 import axiosInstance from "@shared/config/axios";
 
 export const ParticipantApi = {
-  getParticipant: (sessionId, participantId) => {
-    return axiosInstance.get(``);
+  getParticipantDetail: (participantId) => {
+    return axiosInstance.get(`/session-participants/detail/${participantId}`);
   },
-  getParticipants: (sessionId) => {
-    return axiosInstance.get(`/session-participants/${sessionId}`);
+  getParticipants: (sessionId, { page = 1, limit = 10 } = {}) => {
+    return axiosInstance.get(`/session-participants/${sessionId}`, {
+      params: { page, limit },
+    });
   },
 };
 
@@ -29,6 +31,6 @@ export const getAudioFileName = async (classId, sessionId) => {
   return {
     className: classRes.data.data.className,
     sessionName: sessionRes.data.data.sessionName,
-    session: sessionRes.data.data
+    session: sessionRes.data.data,
   };
 };
