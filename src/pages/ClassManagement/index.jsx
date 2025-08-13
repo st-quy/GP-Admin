@@ -125,7 +125,6 @@ const ClassManagement = () => {
           >
             Import from Excel
           </Button>
-
           <input
             type="file"
             accept=".xlsx, .xls"
@@ -167,7 +166,7 @@ const ClassManagement = () => {
         onClose={() => setIsOpen(null)}
         classId={dataClass?.ID}
       />
-      {dataExam && (
+      {isModalOpen && (
         <PreviewExam
           isModalOpen={isModalOpen}
           setIsModalOpen={setIsModalOpen}

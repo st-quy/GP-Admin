@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Button, message, Drawer, Steps, theme } from "antd";
+import React, { useState, useEffect, useRef } from "react";
+import { Button, Drawer, Steps } from "antd";
 import SpeakingPreview from "./Speaking";
 import ListeningTest from "./Listening/listening-test";
 import GrammarVocabPreview from "./GrammarVocab";
@@ -15,33 +15,27 @@ const PreviewExam = ({
   setDataExam,
 }) => {
   const [current, setCurrent] = useState(0);
-  const next = () => {
-    setCurrent(current + 1);
-  };
-  const prev = () => {
-    setCurrent(current - 1);
-  };
+  const contentRef = useRef(null);
+
+  const next = () => setCurrent((c) => c + 1);
+  const prev = () => setCurrent((c) => c - 1);
+
+  useEffect(() => {
+    contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    document
+      .querySelector(".ant-drawer-body")
+      ?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [current]);
+
   const steps = [
-    {
-      title: "Speaking",
-      content: <SpeakingPreview dataExam={dataExam} />,
-    },
-    {
-      title: "Listening",
-      content: <ListeningTest dataExam={dataExam} />,
-    },
+    { title: "Speaking", content: <SpeakingPreview dataExam={dataExam} /> },
+    { title: "Listening", content: <ListeningTest dataExam={dataExam} /> },
     {
       title: "Grammar & Vocabulary",
       content: <GrammarVocabPreview dataExam={dataExam} />,
     },
-    {
-      title: "Reading",
-      content: <ReadingTest dataExam={dataExam} />,
-    },
-    {
-      title: "Writing",
-      content: <WritingTest dataExam={dataExam} />,
-    },
+    { title: "Reading", content: <ReadingTest dataExam={dataExam} /> },
+    { title: "Writing", content: <WritingTest dataExam={dataExam} /> },
   ];
 
   const items = steps.map((item) => ({ key: item.title, title: item.title }));
@@ -49,7 +43,6 @@ const PreviewExam = ({
   return (
     <Drawer
       title={<Steps current={current} items={items} className="my-4" />}
-      //   closable={false}
       onClose={() => {
         setDataExam(null);
         setIsModalOpen(false);
@@ -60,12 +53,12 @@ const PreviewExam = ({
       footer={
         <div className="flex justify-end">
           {current > 0 && (
-            <Button style={{ margin: "0 8px" }} onClick={() => prev()}>
+            <Button style={{ margin: "0 8px" }} onClick={prev}>
               Previous
             </Button>
           )}
           {current < steps.length - 1 && (
-            <Button type="primary" onClick={() => next()}>
+            <Button type="primary" onClick={next}>
               Next
             </Button>
           )}
@@ -84,10 +77,15 @@ const PreviewExam = ({
         </div>
       }
     >
-      <div className="mb-4">
-        <div className="!h-[600px]">{steps[current].content}</div>
+      <div
+        ref={contentRef}
+        className="mb-4 overflow-auto"
+        style={{ maxHeight: "calc(100vh - 220px)" }}
+      >
+        <div className="min-h-[600px]">{steps[current].content}</div>
       </div>
     </Drawer>
   );
 };
+
 export default PreviewExam;

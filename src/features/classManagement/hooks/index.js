@@ -8,6 +8,9 @@ import { transformExcelDataToStructuredJSON } from "@shared/lib/utils/transformE
 export const fileInputRef = { current: null };
 
 export const handleImportClick = () => {
+  if (fileInputRef.current) {
+    fileInputRef.current.value = ""; // reset để lần sau chọn cùng file vẫn trigger onChange
+  }
   fileInputRef.current?.click();
 };
 
