@@ -193,7 +193,7 @@ export const transformListeningData = (data) => {
 
     const correctAnswerArray = correctRaw.split("\n").map((line) => {
       const [key, letter] = line.split("|").map((s) => s.trim());
-      const index = letter.charCodeAt(0) - 65;
+      const index = letter?.charCodeAt(0) - 65;
       return {
         key,
         value: rightItems[index] || letter,

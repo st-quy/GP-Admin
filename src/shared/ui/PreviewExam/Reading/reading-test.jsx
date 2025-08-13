@@ -6,8 +6,6 @@ const { Option } = Select;
 const { Title, Text } = Typography;
 
 const ReadingTest = ({ dataExam }) => {
-  console.log(dataExam, "dataExam");
-
   const testData = transformReadingData(dataExam);
 
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
@@ -100,6 +98,7 @@ const ReadingTest = ({ dataExam }) => {
                   <div className="flex items-center gap-2">
                     <span className="font-bold">{index + 1}.</span>
                     <Select
+                      key={index}
                       value={processedData.correctAnswers?.[index].right || ""}
                       className="w-full"
                       placeholder="Select a heading"
@@ -305,8 +304,6 @@ const ReadingTest = ({ dataExam }) => {
         return renderDropdownQuestion(currentQuestion);
       }
       case "ordering": {
-        console.log(currentQuestion);
-
         const options = (() => {
           try {
             if (Array.isArray(currentQuestion.AnswerContent)) {
