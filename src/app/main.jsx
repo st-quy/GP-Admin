@@ -6,7 +6,7 @@ import { Provider } from "react-redux";
 import RouteProvider from "@app/providers/RouteProvider";
 import store from "./providers/store";
 import { Spin } from "antd";
-
+//Test git
 const queryClient = new QueryClient();
 
 ReactDOM.createRoot(document.getElementById("root")).render(
