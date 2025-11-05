@@ -58,6 +58,8 @@ export const useRegister = () => {
       return data.data;
     },
     onError({ response }) {
+      console.log(response);
+      
       message.error(response.data.message);
     },
   });

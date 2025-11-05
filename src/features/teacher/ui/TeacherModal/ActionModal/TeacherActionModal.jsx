@@ -6,6 +6,7 @@ import {
   useUpdateTeacher,
 } from "@features/teacher/hook/useTeacherQuery";
 import { EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
+// import { min } from "lodash"; // Không còn được sử dụng
 
 const yupSync = (schema) => ({
   async validator({ field }, value) {
@@ -22,16 +23,29 @@ const accountSchema = Yup.object().shape({
   lastName: Yup.string().required("Last name is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   teacherCode: Yup.string().required("Teacher Code is required"),
-  password: Yup.string()
-    .transform((value) => (value === "" ? undefined : value))
-    .min(6, "Password must be at least 6 characters")
-    .notRequired(),
+
+  // BẮT ĐẦU SỬA LỖI VALIDATION
+  password: Yup.string().when({
+    // is: (value) => value && value.length > 0, // Điều kiện: Nếu có giá trị (không phải chuỗi rỗng)
+    is: (value) => value?.length > 0, // Cách viết ngắn hơn
+    // then: Nếu điều kiện đúng (có nhập), thì phải tuân theo luật này
+    then: (schema) =>
+      schema.matches(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{6,}$/,
+        "Password must be at least 6 characters, and include an uppercase letter, a lowercase letter, and a number."
+      ),
+    // otherwise: Nếu điều kiện sai (tức là để trống), thì không bắt buộc
+    otherwise: (schema) => schema.notRequired(),
+  }),
+  // KẾT THÚC SỬA LỖI VALIDATION
 });
 
 const TeacherActionModal = ({ initialData = null }) => {
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
-  const [passwordValue, setPasswordValue] = useState("");
+  
+  // SỬA LỖI: Xóa state này đi, Form đã quản lý state này rồi
+  // const [passwordValue, setPasswordValue] = useState("");
 
   const isEdit = initialData !== null;
   // @ts-ignore
@@ -49,7 +63,7 @@ const TeacherActionModal = ({ initialData = null }) => {
   };
 
   // @ts-ignore
-  const onAction = async (values) => {
+  const onAction = async (values) => { // "values" chứa TẤT CẢ dữ liệu từ form
     try {
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
@@ -57,7 +71,13 @@ const TeacherActionModal = ({ initialData = null }) => {
         lastName: values.lastName,
         email: values.email,
         teacherCode: values.teacherCode,
-        password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
+        
+        // SỬA LỖI: Dùng values.password từ form, không dùng state
+        // Logic "values.password || `Greenwich@123`" sẽ hoạt động hoàn hảo:
+        // 1. Nếu values.password là "" (để trống) -> Dùng "Greenwich@123"
+        // 2. Nếu values.password là "ValidPass@123" -> Dùng "ValidPass@123"
+        password: !isEdit ? values.password || `Greenwich@123` : undefined,
+        
         roleIDs: ["teacher"],
         status: values.status,
         phone: values.phone ? values.phone : undefined,
@@ -134,7 +154,7 @@ const TeacherActionModal = ({ initialData = null }) => {
               lastName: isEdit ? initialData?.lastName : "",
               email: isEdit ? initialData?.email : "",
               teacherCode: isEdit ? initialData?.teacherCode : "",
-              password: "",
+              password: "", // Để trống
               status: isEdit ? initialData?.status : true,
               phone: isEdit ? initialData?.phone : "",
             }}
@@ -197,13 +217,14 @@ const TeacherActionModal = ({ initialData = null }) => {
                 <Form.Item
                   label={<span className="text-[16px]">Password</span>}
                   // @ts-ignore
-                  rules={[yupSync(accountSchema)]}
+                  rules={[yupSync(accountSchema)]} // Chỉ cần yupSync
                   name="password"
                 >
                   <Input.Password
                     className="h-[46px]"
                     placeholder="Password"
-                    onChange={(e) => setPasswordValue(e.target.value)}
+                    // SỬA LỖI: Xóa onChange này đi
+                    // onChange={(e) => setPasswordValue(e.target.value)}
                   />
                   <div className="text-[14px] text-[#b3b0a5] mt-2">
                     Default Password: Greenwich@123
@@ -226,6 +247,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   layout="horizontal"
                   // @ts-ignore
                   name="status"
+                  valuePropName="checked" // Thêm cái này để Switch hoạt động đúng
                 >
                   <Switch className="ml-2" />
                 </Form.Item>
