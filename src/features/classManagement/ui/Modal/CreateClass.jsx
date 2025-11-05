@@ -4,7 +4,7 @@ import { yupSync } from "@shared/lib/utils";
 import { CreateClassSchema } from "@features/classManagement/shema";
 import { useCreateClass } from "@features/classManagement/hooks";
 
-const CreateClassModal = ({ isOpen, onClose }) => {
+const CreateClassModal = ({ isOpen, onClose, existingNames = [] }) => {
   const { mutate: createClass, isPending } = useCreateClass();
 
   const handleFinish = (values) => {
@@ -21,6 +21,7 @@ const CreateClassModal = ({ isOpen, onClose }) => {
   };
 
   const [form] = Form.useForm();
+  const [, forceRerender] = React.useState(0);
 
   return (
     <Modal open={isOpen} footer={null} centered onCancel={onClose} width={600}>
@@ -34,6 +35,7 @@ const CreateClassModal = ({ isOpen, onClose }) => {
           layout="vertical"
           onFinish={handleFinish}
           className=""
+          onValuesChange={() => forceRerender((v) => v + 1)}
         >
           <Form.Item
             label={
@@ -44,7 +46,19 @@ const CreateClassModal = ({ isOpen, onClose }) => {
             }
             name="className"
             required={false}
-            rules={[yupSync(CreateClassSchema)]}
+            rules={[
+              yupSync(CreateClassSchema),
+              () => ({
+                validator(_, value) {
+                  if (!value) return Promise.resolve();
+                  const normalized = value.trim().toLowerCase();
+                  if (existingNames.includes(normalized)) {
+                    return Promise.reject(new Error("Class name already exists"));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
             className="w-full"
           >
             <Input size="large" placeholder="Enter class name" />
@@ -66,6 +80,11 @@ const CreateClassModal = ({ isOpen, onClose }) => {
               type="primary"
               htmlType="submit"
               loading={isPending}
+              disabled={
+                isPending ||
+                !form.isFieldsTouched(true) ||
+                form.getFieldsError().some((f) => f.errors.length)
+              }
               className="w-[100px] h-[50px] bg-primaryColor hover:bg-[#002A6B] rounded-full"
             >
               Create

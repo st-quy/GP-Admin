@@ -150,6 +150,7 @@ const ClassManagement = () => {
       <CreateClassModal
         isOpen={isOpen === "Create" ? true : false}
         onClose={() => setIsOpen(null)}
+        existingNames={(classList || []).map((c) => (c.className || "").trim().toLowerCase())}
       />
       {dataClass && (
         <UpdateClassModal
@@ -159,6 +160,9 @@ const ClassManagement = () => {
             setIsOpen(null);
           }}
           data={dataClass}
+          existingNames={(classList || [])
+            .filter((c) => c.ID !== dataClass?.ID)
+            .map((c) => (c.className || "").trim().toLowerCase())}
         />
       )}
       <DeleteClassModal

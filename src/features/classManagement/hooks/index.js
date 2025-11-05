@@ -105,21 +105,25 @@ export const useGetAllClass = (teacherId = null) => {
 };
 
 export const useCreateClass = () => {
+  // @ts-ignore
   const { user } = useSelector((state) => state.auth);
 
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (params) => {
       const response = await ClassApi.createClass({
+        // @ts-ignore
         ...params,
         userId: user.userId,
       });
       return response.data;
     },
+    // @ts-ignore
     onSuccess: (data) => {
       message.success("Class created successfully");
       queryClient.invalidateQueries({ queryKey: ["classes"] });
     },
+    // @ts-ignore
     onError: ({ response }) => {
       message.error(response.data.message || "Failed to create class");
     },
@@ -130,14 +134,22 @@ export const useUpdateClass = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (params) => {
+      // @ts-ignore
       const response = await ClassApi.updateClass(params.classId, {
+        // @ts-ignore
         className: params.className,
       });
       return response.data;
     },
+    // @ts-ignore
     onSuccess: (data) => {
       message.success("Class updated successfully");
       queryClient.invalidateQueries({ queryKey: ["classes"] });
+    },
+    // @ts-ignore
+    onError: ({ response }) => {
+      // Hiển thị error message từ backend
+      message.error(response?.data?.message || "Failed to update class");
     },
   });
 };
@@ -149,10 +161,12 @@ export const useDeleteClass = () => {
       const response = await ClassApi.deleteClass(classId);
       return response.data;
     },
+    // @ts-ignore
     onSuccess: (data) => {
       message.success("Deleted class successfully");
       queryClient.invalidateQueries({ queryKey: ["classes"] });
     },
+    // @ts-ignore
     onError: ({ response }) => {
       message.error("Can't delete this class because it has sessions");
     },

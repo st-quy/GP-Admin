@@ -4,7 +4,7 @@ import { yupSync } from "@shared/lib/utils";
 import { CreateClassSchema } from "@features/classManagement/shema";
 import { useUpdateClass } from "@features/classManagement/hooks";
 
-const UpdateClassModal = ({ data, isOpen, onClose }) => {
+const UpdateClassModal = ({ data, isOpen, onClose, existingNames = [] }) => {
   const { mutate: updateClass, isPending } = useUpdateClass();
 
   const handleFinish = (values) => {
@@ -38,6 +38,7 @@ const UpdateClassModal = ({ data, isOpen, onClose }) => {
           layout="vertical"
           onFinish={handleFinish}
           className=""
+          onValuesChange={() => {}}
           initialValues={initialValues}
         >
           <Form.Item
@@ -49,7 +50,21 @@ const UpdateClassModal = ({ data, isOpen, onClose }) => {
             }
             name="className"
             required={false}
-            rules={[yupSync(CreateClassSchema)]}
+            rules={[
+              yupSync(CreateClassSchema),
+              () => ({
+                validator(_, value) {
+                  if (!value) return Promise.resolve();
+                  const normalized = value.trim().toLowerCase();
+                  // Allow keeping the same name, but block duplicates with other classes
+                  const current = (data?.className || "").trim().toLowerCase();
+                  if (normalized !== current && existingNames.includes(normalized)) {
+                    return Promise.reject(new Error("Class name already exists"));
+                  }
+                  return Promise.resolve();
+                },
+              }),
+            ]}
             className="w-full"
           >
             <Input size="large" placeholder="Enter class name" />
