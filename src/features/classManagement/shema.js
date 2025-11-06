@@ -2,6 +2,7 @@ import * as Yup from "yup";
 
 export const CreateClassSchema = Yup.object().shape({
   className: Yup.string()
+    .trim()
     .required("Class name is required")
     .matches(
       /^[a-zA-Z0-9\s]+$/, 

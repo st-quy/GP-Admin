@@ -7,6 +7,18 @@ import { useCreateClass } from "@features/classManagement/hooks";
 const CreateClassModal = ({ isOpen, onClose, existingNames = [] }) => {
   const { mutate: createClass, isPending } = useCreateClass();
 
+  /** @type {any} */
+  const uniqueNameRule = {
+    validator(_, value) {
+      if (!value) return Promise.resolve();
+      const normalized = value.trim().toLowerCase();
+      if (existingNames.includes(normalized)) {
+        return Promise.reject(new Error("Class name already exists"));
+      }
+      return Promise.resolve();
+    },
+  };
+
   const handleFinish = (values) => {
     const trimmedValues = {
       ...values,
@@ -46,19 +58,7 @@ const CreateClassModal = ({ isOpen, onClose, existingNames = [] }) => {
             }
             name="className"
             required={false}
-            rules={[
-              yupSync(CreateClassSchema),
-              () => ({
-                validator(_, value) {
-                  if (!value) return Promise.resolve();
-                  const normalized = value.trim().toLowerCase();
-                  if (existingNames.includes(normalized)) {
-                    return Promise.reject(new Error("Class name already exists"));
-                  }
-                  return Promise.resolve();
-                },
-              }),
-            ]}
+          rules={[yupSync(CreateClassSchema), uniqueNameRule]}
             className="w-full"
           >
             <Input size="large" placeholder="Enter class name" />
@@ -83,7 +83,8 @@ const CreateClassModal = ({ isOpen, onClose, existingNames = [] }) => {
               disabled={
                 isPending ||
                 !form.isFieldsTouched(true) ||
-                form.getFieldsError().some((f) => f.errors.length)
+                form.getFieldsError().some((f) => f.errors.length) ||
+                !(form.getFieldValue("className") || "").trim()
               }
               className="w-[100px] h-[50px] bg-primaryColor hover:bg-[#002A6B] rounded-full"
             >
