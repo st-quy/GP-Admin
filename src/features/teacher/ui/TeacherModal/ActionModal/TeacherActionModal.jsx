@@ -18,11 +18,10 @@ const yupSync = (schema) => ({
   },
 });
 
-const accountSchema = Yup.object().shape({
-  firstName: Yup.string().required("First name is required"),
-  lastName: Yup.string().required("Last name is required"),
-  email: Yup.string().email("Invalid email").required("Email is required"),
-  teacherCode: Yup.string().required("Teacher Code is required"),
+email: Yup.string()
+  .email("Invalid email")
+  .matches(/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/, "Invalid email")
+  .required("Email is required"),
 
   // BẮT ĐẦU SỬA LỖI VALIDATION
   password: Yup.string().when({
@@ -43,7 +42,7 @@ const accountSchema = Yup.object().shape({
 const TeacherActionModal = ({ initialData = null }) => {
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
-  
+
   // SỬA LỖI: Xóa state này đi, Form đã quản lý state này rồi
   // const [passwordValue, setPasswordValue] = useState("");
 
@@ -71,13 +70,13 @@ const TeacherActionModal = ({ initialData = null }) => {
         lastName: values.lastName,
         email: values.email,
         teacherCode: values.teacherCode,
-        
+
         // SỬA LỖI: Dùng values.password từ form, không dùng state
         // Logic "values.password || `Greenwich@123`" sẽ hoạt động hoàn hảo:
         // 1. Nếu values.password là "" (để trống) -> Dùng "Greenwich@123"
         // 2. Nếu values.password là "ValidPass@123" -> Dùng "ValidPass@123"
         password: !isEdit ? values.password || `Greenwich@123` : undefined,
-        
+
         roleIDs: ["teacher"],
         status: values.status,
         phone: values.phone ? values.phone : undefined,
@@ -94,14 +93,14 @@ const TeacherActionModal = ({ initialData = null }) => {
           message.error(
             // @ts-ignore
             error?.response?.data?.message ||
-              `Failed to ${isEdit ? "update" : "create"} account.`
+            `Failed to ${isEdit ? "update" : "create"} account.`
           );
         },
       });
     } catch (error) {
       message.error(
         error.response?.data?.message ||
-          "Failed to send request account. Please try again."
+        "Failed to send request account. Please try again."
       );
     }
   };
@@ -223,8 +222,8 @@ const TeacherActionModal = ({ initialData = null }) => {
                   <Input.Password
                     className="h-[46px]"
                     placeholder="Password"
-                    // SỬA LỖI: Xóa onChange này đi
-                    // onChange={(e) => setPasswordValue(e.target.value)}
+                  // SỬA LỖI: Xóa onChange này đi
+                  // onChange={(e) => setPasswordValue(e.target.value)}
                   />
                   <div className="text-[14px] text-[#b3b0a5] mt-2">
                     Default Password: Greenwich@123
