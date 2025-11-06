@@ -27,23 +27,41 @@ export const useLogin = () => {
       const { data } = await AuthApi.login(credentials);
       const decodedToken = jwtDecode(data.data.access_token);
 
-      if (decodedToken?.role.includes("student")) {
-        return navigate("/unauthorized");
-      }
-      if (decodedToken?.role.includes("teacher")) {
-        navigate("/class");
-      }
-      if (decodedToken?.role.includes("admin")) {
-        navigate("/dashboard");
-      }
-
+      // Set token and dispatch login BEFORE navigation
       setStorageData(ACCESS_TOKEN, data.data.access_token);
       setStorageData(REFRESH_TOKEN, data.data.refresh_token);
       dispatch(login());
+
+      // Navigate AFTER setting auth state
+      if (decodedToken?.role.includes("student")) {
+        navigate("/unauthorized");
+      } else if (decodedToken?.role.includes("teacher")) {
+        navigate("/class");
+      } else if (decodedToken?.role.includes("admin")) {
+        navigate("/dashboard");
+      }
+
       return data.data;
     },
-    onError({ response }) {
-      message.error(response.data.message);
+    onError(error) {
+      let errorMessage = "Login failed. Please try again.";
+      
+      // Handle network errors specifically
+      if (!error?.response) {
+        if (error?.code === "ERR_NETWORK" || error?.message?.includes("Network Error")) {
+          errorMessage = "Cannot connect to server. Please check if the backend API is running.";
+        } else if (error?.code === "ECONNABORTED") {
+          errorMessage = "Request timeout. Please check your connection.";
+        } else {
+          errorMessage = "Network error. Please check if the backend API is running.";
+        }
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      message.error(errorMessage);
     },
   });
 };

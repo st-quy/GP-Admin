@@ -7,6 +7,7 @@ import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import SessionTable from "./SessionTable/SessionTable";
 import { Button } from "antd";
+import { ICON_COLORS, ICON_CLASSES } from "@shared/lib/constants/iconColors";
 
 const SessionManager = ({ data, isLoading }) => {
   const [modalState, setModalState] = useState({
@@ -92,14 +93,16 @@ const SessionManager = ({ data, isLoading }) => {
           <span className="text-xl">
             <EditOutlined
               onClick={() => openModal("edit", record)}
-              className="hover:opacity-50"
+              className={ICON_CLASSES.EDIT}
+              style={{ color: ICON_COLORS.EDIT, cursor: "pointer" }}
             />
           </span>
           {record.SessionParticipants.length === 0 && (
             <span className="text-xl">
               <DeleteOutlined
                 onClick={() => openModal("delete", record)}
-                className="hover:opacity-50"
+                className={ICON_CLASSES.DELETE}
+                style={{ color: ICON_COLORS.DELETE, cursor: "pointer" }}
               />
             </span>
           )}

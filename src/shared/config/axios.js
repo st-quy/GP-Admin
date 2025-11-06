@@ -1,8 +1,27 @@
 import axios from "axios";
 import { jwtDecode } from "jwt-decode";
 
+// Use relative path for Docker with nginx proxy
+// This ensures requests go through nginx proxy (HTTPS) instead of direct HTTP call
+const getBaseURL = () => {
+  const envURL = import.meta.env.VITE_BASE_URL;
+  
+  // If running in production/Docker mode (not DEV), always use relative path
+  // This allows nginx to proxy requests to backend
+  if (!import.meta.env.DEV) {
+    return "/api"; // Relative path for nginx proxy
+  }
+  
+  // For local development, use configured URL or default to localhost
+  if (envURL && !envURL.includes("127.0.0.1:3010")) {
+    return envURL;
+  }
+  
+  return "http://localhost:3010/api"; // Local dev fallback
+};
+
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_BASE_URL,
+  baseURL: getBaseURL(),
   headers: {
     "Content-Type": "application/json",
   },

@@ -22,6 +22,7 @@ const UpdateClassModal = ({ data, isOpen, onClose, existingNames = [] }) => {
   };
 
   const [form] = Form.useForm();
+  const [, forceRerender] = React.useState(0);
   const initialValues = {
     className: data?.className || "",
   };
@@ -38,7 +39,7 @@ const UpdateClassModal = ({ data, isOpen, onClose, existingNames = [] }) => {
           layout="vertical"
           onFinish={handleFinish}
           className=""
-          onValuesChange={() => {}}
+          onValuesChange={() => forceRerender((v) => v + 1)}
           initialValues={initialValues}
         >
           <Form.Item
@@ -50,6 +51,7 @@ const UpdateClassModal = ({ data, isOpen, onClose, existingNames = [] }) => {
             }
             name="className"
             required={false}
+            validateTrigger={["onChange", "onBlur"]}
             rules={[
               yupSync(CreateClassSchema),
               () => ({
@@ -86,6 +88,11 @@ const UpdateClassModal = ({ data, isOpen, onClose, existingNames = [] }) => {
               type="primary"
               htmlType="submit"
               loading={isPending}
+              disabled={
+                isPending ||
+                !form.isFieldsTouched(true) ||
+                form.getFieldsError().some((f) => f.errors.length)
+              }
               className="w-[100px] h-[50px] bg-primaryColor hover:bg-[#002A6B] rounded-full"
             >
               Update

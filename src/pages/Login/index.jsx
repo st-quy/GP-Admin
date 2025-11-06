@@ -21,11 +21,32 @@ const LoginPage = () => {
   const [form] = Form.useForm();
 
   const onSubmit = async (values) => {
-    try {
-      loginFunc(values);
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
+    setErrorMessage(""); // Clear previous errors
+    loginFunc(values, {
+      onError: (error) => {
+        let errorMsg = "Login failed. Please try again.";
+        
+        // Network error - backend không kết nối được
+        if (!error?.response) {
+          if (error?.code === "ERR_NETWORK" || error?.message?.includes("Network Error")) {
+            errorMsg = "Cannot connect to server. Please check if the backend API is running on port 3010.";
+          } else if (error?.code === "ECONNABORTED") {
+            errorMsg = "Request timeout. Please check your connection.";
+          } else {
+            errorMsg = "Network error. Please check if the backend API is running.";
+          }
+        } else if (error?.response?.data?.message) {
+          errorMsg = error.response.data.message;
+        } else if (error?.message) {
+          errorMsg = error.message;
+        }
+        
+        setErrorMessage(errorMsg);
+      },
+      onSuccess: () => {
+        setErrorMessage(""); // Clear error on success
+      },
+    });
   };
 
   useEffect(() => {

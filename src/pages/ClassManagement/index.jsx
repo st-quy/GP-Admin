@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
+import { ICON_COLORS, ICON_CLASSES } from "@shared/lib/constants/iconColors";
 import {
   useGetAllClass,
   handleImportClick,
@@ -77,17 +78,17 @@ const ClassManagement = () => {
       render: (_, record) => (
         <div className="flex gap-4 justify-center items-center">
           <Button
-            className="text-xl !text-primaryColor"
+            className={`text-xl ${ICON_CLASSES.EDIT}`}
             type="link"
-            icon={<EditOutlined />}
+            icon={<EditOutlined style={{ color: ICON_COLORS.EDIT }} />}
             onClick={handleUpdateClass(record)}
           />
           {/* Edit button */}
           {record.numberOfSessions <= 0 && (
             <Button
-              className="text-xl"
+              className={`text-xl ${ICON_CLASSES.DELETE}`}
               type="link"
-              icon={<DeleteOutlined className="text-red-500" />}
+              icon={<DeleteOutlined style={{ color: ICON_COLORS.DELETE }} />}
               onClick={handleDeleteClass(record)}
             />
           )}
