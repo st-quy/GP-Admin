@@ -17,16 +17,32 @@ const yupSync = (schema) => ({
   },
 });
 
-const accountSchema = Yup.object().shape({
+// Base schema for common fields (used for both create and update)
+const baseSchema = Yup.object().shape({
   firstName: Yup.string().required("First name is required"),
   lastName: Yup.string().required("Last name is required"),
   email: Yup.string().email("Invalid email").required("Email is required"),
   teacherCode: Yup.string().required("Teacher Code is required"),
-  password: Yup.string()
-    .transform((value) => (value === "" ? undefined : value))
-    .min(6, "Password must be at least 6 characters")
-    .notRequired(),
 });
+
+// Schema for creating an account (password required, min 6)
+const accountCreateSchema = baseSchema.concat(
+  Yup.object().shape({
+    password: Yup.string()
+      .required("Password is required")
+      .min(6, "Password must be at least 6 characters"),
+  })
+);
+
+// Schema for updating an account (password optional but if provided must be min 6)
+const accountUpdateSchema = baseSchema.concat(
+  Yup.object().shape({
+    password: Yup.string()
+      .transform((value) => (value === "" ? undefined : value))
+      .min(6, "Password must be at least 6 characters")
+      .notRequired(),
+  })
+);
 
 const TeacherActionModal = ({ initialData = null }) => {
   const [form] = Form.useForm();
@@ -51,13 +67,20 @@ const TeacherActionModal = ({ initialData = null }) => {
   // @ts-ignore
   const onAction = async (values) => {
     try {
+      // Read password value from form (ensure we use the Form-controlled value)
+      const pwd = form.getFieldValue("password");
+      // Defensive client-side guard: if user provided a password while creating, it must be >= 6 chars
+      if (!isEdit && pwd && pwd.length < 6) {
+        message.error("Password must be at least 6 characters");
+        return;
+      }
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
         teacherCode: values.teacherCode,
-        password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
+        password: !isEdit ? pwd || passwordValue || `Greenwich@123` : undefined,
         roleIDs: ["teacher"],
         status: values.status,
         phone: values.phone ? values.phone : undefined,
@@ -125,20 +148,20 @@ const TeacherActionModal = ({ initialData = null }) => {
           <p className="mb-8 text-primaryTextColor text-[16px]">
             {isEdit ? "Update a teacher account." : "Create a teacher account."}
           </p>
-          <Form
-            onFinish={onAction}
-            form={form}
-            layout="vertical"
-            initialValues={{
-              firstName: isEdit ? initialData?.firstName : "",
-              lastName: isEdit ? initialData?.lastName : "",
-              email: isEdit ? initialData?.email : "",
-              teacherCode: isEdit ? initialData?.teacherCode : "",
-              password: "",
-              status: isEdit ? initialData?.status : true,
-              phone: isEdit ? initialData?.phone : "",
-            }}
-          >
+            <Form
+              onFinish={onAction}
+              form={form}
+              layout="vertical"
+              initialValues={{
+                firstName: isEdit ? initialData?.firstName : "",
+                lastName: isEdit ? initialData?.lastName : "",
+                email: isEdit ? initialData?.email : "",
+                teacherCode: isEdit ? initialData?.teacherCode : "",
+                password: "",
+                status: isEdit ? initialData?.status : true,
+                phone: isEdit ? initialData?.phone : "",
+              }}
+            >
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
                 label={
@@ -148,7 +171,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[yupSync(baseSchema)]}
                 name="firstName"
               >
                 <Input className="h-[46px]" placeholder="First name" />
@@ -160,7 +183,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[yupSync(baseSchema)]}
                 name="lastName"
               >
                 <Input className="h-[46px]" placeholder="Last name" />
@@ -174,7 +197,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[yupSync(baseSchema)]}
                 name="email"
               >
                 <Input className="h-[46px]" placeholder="Email" />
@@ -186,7 +209,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[yupSync(baseSchema)]}
                 name="teacherCode"
               >
                 <Input className="h-[46px]" placeholder="Teacher Code" />
@@ -196,14 +219,26 @@ const TeacherActionModal = ({ initialData = null }) => {
               {!isEdit && (
                 <Form.Item
                   label={<span className="text-[16px]">Password</span>}
-                  // @ts-ignore
-                  rules={[yupSync(accountSchema)]}
                   name="password"
+                  rules={[
+                    { required: false },
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        // password is optional (empty => default used). But if provided, must be at least 6 chars
+                        if (!value || value.length === 0) {
+                          return Promise.resolve();
+                        }
+                        if (value.length >= 6) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error("Password must be at least 6 characters"));
+                      },
+                    }),
+                  ]}
                 >
                   <Input.Password
                     className="h-[46px]"
                     placeholder="Password"
-                    onChange={(e) => setPasswordValue(e.target.value)}
                   />
                   <div className="text-[14px] text-[#b3b0a5] mt-2">
                     Default Password: Greenwich@123
