@@ -32,8 +32,6 @@ const ClassManagement = () => {
   const { data: classList, isLoading } = useGetAllClass(
     user?.role.includes("admin") ? null : userId
   );
-  console.log("✅ Raw classList from API:", classList);
-  console.log("✅ classList length:", classList?.length);
   const handleExport = async () => {
     setExportLoading(true);
     await handleExportExcel(setExportLoading);

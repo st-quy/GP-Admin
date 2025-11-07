@@ -15,7 +15,6 @@ const TableSearch = ({ data, columns, isLoading }) => {
       String(value).toLowerCase().includes(searchValue)
     );
   });
-  console.log("test:", filteredData);
   const start = (currentPage - 1) * pageSize + 1;
   const end = Math.min(start + pageSize - 1, filteredData.length);
   const total = filteredData.length;
