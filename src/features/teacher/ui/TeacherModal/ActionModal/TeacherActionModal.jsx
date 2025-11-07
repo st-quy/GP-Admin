@@ -19,16 +19,17 @@ const yupSync = (schema) => ({
 
 // Base schema for common fields (used for both create and update)
 const baseSchema = Yup.object().shape({
-  firstName: Yup.string().required("First name is required"),
-  lastName: Yup.string().required("Last name is required"),
-  email: Yup.string().email("Invalid email").required("Email is required"),
-  teacherCode: Yup.string().required("Teacher Code is required"),
+  firstName: Yup.string().trim().required("First name is required"),
+  lastName: Yup.string().trim().required("Last name is required"),
+  email: Yup.string().trim().email("Invalid email").required("Email is required"),
+  teacherCode: Yup.string().trim().required("Teacher Code is required"),
 });
 
 // Schema for creating an account (password required, min 6)
 const accountCreateSchema = baseSchema.concat(
   Yup.object().shape({
     password: Yup.string()
+      .transform((value) => (typeof value === "string" && value.trim() === "" ? undefined : value))
       .required("Password is required")
       .min(6, "Password must be at least 6 characters"),
   })
@@ -38,7 +39,7 @@ const accountCreateSchema = baseSchema.concat(
 const accountUpdateSchema = baseSchema.concat(
   Yup.object().shape({
     password: Yup.string()
-      .transform((value) => (value === "" ? undefined : value))
+      .transform((value) => (typeof value === "string" && value.trim() === "" ? undefined : value))
       .min(6, "Password must be at least 6 characters")
       .notRequired(),
   })

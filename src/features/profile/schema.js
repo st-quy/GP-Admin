@@ -11,15 +11,21 @@ export const ChangePasswordSchema = Yup.object().shape({
 
 
 export const UpdateProfileSchema = Yup.object().shape({
-  firstName: Yup.string().required("First name is required"),
-  lastName: Yup.string().required("Last name is required"),
-  teacherCode: Yup.string().required("Code is required"),
+  firstName: Yup.string().trim().required("First name is required"),
+  lastName: Yup.string().trim().required("Last name is required"),
+  teacherCode: Yup.string().trim().required("Code is required"),
   dob: Yup.string().nullable(),
   email: Yup.string()
+    .trim()
     .email("Enter a valid email")
     .required("Email is required"),
   phone: Yup.string()
-    .matches(/^\d{9,10}$/, "Phone number must be 9-10 digits")
-    .nullable(),
-  address: Yup.string().nullable(),
+    .transform((value) => (typeof value === "string" && value.trim() === "" ? null : value))
+    .nullable()
+    .test(
+      "phone-format",
+      "Phone number must be 9-10 digits",
+      (value) => !value || /^\d{9,10}$/.test(value)
+    ),
+  address: Yup.string().transform((value) => (typeof value === "string" && value.trim() === "" ? null : value)).nullable(),
 });
