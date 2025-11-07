@@ -90,10 +90,16 @@ const SessionManager = ({ data, isLoading }) => {
       render: (_, record) => (
         <div className="flex justify-center items-center gap-4">
           <span className="text-xl">
-            <EditOutlined
-              onClick={() => openModal("edit", record)}
-              className="hover:opacity-50"
-            />
+            {record.status !== "ongoing" ? (
+              <EditOutlined
+                onClick={() => openModal("edit", record)}
+                className="hover:opacity-50 cursor-pointer"
+              />
+            ) : (
+              <EditOutlined
+                className="text-gray-300 cursor-not-allowed"
+              />
+            )}
           </span>
           {record.SessionParticipants.length === 0 && (
             <span className="text-xl">

@@ -2,13 +2,28 @@ import React from "react";
 import { Form, Input, Button, Typography, Modal, DatePicker } from "antd";
 import { useUpdateProfile } from "@features/auth/hooks/index";
 import { UpdateProfileSchema } from "@features/profile/schema";
-import { yupSync } from "@shared/lib/utils";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
 
+// Create a validator function that follows Ant Design's FormRule type
+const createValidator = (fieldName, schema) => ({
+  validator: async (_, value) => {
+    if (!value) return Promise.resolve();
+    try {
+      await schema.validateSyncAt(fieldName, { [fieldName]: value });
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error.message);
+    }
+  }
+});
+
 const ProfileUpdate = ({ isOpen, onClose }) => {
   const { mutate: updateProfile, isPending } = useUpdateProfile();
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => {
+    // @ts-ignore
+    return state.auth;
+  });
 
   const handleFinish = (values) => {
     updateProfile(values, {
@@ -68,7 +83,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="firstName"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[createValidator("firstName", UpdateProfileSchema)]}
             className="w-full"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -82,7 +97,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="lastName"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[createValidator("lastName", UpdateProfileSchema)]}
             className="w-full"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -91,12 +106,10 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             label={
               <div className="flex font-medium">
                 <span>Code</span>
-                <span className="text-red-500 ml-1">*</span>
               </div>
             }
             name="teacherCode"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
             className="w-full"
           >
             <Input
@@ -113,7 +126,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="dob"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[createValidator("dob", UpdateProfileSchema)]}
             className="w-full"
           >
             <DatePicker
@@ -129,12 +142,10 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             label={
               <div className="flex font-medium">
                 <span>Email</span>
-                <span className="text-red-500 ml-1">*</span>
               </div>
             }
             name="email"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
           >
             <Input
@@ -150,7 +161,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               </div>
             }
             name="phone"
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[createValidator("phone", UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
