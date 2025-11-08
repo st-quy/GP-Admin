@@ -21,7 +21,14 @@ const yupSync = (schema) => ({
 const baseSchema = Yup.object().shape({
   firstName: Yup.string().trim().required("First name is required"),
   lastName: Yup.string().trim().required("Last name is required"),
-  email: Yup.string().trim().email("Invalid email").required("Email is required"),
+  email: Yup.string()
+    .trim()
+    .email("Invalid email")
+    .matches(
+      /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+      "Invalid email format"
+    )
+    .required("Email is required"),
   teacherCode: Yup.string().trim().required("Teacher Code is required"),
 });
 
