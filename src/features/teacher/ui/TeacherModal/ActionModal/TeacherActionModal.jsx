@@ -95,18 +95,33 @@ const TeacherActionModal = ({ initialData = null }) => {
           handleCancel();
         },
         onError: (error) => {
-          message.error(
-            // @ts-ignore
-            error?.response?.data?.message ||
+          // @ts-ignore
+          const apiMsg = error?.response?.data?.message;
+          // @ts-ignore
+          const apiErrors = error?.response?.data?.errors;
+          // Ưu tiên hiển thị lỗi chi tiết từ mảng errors
+          if (Array.isArray(apiErrors) && apiErrors.length > 0) {
+            message.error(apiErrors[0]);
+          } else if (apiMsg) {
+            message.error(apiMsg);
+          } else {
+            message.error(
               `Failed to ${isEdit ? "update" : "create"} account.`
-          );
+            );
+          }
         },
       });
     } catch (error) {
-      message.error(
-        error.response?.data?.message ||
-          "Failed to send request account. Please try again."
-      );
+      const apiMsg = error?.response?.data?.message;
+      const apiErrors = error?.response?.data?.errors;
+      // Ưu tiên hiển thị lỗi chi tiết từ mảng errors
+      if (Array.isArray(apiErrors) && apiErrors.length > 0) {
+        message.error(apiErrors[0]);
+      } else if (apiMsg) {
+        message.error(apiMsg);
+      } else {
+        message.error("Failed to send request account. Please try again.");
+      }
     }
   };
 
