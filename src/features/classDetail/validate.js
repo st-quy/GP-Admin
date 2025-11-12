@@ -25,19 +25,17 @@ export const sessionSchema = yup.object().shape({
     .of(yup.date().nullable())
     .min(2, "Date range must have start and end date")
     .test("start-date", "Start date must be today or later", function (value) {
-      // value[0] là startDate
       return isStartDateValid(value?.[0]);
     })
-    // *** THÊM LOGIC VALIDATION MỚI TẠI ĐÂY ***
     .test(
       "end-date",
-      "End date must be after start date", // Thông báo lỗi bạn yêu cầu
+      "End date must be after start date", 
       function (value) {
-        const [startDate, endDate] = value || []; // Lấy startDate và endDate
+        const [startDate, endDate] = value || []; 
         if (startDate && endDate) {
-          return dayjs(endDate).isAfter(dayjs(startDate)); // Kiểm tra endDate > startDate
+          return dayjs(endDate).isAfter(dayjs(startDate)); 
         }
-        return true; // Bỏ qua nếu chưa chọn đủ (quy tắc 'min(2)' sẽ xử lý)
+        return true; 
       }
     ),
 });
