@@ -114,7 +114,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
           >
             <Input
               className="h-[46px] w-full max-w-[458px] rounded-lg"
-              disabled
+              disabled  
             />
           </Form.Item>
 

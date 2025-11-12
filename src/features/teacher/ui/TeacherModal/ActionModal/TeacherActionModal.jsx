@@ -7,39 +7,40 @@ import {
 } from "@features/teacher/hook/useTeacherQuery";
 import { EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
 
-
 const createValidator = (fieldName, schema) => ({
   validator: async (_, value) => {
-    
     if (fieldName === 'password' && (!value || value.trim() === '')) {
       return Promise.resolve();
     }
     
     try {
-    
       await schema.validateSyncAt(fieldName, { [fieldName]: value });
       return Promise.resolve();
     } catch (error) {
-      
       return Promise.reject(error.message);
     }
   }
 });
 
 const baseSchema = Yup.object().shape({
-  firstName: Yup.string().trim().required("First name is required"),
-  lastName: Yup.string().trim().required("Last name is required"),
+  firstName: Yup.string()
+    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
+    .required("First name is required"),
+  lastName: Yup.string()
+    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
+    .required("Last name is required"),
   email: Yup.string()
-    .trim()
+    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
     .email("Invalid email")
     .matches(
       /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
       "Invalid email format"
     )
     .required("Email is required"),
-  teacherCode: Yup.string().trim().required("Teacher Code is required"),
+  teacherCode: Yup.string()
+    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
+    .required("Teacher Code is required"),
 });
-
 
 const accountCreateSchema = baseSchema.concat(
   Yup.object().shape({
@@ -50,14 +51,12 @@ const accountCreateSchema = baseSchema.concat(
   })
 );
 
-
 const passwordCreateSchema = Yup.object().shape({
   password: Yup.string()
     .transform((value) => (typeof value === "string" && value.trim() === "" ? undefined : value))
-    .notRequired() 
-    .min(6, "Password must be at least 6 characters"), 
+    .notRequired()
+    .min(6, "Password must be at least 6 characters"),
 });
-
 
 const accountUpdateSchema = baseSchema.concat(
   Yup.object().shape({
@@ -91,7 +90,6 @@ const TeacherActionModal = ({ initialData = null }) => {
   // @ts-ignore
   const onAction = async (values) => {
     try {
-      // Hàm này sẽ chạy SAU KHI validation thành công
       const pwd = form.getFieldValue("password");
       
       const data = {
@@ -118,7 +116,6 @@ const TeacherActionModal = ({ initialData = null }) => {
           const apiMsg = error?.response?.data?.message;
           // @ts-ignore
           const apiErrors = error?.response?.data?.errors;
-          // Ưu tiên hiển thị lỗi chi tiết từ mảng errors
           if (Array.isArray(apiErrors) && apiErrors.length > 0) {
             message.error(apiErrors[0]);
           } else if (apiMsg) {
@@ -131,15 +128,12 @@ const TeacherActionModal = ({ initialData = null }) => {
         },
       });
     } catch (error) {
-      
       if (error?.errorFields?.length > 0) {
-         return; 
+         return;
       }
-      
       
       const apiMsg = error?.response?.data?.message;
       const apiErrors = error?.response?.data?.errors;
-      
       if (Array.isArray(apiErrors) && apiErrors.length > 0) {
         message.error(apiErrors[0]);
       } else if (apiMsg) {
@@ -169,7 +163,6 @@ const TeacherActionModal = ({ initialData = null }) => {
       <Modal
         open={open}
         okText={isEdit ? "Update" : "Create"}
-        // onOk={onAction}
         closable={false}
         confirmLoading={isOnAction}
         width={{
@@ -261,9 +254,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                 <Form.Item
                   label={<span className="text-[16px]">Password</span>}
                   name="password"
-                  // *** ĐÂY LÀ PHẦN SỬA LỖI BUG_TM002 (dùng schema mới) ***
                   rules={[createValidator("password", passwordCreateSchema)]}
-                  // *** KẾT THÚC PHẦN SỬA LỖI ***
                 >
                   <Input.Password
                     className="h-[46px]"
@@ -290,7 +281,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   layout="horizontal"
                   // @ts-ignore
                   name="status"
-                  valuePropName="checked" 
+                  valuePropName="checked"
                 >
                   <Switch className="ml-2" />
                 </Form.Item>
