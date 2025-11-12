@@ -7,17 +7,25 @@ import {
 } from "@features/teacher/hook/useTeacherQuery";
 import { EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
 
-const yupSync = (schema) => ({
-  async validator({ field }, value) {
-    try {
-      await schema.validateSyncAt(field, { [field]: value });
-    } catch (error) {
-      throw new Error(error.message);
+
+const createValidator = (fieldName, schema) => ({
+  validator: async (_, value) => {
+    
+    if (fieldName === 'password' && (!value || value.trim() === '')) {
+      return Promise.resolve();
     }
-  },
+    
+    try {
+    
+      await schema.validateSyncAt(fieldName, { [fieldName]: value });
+      return Promise.resolve();
+    } catch (error) {
+      
+      return Promise.reject(error.message);
+    }
+  }
 });
 
-// Base schema for common fields (used for both create and update)
 const baseSchema = Yup.object().shape({
   firstName: Yup.string().trim().required("First name is required"),
   lastName: Yup.string().trim().required("Last name is required"),
@@ -32,7 +40,7 @@ const baseSchema = Yup.object().shape({
   teacherCode: Yup.string().trim().required("Teacher Code is required"),
 });
 
-// Schema for creating an account (password required, min 6)
+
 const accountCreateSchema = baseSchema.concat(
   Yup.object().shape({
     password: Yup.string()
@@ -42,7 +50,15 @@ const accountCreateSchema = baseSchema.concat(
   })
 );
 
-// Schema for updating an account (password optional but if provided must be min 6)
+
+const passwordCreateSchema = Yup.object().shape({
+  password: Yup.string()
+    .transform((value) => (typeof value === "string" && value.trim() === "" ? undefined : value))
+    .notRequired() 
+    .min(6, "Password must be at least 6 characters"), 
+});
+
+
 const accountUpdateSchema = baseSchema.concat(
   Yup.object().shape({
     password: Yup.string()
@@ -75,13 +91,9 @@ const TeacherActionModal = ({ initialData = null }) => {
   // @ts-ignore
   const onAction = async (values) => {
     try {
-      // Read password value from form (ensure we use the Form-controlled value)
+      // Hàm này sẽ chạy SAU KHI validation thành công
       const pwd = form.getFieldValue("password");
-      // Defensive client-side guard: if user provided a password while creating, it must be >= 6 chars
-      if (!isEdit && pwd && pwd.length < 6) {
-        message.error("Password must be at least 6 characters");
-        return;
-      }
+      
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
         firstName: values.firstName,
@@ -119,9 +131,15 @@ const TeacherActionModal = ({ initialData = null }) => {
         },
       });
     } catch (error) {
+      
+      if (error?.errorFields?.length > 0) {
+         return; 
+      }
+      
+      
       const apiMsg = error?.response?.data?.message;
       const apiErrors = error?.response?.data?.errors;
-      // Ưu tiên hiển thị lỗi chi tiết từ mảng errors
+      
       if (Array.isArray(apiErrors) && apiErrors.length > 0) {
         message.error(apiErrors[0]);
       } else if (apiMsg) {
@@ -194,7 +212,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(baseSchema)]}
+                rules={[createValidator("firstName", baseSchema)]}
                 name="firstName"
               >
                 <Input className="h-[46px]" placeholder="First name" />
@@ -206,7 +224,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(baseSchema)]}
+                rules={[createValidator("lastName", baseSchema)]}
                 name="lastName"
               >
                 <Input className="h-[46px]" placeholder="Last name" />
@@ -220,7 +238,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(baseSchema)]}
+                rules={[createValidator("email", baseSchema)]}
                 name="email"
               >
                 <Input className="h-[46px]" placeholder="Email" />
@@ -232,7 +250,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(baseSchema)]}
+                rules={[createValidator("teacherCode", baseSchema)]}
                 name="teacherCode"
               >
                 <Input className="h-[46px]" placeholder="Teacher Code" />
@@ -243,21 +261,9 @@ const TeacherActionModal = ({ initialData = null }) => {
                 <Form.Item
                   label={<span className="text-[16px]">Password</span>}
                   name="password"
-                  rules={[
-                    { required: false },
-                    ({ getFieldValue }) => ({
-                      validator(_, value) {
-                        // password is optional (empty => default used). But if provided, must be at least 6 chars
-                        if (!value || value.length === 0) {
-                          return Promise.resolve();
-                        }
-                        if (value.length >= 6) {
-                          return Promise.resolve();
-                        }
-                        return Promise.reject(new Error("Password must be at least 6 characters"));
-                      },
-                    }),
-                  ]}
+                  // *** ĐÂY LÀ PHẦN SỬA LỖI BUG_TM002 (dùng schema mới) ***
+                  rules={[createValidator("password", passwordCreateSchema)]}
+                  // *** KẾT THÚC PHẦN SỬA LỖI ***
                 >
                   <Input.Password
                     className="h-[46px]"
@@ -284,6 +290,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   layout="horizontal"
                   // @ts-ignore
                   name="status"
+                  valuePropName="checked" 
                 >
                   <Switch className="ml-2" />
                 </Form.Item>
