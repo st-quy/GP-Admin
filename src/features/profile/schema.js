@@ -10,6 +10,7 @@ export const ChangePasswordSchema = Yup.object().shape({
 });
 
 
+
 export const UpdateProfileSchema = Yup.object().shape({
   firstName: Yup.string()
     .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
@@ -17,12 +18,11 @@ export const UpdateProfileSchema = Yup.object().shape({
   lastName: Yup.string()
     .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
     .required("Last name is required"),
-  teacherCode: Yup.string().trim(),
+  teacherCode: Yup.string().trim(), 
   dob: Yup.string().nullable(),
-  email: Yup.string()
-    .trim()
-    .email("Enter a valid email")
-    .required("Email is required"),
+  email: Yup.string() 
+    .email("Enter a valid email"),
+   
   phone: Yup.string()
     .transform((value) => (typeof value === "string" && value.trim() === "" ? null : value))
     .nullable()
