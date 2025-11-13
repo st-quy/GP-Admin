@@ -24,13 +24,13 @@ const createValidator = (fieldName, schema) => ({
 
 const baseSchema = Yup.object().shape({
   firstName: Yup.string()
-    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
     .required("First name is required"),
   lastName: Yup.string()
-    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
     .required("Last name is required"),
   email: Yup.string()
-    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
     .email("Invalid email")
     .matches(
       /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
@@ -38,7 +38,7 @@ const baseSchema = Yup.object().shape({
     )
     .required("Email is required"),
   teacherCode: Yup.string()
-    .transform((value) => (value && typeof value === 'string' ? value.trim() : value))
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
     .required("Teacher Code is required"),
 });
 
@@ -254,7 +254,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                 <Form.Item
                   label={<span className="text-[16px]">Password</span>}
                   name="password"
-                  rules={[createValidator("password", passwordCreateSchema)]}
+                  rules={[createValidator("password", accountCreateSchema)]}
                 >
                   <Input.Password
                     className="h-[46px]"

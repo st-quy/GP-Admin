@@ -2,21 +2,13 @@ import React from "react";
 import { Form, Input, Button, Typography, Modal, DatePicker } from "antd";
 import { useUpdateProfile } from "@features/auth/hooks/index";
 import { UpdateProfileSchema } from "@features/profile/schema";
+import { createFormValidator } from "@shared/lib/utils/form";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
 
-// Create a validator function that follows Ant Design's FormRule type
-const createValidator = (fieldName, schema) => ({
-  validator: async (_, value) => {
-    if (!value) return Promise.resolve();
-    try {
-      await schema.validateSyncAt(fieldName, { [fieldName]: value });
-      return Promise.resolve();
-    } catch (error) {
-      return Promise.reject(error.message);
-    }
-  }
-});
+// List of disabled fields to skip validation
+const disabledFields = ["teacherCode", "email"];
+const validate = createFormValidator(UpdateProfileSchema, disabledFields);
 
 const ProfileUpdate = ({ isOpen, onClose }) => {
   const { mutate: updateProfile, isPending } = useUpdateProfile();
@@ -83,7 +75,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="firstName"
             required={false}
-            rules={[createValidator("firstName", UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -97,7 +89,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="lastName"
             required={false}
-            rules={[createValidator("lastName", UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -110,6 +102,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="teacherCode"
             required={false}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <Input
@@ -126,7 +119,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="dob"
             required={false}
-            rules={[createValidator("dob", UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <DatePicker
@@ -146,6 +139,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="email"
             required={false}
+            rules={[{ validator: validate }]}
             className="w-full md:max-w-[458px]"
           >
             <Input
@@ -161,7 +155,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               </div>
             }
             name="phone"
-            rules={[createValidator("phone", UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full md:max-w-[458px]"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -174,6 +168,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               </div>
             }
             name="address"
+            rules={[{ validator: validate }]}
             className="w-full md:max-w-[458px]"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
