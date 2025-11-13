@@ -6,7 +6,7 @@ import { formatDateTime } from "@shared/lib/utils/formatString";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import SessionTable from "./SessionTable/SessionTable";
-import { Button } from "antd";
+import { Button, message } from "antd";
 
 const SessionManager = ({ data, isLoading }) => {
   const [modalState, setModalState] = useState({
@@ -18,6 +18,12 @@ const SessionManager = ({ data, isLoading }) => {
   const [selectedSession, setSelectedSession] = useState(null);
 
   const openModal = (type, session = null) => {
+    if (type === "edit" && session?.status === "ON_GOING") {
+      message.warning(
+        "You cannot edit an ongoing session until the exam is completed."
+      );
+      return;
+    }
     setSelectedSession(session);
     setModalState((prev) => ({ ...prev, [type]: true }));
   };
