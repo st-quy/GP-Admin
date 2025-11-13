@@ -26,5 +26,16 @@ export const sessionSchema = yup.object().shape({
     .min(2, "Date range must have start and end date")
     .test("start-date", "Start date must be today or later", function (value) {
       return isStartDateValid(value?.[0]);
-    }),
+    })
+    .test(
+      "end-date",
+      "End date must be after start date",
+      function (value) {
+        const [startDate, endDate] = value || [];
+        if (startDate && endDate) {
+          return dayjs(endDate).isAfter(dayjs(startDate));
+        }
+        return true;
+      }
+    ),
 });
