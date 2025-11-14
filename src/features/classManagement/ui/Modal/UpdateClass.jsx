@@ -2,26 +2,67 @@ import React from "react";
 import { Form, Input, Button, Typography, Modal } from "antd";
 import { yupSync } from "@shared/lib/utils";
 import { CreateClassSchema } from "@features/classManagement/shema";
-import { useUpdateClass } from "@features/classManagement/hooks";
+import { useUpdateClass, useGetAllClass } from "@features/classManagement/hooks";
+import { useSelector } from "react-redux";
 
 const UpdateClassModal = ({ data, isOpen, onClose }) => {
   const { mutate: updateClass, isPending } = useUpdateClass();
+  const [form] = Form.useForm();
+  // @ts-ignore
+  const { userId, user } = useSelector((state) => state.auth);
+  const { data: classList } = useGetAllClass(user?.role?.includes("admin") ? null : userId);
 
   const handleFinish = (values) => {
+    form.setFields([{ name: "className", errors: [] }]);
+
+    const trimmed = values.className ? values.className.trim() : "";
+    if (!trimmed) {
+      form.setFields([{ name: "className", errors: ["Class name is required"] }]);
+      return;
+    }
+
+    const duplicated =
+      Array.isArray(classList) &&
+      classList.some(
+        (c) =>
+          String(c?.className || "").toLowerCase() === trimmed.toLowerCase() &&
+          c?.ID !== data?.ID
+      );
+    if (duplicated) {
+      form.setFields([{ name: "className", errors: ["Class name already exists"] }]);
+      return;
+    }
+
     updateClass(
+      // @ts-ignore
       {
         classId: data?.ID,
-        className: values.className,
+        className: trimmed,
       },
       {
         onSuccess: () => {
           onClose();
         },
+        onError: (error) => {
+          const hasResp = typeof error === "object" && error !== null && "response" in error;
+          let statusCode;
+          let messageText = "";
+          if (hasResp) {
+            // @ts-ignore
+            statusCode = error.response?.status;
+            // @ts-ignore
+            messageText = typeof error.response?.data?.message === "string" ? error.response.data.message : "";
+          }
+          const isDuplicate =
+            statusCode === 409 || /exist|duplicate|đã tồn tại/i.test(messageText || "");
+          if (isDuplicate) {
+            form.setFields([{ name: "className", errors: ["Class name already exists"] }]);
+            return;
+          }
+        },
       }
     );
   };
-
-  const [form] = Form.useForm();
   const initialValues = {
     className: data?.className || "",
   };
@@ -49,7 +90,6 @@ const UpdateClassModal = ({ data, isOpen, onClose }) => {
             }
             name="className"
             required={false}
-            rules={[yupSync(CreateClassSchema)]}
             className="w-full"
           >
             <Input size="large" placeholder="Enter class name" />

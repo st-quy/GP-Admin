@@ -77,9 +77,9 @@ const ClassManagement = () => {
       render: (_, record) => (
         <div className="flex gap-4 justify-center items-center">
           <Button
-            className="text-xl !text-primaryColor"
+            className="text-xl"
             type="link"
-            icon={<EditOutlined />}
+            icon={<EditOutlined style={{ color: "#007BFF" }} />}
             onClick={handleUpdateClass(record)}
           />
           {/* Edit button */}
@@ -87,7 +87,7 @@ const ClassManagement = () => {
             <Button
               className="text-xl"
               type="link"
-              icon={<DeleteOutlined className="text-red-500" />}
+              icon={<DeleteOutlined style={{ color: "#FF4D4F" }} />}
               onClick={handleDeleteClass(record)}
             />
           )}
