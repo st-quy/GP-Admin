@@ -12,7 +12,7 @@ const RedirectByRole = () => {
     return <Navigate to="/class" />;
   }
 
-  // Mặc định fallback nếu role không khớp
+
   return <Navigate to="/unauthorized" replace />;
 };
 
