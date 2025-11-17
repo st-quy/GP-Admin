@@ -10,6 +10,7 @@ import ClassDetail from "@pages/ClassDetail/ClassDetail.jsx";
 import TeacherAccountManagement from "@pages/TeacherManagement/TeacherAccountManagement.jsx";
 import ClassManagement from "@pages/ClassManagement/index.jsx";
 import RedirectByRole from "./RedirectByRole/index.jsx";
+import ExamManagement from "@pages/ExamManagement/index.jsx";
 
 const PrivateRoute = [
   {
@@ -104,6 +105,17 @@ const PrivateRoute = [
                 ],
               },
             ],
+          },
+        ],
+      },
+      {
+        path: "exam",
+        role: ["teacher"],
+        breadcrumb: "Exam Management",
+        children: [
+          {
+            index: true,
+            element: <ExamManagement />,
           },
         ],
       },
