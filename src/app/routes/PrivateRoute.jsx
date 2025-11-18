@@ -10,6 +10,7 @@ import ClassDetail from "@pages/ClassDetail/ClassDetail.jsx";
 import TeacherAccountManagement from "@pages/TeacherManagement/TeacherAccountManagement.jsx";
 import ClassManagement from "@pages/ClassManagement/index.jsx";
 import RedirectByRole from "./RedirectByRole/index.jsx";
+import QuestionBank from "@pages/QuestionBank/index.jsx";
 
 const PrivateRoute = [
   {
@@ -104,6 +105,17 @@ const PrivateRoute = [
                 ],
               },
             ],
+          },
+        ],
+      },
+       {
+        path: "question-bank",
+        role: ["teacher"],
+        breadcrumb: "Question Management",
+        children: [
+          {
+            index: true,
+            element: <QuestionBank />,
           },
         ],
       },
