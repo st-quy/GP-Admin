@@ -19,12 +19,15 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import HeaderInfo from "@app/components/HeaderInfo";
+import useConfirm from "@shared/hook/useConfirm"; // 👈 Import hook useConfirm
 
 const { Text } = Typography;
 const { Option } = Select;
 
 const QuestionBank = () => {
-  const navigate = useNavigate(); // Hook để chuyển trang
+  const navigate = useNavigate();
+  // 👈 Gọi hook useConfirm
+  const { openConfirmModal, ModalComponent } = useConfirm(); 
 
   // 1. Mock Data
   const dataSource = [
@@ -83,6 +86,22 @@ const QuestionBank = () => {
   // State quản lý phân trang và tìm kiếm
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  
+  // Hàm xử lý khi nhấn nút Xóa, hiển thị modal xác nhận
+  const handleDeleteQuestion = (record) => {
+    openConfirmModal({
+      title: "Are you sure you want to delete this question?",
+      message: "After deleting this question it will no longer appear.",
+      okText: "Delete",
+      okButtonColor: "#FF4D4F", // Màu đỏ cho nút Delete
+      onConfirm: () => {
+        // 🚨 THAY THẾ BẰNG LOGIC XÓA THỰC TẾ CỦA BẠN 
+        console.log(`Deleting question with key: ${record.key}`);
+        // Ví dụ: gọi API xóa ở đây
+        // deleteQuestionMutation.mutate(record.key);
+      },
+    });
+  };
 
   // 2. Định nghĩa Columns
   const columns = [
@@ -107,7 +126,7 @@ const QuestionBank = () => {
       dataIndex: "skills",
       key: "skills",
       align: "center",
-      // Cập nhật: Hiển thị text thường giống các cột khác
+      // Đã cập nhật: Hiển thị text thường giống các cột khác
       render: (text) => <span className="text-gray-500">{text}</span>,
     },
     {
@@ -151,6 +170,8 @@ const QuestionBank = () => {
             type="text"
             className="text-[#FF4D4F] hover:bg-red-50 px-2"
             icon={<DeleteOutlined />}
+            // 👈 Sử dụng hàm xóa đã định nghĩa
+            onClick={() => handleDeleteQuestion(record)}
           />
         </Space>
       ),
@@ -188,6 +209,8 @@ const QuestionBank = () => {
 
   return (
     <>
+      {/* 👈 Component Modal được render ở đây */}
+      <ModalComponent /> 
       <HeaderInfo
         title="Question List"
         subtitle="View Question Information"
@@ -196,7 +219,7 @@ const QuestionBank = () => {
         SubAction={
           <Dropdown menu={{ items, onClick: (e) => navigate(`create/${e.key}`) }} >
               <Button className="w-full p-5" icon={<DownOutlined />} iconPosition="end" >
-               Create Question
+                Create Question
               </Button>
           </Dropdown>
         }
