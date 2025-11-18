@@ -18,11 +18,11 @@ const QuestionBank = () => {
 
     const handleRedirect = (value) => {
         // Redirect sang page tương ứng
-        navigate(`/question-bank/${value}`)
+        navigate(`/questions/${value}`)
     }
 
     return (
-        <div>
+        <div className='p-8'>
             <div className='mt-4 flex justify-between items-center  '>
                 <div className='left-area'>
                     <Title level={3}>Question List</Title>

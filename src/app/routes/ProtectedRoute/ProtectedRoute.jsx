@@ -1,17 +1,26 @@
-import { LogoGreen } from "@assets/images";
-import { ConfigProvider, Layout, Menu, Segmented } from "antd";
+// @ts-nocheck
+import { LogoGreen } from '@assets/images';
+import { Layout, Menu } from 'antd';
 import {
   Outlet,
   useLocation,
   useNavigate,
   matchRoutes,
   Navigate,
-} from "react-router-dom";
-import { Breadcrumb } from "../../components/Breadcrumb/Breadcrumb";
-import PrivateRoute from "../PrivateRoute";
-import ProfileMenu from "@features/auth/ui/ProfileMenu";
-import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+} from 'react-router-dom';
+import { Breadcrumb } from '../../components/Breadcrumb/Breadcrumb';
+import PrivateRoute from '../PrivateRoute';
+import ProfileMenu from '@features/auth/ui/ProfileMenu';
+import { useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
+import Sider from 'antd/es/layout/Sider';
+import {
+  ContactsOutlined,
+  ContainerOutlined,
+  DatabaseOutlined,
+  HomeOutlined,
+  ReadOutlined, 
+} from '@ant-design/icons';
 
 const { Header, Content } = Layout;
 
@@ -19,7 +28,7 @@ export const ProtectedRoute = () => {
   // @ts-ignore
   const { isAuth, user } = useSelector((state) => state.auth);
 
-  const [currentKey, setCurrentKey] = useState("1");
+  const [currentKey, setCurrentKey] = useState('dashboard');
   const location = useLocation();
 
   const navigate = useNavigate();
@@ -41,30 +50,16 @@ export const ProtectedRoute = () => {
 
   // Function to handle navigation
   const navigateTo = (key) => {
-    switch (key) {
-      case "1":
-        navigate("/");
-        break;
-      case "2":
-        navigate("/class");
-        break;
-      case "3":
-        navigate("/teacher");
-        break;
-      default:
-        setCurrentKey(key);
-        break;
-    }
+    setCurrentKey(key);
+    navigate(`/${key}`);
   };
 
   useEffect(() => {
-    const path = location.pathname.split("/")[1];
-    if (path === "class") {
-      setCurrentKey("2");
-    } else if (path === "teacher") {
-      setCurrentKey("3");
+    const path = location.pathname.split('/')[1];
+    if (!path) {
+      setCurrentKey('dashboard');
     } else {
-      setCurrentKey("1");
+      setCurrentKey(path);
     }
   }, [location.pathname]);
 
@@ -75,76 +70,96 @@ export const ProtectedRoute = () => {
     requiredRoles.length > 0 &&
     !requiredRoles.some((item) => user?.role.includes(item))
   ) {
-    return <Navigate to="/unauthorized" replace />;
+    return <Navigate to='/unauthorized' replace />;
   }
 
-  const segmentedOptions = [
+  const items = [
     {
-      value: "1",
-      label: "Dashboard",
-      roles: ["admin"],
+      key: 'dashboard',
+      icon: <HomeOutlined />,
+      label: `Dashboard`,
+      roles: ['superadmin', 'admin'],
     },
     {
-      value: "2",
-      label: "Class Management",
-      roles: ["superadmin"],
+      key: 'teacher',
+      icon: <ContactsOutlined />,
+      label: `Teacher Management`,
+      roles: ['superadmin', 'admin'],
     },
     {
-      value: "3",
-      label: "Teacher Management",
-      roles: ["admin"],
+      key: 'questions',
+      icon: <DatabaseOutlined />,
+      label: `Question Bank`,
+      roles: ['superadmin', 'teacher', 'admin'],
+    },
+    {
+      key: 'exam',
+      icon: <ReadOutlined />,
+      label: `Exam`,
+      roles: ['superadmin', 'teacher', 'admin'],
+    },
+    {
+      key: 'class',
+      icon: <ContainerOutlined />,
+      label: `Class`,
+      roles: ['superadmin', 'teacher', 'admin'],
     },
   ];
 
-  const allowedSegmentedOptions = segmentedOptions.filter((option) =>
+  const allowedOptions = items.filter((option) =>
     option.roles.some((role) => user?.role.includes(role))
   );
 
   useEffect(() => {
-    if (!isAuth) navigate("/login");
+    if (!isAuth) navigate('/login');
   }, [isAuth, navigate]);
 
+  const siderStyle = {
+    overflow: 'auto',
+    height: '100vh',
+    position: 'sticky',
+    insetInlineStart: 0,
+    top: 0,
+    bottom: 0,
+    scrollbarWidth: 'thin',
+    scrollbarGutter: 'stable',
+  };
+
   return (
-    <ConfigProvider
-      theme={{
-        components: {
-          Segmented: {
-            itemSelectedBg: "#003087",
-            itemSelectedColor: "#fff",
-          },
-        },
-      }}
-    >
-      <Layout className="min-h-screen">
-        <Header className="flex items-center justify-between h-28 bg-white shadow-xl">
-          <div className="w-[200px] flex items-center h-28">
+    <Layout hasSider>
+      <Sider
+        className='bg-white shadow-xl'
+        breakpoint='lg'
+        collapsedWidth='0'
+        style={siderStyle}
+      >
+        <div className='flex flex-col justify-between h-full'>
+          <div className='w-full px-2 flex flex-col justify-start items-center p-4'>
             <img
               src={LogoGreen}
-              className="max-w-40 cursor-pointer"
-              onClick={() => navigate("/")}
+              className='cursor-pointer w-24 pb-8'
+              onClick={() => navigate('/')}
+            />
+
+            <Menu
+              theme='light'
+              defaultSelectedKeys={[currentKey]}
+              items={allowedOptions}
+              className='!border-none'
+              onClick={(e) => navigateTo(e.key)}
             />
           </div>
-
-          <Segmented
-            size="large"
-            shape="round"
-            className="!p-0"
-            options={allowedSegmentedOptions.map(({ value, label }) => ({
-              value,
-              label,
-            }))}
-            value={currentKey}
-            onChange={(value) => navigateTo(value)}
-          />
-          <div className="w-[200px]">
-            <ProfileMenu />
-          </div>
+          <ProfileMenu />
+        </div>
+      </Sider>
+      <Layout className='p-0'>
+        <Header className='bg-white px-4 shadow-md flex justify-start items-end h-10'>
+          {location.pathname !== '/' && <Breadcrumb paths={breadcrumbPaths} />}
         </Header>
-        <Content className="p-10 pt-4">
-          {location.pathname !== "/" && <Breadcrumb paths={breadcrumbPaths} />}
+        <Content className=''>
           <Outlet />
         </Content>
       </Layout>
-    </ConfigProvider>
+    </Layout>
   );
 };
