@@ -16,6 +16,7 @@ import { useSelector } from "react-redux";
 const { Header, Content } = Layout;
 
 export const ProtectedRoute = () => {
+  // @ts-ignore
   const { isAuth, user } = useSelector((state) => state.auth);
 
   const [currentKey, setCurrentKey] = useState("1");

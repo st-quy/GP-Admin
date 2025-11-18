@@ -10,6 +10,8 @@ import ClassDetail from "@pages/ClassDetail/ClassDetail.jsx";
 import TeacherAccountManagement from "@pages/TeacherManagement/TeacherAccountManagement.jsx";
 import ClassManagement from "@pages/ClassManagement/index.jsx";
 import RedirectByRole from "./RedirectByRole/index.jsx";
+import QuestionBank from "@pages/QuestionBank/index.jsx";
+import CreateQuestion from "@pages/QuestionBank/components/CreateQuestion.jsx";
 
 const PrivateRoute = [
   {
@@ -104,6 +106,21 @@ const PrivateRoute = [
                 ],
               },
             ],
+          },
+        ],
+      },
+      {
+        path: "question-bank",
+        role: ["teacher"],
+        breadcrumb: "Class Management",
+        children: [
+          {
+            index: true,
+            element: <QuestionBank />,
+          },
+          {
+            path: ":type",             // Dynamic route
+            element: <CreateQuestion/>, // Tự render đúng trang theo type
           },
         ],
       },
