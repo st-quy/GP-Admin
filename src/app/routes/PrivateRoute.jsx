@@ -10,29 +10,43 @@ import ClassDetail from "@pages/ClassDetail/ClassDetail.jsx";
 import TeacherAccountManagement from "@pages/TeacherManagement/TeacherAccountManagement.jsx";
 import ClassManagement from "@pages/ClassManagement/index.jsx";
 import RedirectByRole from "./RedirectByRole/index.jsx";
+const QuestionBank = lazy(() => import("@pages/QuestionBank/index.jsx"));
+const QuestionDetail = lazy(() => import("@pages/QuestionBank/QuestionDetail"));
 
 const PrivateRoute = [
   {
-    path: "/",
+    path: '/',
     element: <ProtectedRoute />,
-    breadcrumb: "Home",
+    breadcrumb: 'Home',
     children: [
       {
         index: true,
         element: <RedirectByRole />,
-        breadcrumb: "Dashboard",
+        breadcrumb: 'Dashboard',
       },
       {
-        path: "dashboard",
+        path: 'dashboard',
         element: <Dashboard />,
-        breadcrumb: "Dashboard",
-        role: ["admin"],
+        breadcrumb: 'Dashboard',
+        role: ['admin'],
       },
       {
-        path: "teacher",
-        role: ["admin"],
-        breadcrumb: "Teacher",
+        path: 'teacher',
+        role: ['admin'],
+        breadcrumb: 'Teacher',
         element: <TeacherAccountManagement />,
+      },
+      {
+        path: "question-bank",
+        element: <QuestionBank />,
+        breadcrumb: "Question Bank",
+        role: ["teacher", "admin"], // Cấp quyền cho role phù hợp
+      },
+      {
+        path: "question-bank/:id",
+        element: <QuestionDetail />,
+        breadcrumb: "Question Detail",
+        role: ["admin", "teacher"],
       },
       {
         path: "class",
@@ -44,20 +58,20 @@ const PrivateRoute = [
             element: <ClassManagement />,
           },
           {
-            path: ":classId",
-            breadcrumb: "Class Detail",
+            path: ':classId',
+            breadcrumb: 'Class Detail',
             children: [
               {
                 index: true,
                 element: <ClassDetail />,
               },
               {
-                path: "session",
+                path: 'session',
                 element: <SessionLayout />,
                 children: [
                   {
-                    path: ":sessionId",
-                    breadcrumb: "Session Detail",
+                    path: ':sessionId',
+                    breadcrumb: 'Session Detail',
                     children: [
                       {
                         index: true,
@@ -66,11 +80,11 @@ const PrivateRoute = [
                         ),
                       },
                       {
-                        path: "student",
+                        path: 'student',
                         children: [
                           {
-                            path: ":studentId",
-                            breadcrumb: "Student Detail",
+                            path: ':studentId',
+                            breadcrumb: 'Student Detail',
                             children: [
                               {
                                 index: true,
@@ -85,11 +99,11 @@ const PrivateRoute = [
                         ],
                       },
                       {
-                        path: "participant",
+                        path: 'participant',
                         children: [
                           {
-                            path: ":participantId",
-                            breadcrumb: "Participant Detail",
+                            path: ':participantId',
+                            breadcrumb: 'Participant Detail',
                             children: [
                               {
                                 index: true,
@@ -108,16 +122,32 @@ const PrivateRoute = [
         ],
       },
       {
-        path: "profile",
-        breadcrumb: "Profile",
+        path: 'profile',
+        breadcrumb: 'Profile',
         children: [
           {
-            path: "",
+            path: '',
             element: <ProfilePage />,
-            breadcrumb: "",
+            breadcrumb: '',
           },
         ],
       },
+      {
+        path: 'questions',
+        breadcrumb: 'Question Bank',
+        children: [
+        {
+          index: true,
+          element: <QuestionBank />,
+        },
+        {
+          path: 'create/:skill',
+          element: <>CreateQuestion</>,
+          breadcrumb: 'Create',  
+          role: ['teacher', 'admin', 'superadmin'],
+        }
+        ]
+      }
     ],
   },
 ];
