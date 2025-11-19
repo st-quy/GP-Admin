@@ -1,4 +1,4 @@
-import { useParams } from "react-router-dom"
+import { useLocation, useParams } from "react-router-dom"
 import QuestionLayout from "./QuestionLayout"
 import CreateListening from "./CreateSkills/CreateListening"
 import CreateGrammarVocab from "./CreateSkills/CreateGrammarVocab"
@@ -7,23 +7,19 @@ import CreateWriting from "./CreateSkills/CreateWriting"
 import CreateReading from "./CreateSkills/CreateReading"
 
 const PAGE_COMPONENT = {
-  "create-listening": {
+  "speaking": {
     title: "Create Listening Questions",
     component: <CreateListening />,
   },
-  "create-reading": {
+  "reading": {
     title: "Create Reading Questions",
     component: <CreateReading />,
   },
-    "create-grammar-vocab": {
+    "grammar": {
     title: "Create Grammar Vocab Questions",
     component: <CreateGrammarVocab />,
   },
-    "create-speaking": {
-    title: "Create Speaking Questions",
-    component: <CreateSpeaking />,
-  },
-    "create-writing": {
+    "writing": {
     title: "Create Writing Questions",
     component: <CreateWriting />,
   },
@@ -32,9 +28,10 @@ const PAGE_COMPONENT = {
 }
 
 const CreateQuestion = () => {
-  const { type } = useParams()
+  const location = useLocation()
+  const skill = location.pathname.slice(location.pathname.lastIndexOf('/') + 1);
 
-  const page = PAGE_COMPONENT[type]
+  const page = PAGE_COMPONENT[skill]
 
   if (!page) return <h1 className="text-red-500">Page not found</h1>
 

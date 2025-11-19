@@ -4,14 +4,15 @@ import GradingPage from "@pages/grading/GradingPage.jsx";
 import SessionLayout from "../../pages/SessionManagement/SessionLayout.jsx";
 import SessionInformation from "@pages/SessionManagement/SessionInformation.jsx";
 import { TableType } from "@features/session/constant/TableEnum.js";
+const ProfilePage = lazy(() => import("@pages/Profile/index.jsx"));
 import Dashboard from "@pages/Dashboard/Dashboard.jsx";
 import ClassDetail from "@pages/ClassDetail/ClassDetail.jsx";
 import TeacherAccountManagement from "@pages/TeacherManagement/TeacherAccountManagement.jsx";
 import ClassManagement from "@pages/ClassManagement/index.jsx";
 import RedirectByRole from "./RedirectByRole/index.jsx";
-import QuestionBank from "@pages/QuestionBank/index.jsx";
 import CreateQuestion from "@pages/QuestionBank/components/CreateQuestion.jsx";
-const ProfilePage = lazy(() => import('@pages/Profile/index.jsx'));
+const QuestionBank = lazy(() => import("@pages/QuestionBank/index.jsx"));
+const QuestionDetail = lazy(() => import("@pages/QuestionBank/QuestionDetail"));
 
 const PrivateRoute = [
   {
@@ -37,9 +38,21 @@ const PrivateRoute = [
         element: <TeacherAccountManagement />,
       },
       {
-        path: 'class',
-        role: ['teacher'],
-        breadcrumb: 'Class Management',
+        path: "question-bank",
+        element: <QuestionBank />,
+        breadcrumb: "Question Bank",
+        role: ["teacher", "admin"], // Cấp quyền cho role phù hợp
+      },
+      {
+        path: "question-bank/:id",
+        element: <QuestionDetail />,
+        breadcrumb: "Question Detail",
+        role: ["admin", "teacher"],
+      },
+      {
+        path: "class",
+        role: ["teacher"],
+        breadcrumb: "Class Management",
         children: [
           {
             index: true,
@@ -110,21 +123,6 @@ const PrivateRoute = [
         ],
       },
       {
-        path: "questions",
-        role: ["teacher"],
-        breadcrumb: "Class Management",
-        children: [
-          {
-            index: true,
-            element: <QuestionBank />,
-          },
-          {
-            path: ":type",             // Dynamic route
-            element: <CreateQuestion/>, // Tự render đúng trang theo type
-          },
-        ],
-      },
-      {
         path: "profile",
         breadcrumb: "Profile",
         children: [
@@ -135,6 +133,22 @@ const PrivateRoute = [
           },
         ],
       },
+      {
+        path: 'questions',
+        breadcrumb: 'Question Bank',
+        children: [
+        {
+          index: true,
+          element: <QuestionBank />,
+        },
+        {
+          path: 'create/:skill',
+          element:<CreateQuestion/>,
+          breadcrumb: 'Create',  
+          role: ['teacher', 'admin', 'superadmin'],
+        }
+        ]
+      }
     ],
   },
 ];
