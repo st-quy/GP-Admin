@@ -38,18 +38,6 @@ const PrivateRoute = [
         element: <TeacherAccountManagement />,
       },
       {
-        path: "question-bank",
-        element: <QuestionBank />,
-        breadcrumb: "Question Bank",
-        role: ["teacher", "admin"], // Cấp quyền cho role phù hợp
-      },
-      {
-        path: "question-bank/:id",
-        element: <QuestionDetail />,
-        breadcrumb: "Question Detail",
-        role: ["admin", "teacher"],
-      },
-      {
         path: "class",
         role: ["teacher"],
         breadcrumb: "Class Management",
@@ -137,16 +125,22 @@ const PrivateRoute = [
         path: 'questions',
         breadcrumb: 'Question Bank',
         children: [
-        {
-          index: true,
-          element: <QuestionBank />,
-        },
-        {
-          path: 'create/:skill',
-          element:<CreateQuestion/>,
-          breadcrumb: 'Create',  
-          role: ['teacher', 'admin', 'superadmin'],
-        }
+          {
+            index: true,
+            element: <QuestionBank />,
+          },
+          {
+            path: "questions/:id",
+            element: <QuestionDetail />,
+            breadcrumb: "Question Detail",
+            role: ['teacher', 'admin', 'superadmin'],
+          },
+          {
+            path: 'create/:skill',
+            element: <CreateQuestion />,
+            breadcrumb: 'Create',
+            role: ['teacher', 'admin', 'superadmin'],
+          }
         ]
       }
     ],

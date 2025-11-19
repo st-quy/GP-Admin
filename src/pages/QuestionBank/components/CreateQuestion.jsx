@@ -23,6 +23,10 @@ const PAGE_COMPONENT = {
     title: "Create Writing Questions",
     component: <CreateWriting />,
   },
+      "listening": {
+    title: "Create Listening Questions",
+    component: <CreateListening/>,
+  },
   
   
 }
