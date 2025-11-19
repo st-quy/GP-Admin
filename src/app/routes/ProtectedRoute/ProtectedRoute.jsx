@@ -19,7 +19,7 @@ import {
   ContainerOutlined,
   DatabaseOutlined,
   HomeOutlined,
-  ReadOutlined, 
+  ReadOutlined,
 } from '@ant-design/icons';
 
 const { Header, Content } = Layout;
@@ -56,12 +56,15 @@ export const ProtectedRoute = () => {
 
   useEffect(() => {
     const path = location.pathname.split('/')[1];
+    console.log(path, 'path');
+
     if (!path) {
       setCurrentKey('dashboard');
     } else {
       setCurrentKey(path);
     }
   }, [location.pathname]);
+  console.log(currentKey, 'currentKey');
 
   const requiredRoles =
     routes.find((route) => route.route?.role)?.route?.role || [];
@@ -143,10 +146,10 @@ export const ProtectedRoute = () => {
 
             <Menu
               theme='light'
-              defaultSelectedKeys={[currentKey]}
               items={allowedOptions}
               className='!border-none'
               onClick={(e) => navigateTo(e.key)}
+              selectedKeys={[currentKey]}
             />
           </div>
           <ProfileMenu />

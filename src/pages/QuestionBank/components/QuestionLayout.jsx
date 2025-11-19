@@ -1,10 +1,12 @@
-const QuestionLayout = ({ title, children }) => {
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-4">{title}</h1>
-      {children}
-    </div>
-  )
-}
+import HeaderInfo from '@app/components/HeaderInfo';
 
-export default QuestionLayout
+const QuestionLayout = ({ title, subtitle, children }) => {
+  return (
+    <>
+      <HeaderInfo title={title} subtitle={subtitle} />
+      <div className='p-4'>{children}</div>
+    </>
+  );
+};
+
+export default QuestionLayout;

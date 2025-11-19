@@ -1,18 +1,18 @@
-import { lazy } from "react";
-import { ProtectedRoute } from "./ProtectedRoute/ProtectedRoute.jsx";
-import GradingPage from "@pages/grading/GradingPage.jsx";
-import SessionLayout from "../../pages/SessionManagement/SessionLayout.jsx";
-import SessionInformation from "@pages/SessionManagement/SessionInformation.jsx";
-import { TableType } from "@features/session/constant/TableEnum.js";
-const ProfilePage = lazy(() => import("@pages/Profile/index.jsx"));
-import Dashboard from "@pages/Dashboard/Dashboard.jsx";
-import ClassDetail from "@pages/ClassDetail/ClassDetail.jsx";
-import TeacherAccountManagement from "@pages/TeacherManagement/TeacherAccountManagement.jsx";
-import ClassManagement from "@pages/ClassManagement/index.jsx";
-import RedirectByRole from "./RedirectByRole/index.jsx";
-import CreateQuestion from "@pages/QuestionBank/components/CreateQuestion.jsx";
-const QuestionBank = lazy(() => import("@pages/QuestionBank/index.jsx"));
-const QuestionDetail = lazy(() => import("@pages/QuestionBank/QuestionDetail"));
+import { lazy } from 'react';
+import { ProtectedRoute } from './ProtectedRoute/ProtectedRoute.jsx';
+import GradingPage from '@pages/grading/GradingPage.jsx';
+import SessionLayout from '../../pages/SessionManagement/SessionLayout.jsx';
+import SessionInformation from '@pages/SessionManagement/SessionInformation.jsx';
+import { TableType } from '@features/session/constant/TableEnum.js';
+const ProfilePage = lazy(() => import('@pages/Profile/index.jsx'));
+import Dashboard from '@pages/Dashboard/Dashboard.jsx';
+import ClassDetail from '@pages/ClassDetail/ClassDetail.jsx';
+import TeacherAccountManagement from '@pages/TeacherManagement/TeacherAccountManagement.jsx';
+import ClassManagement from '@pages/ClassManagement/index.jsx';
+import RedirectByRole from './RedirectByRole/index.jsx';
+import CreateQuestion from '@pages/QuestionBank/components/CreateQuestion.jsx';
+const QuestionBank = lazy(() => import('@pages/QuestionBank/index.jsx'));
+const QuestionDetail = lazy(() => import('@pages/QuestionBank/QuestionDetail'));
 
 const PrivateRoute = [
   {
@@ -38,9 +38,9 @@ const PrivateRoute = [
         element: <TeacherAccountManagement />,
       },
       {
-        path: "class",
-        role: ["teacher"],
-        breadcrumb: "Class Management",
+        path: 'class',
+        role: ['teacher'],
+        breadcrumb: 'Class Management',
         children: [
           {
             index: true,
@@ -111,8 +111,8 @@ const PrivateRoute = [
         ],
       },
       {
-        path: "profile",
-        breadcrumb: "Profile",
+        path: 'profile',
+        breadcrumb: 'Profile',
         children: [
           {
             path: '',
@@ -130,19 +130,19 @@ const PrivateRoute = [
             element: <QuestionBank />,
           },
           {
-            path: "questions/:id",
+            path: ':id',
             element: <QuestionDetail />,
-            breadcrumb: "Question Detail",
+            breadcrumb: 'Detail',
             role: ['teacher', 'admin', 'superadmin'],
           },
           {
             path: 'create/:skill',
             element: <CreateQuestion />,
-            breadcrumb: 'Create',
+            breadcrumb: 'Create New Question ',
             role: ['teacher', 'admin', 'superadmin'],
-          }
-        ]
-      }
+          },
+        ],
+      },
     ],
   },
 ];
