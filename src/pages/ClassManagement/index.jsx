@@ -32,7 +32,6 @@ const ClassManagement = () => {
   const { data: classList, isLoading } = useGetAllClass(
     user?.role.includes("admin") ? null : userId
   );
-
   const handleExport = async () => {
     setExportLoading(true);
     await handleExportExcel(setExportLoading);

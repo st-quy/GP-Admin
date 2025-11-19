@@ -8,7 +8,7 @@ const SessionTable = ({ data, columns, isLoading }) => {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const [pageSize, setPageSize] = useState(5);
 
   // Convert statusOptions object to array for Select options
   const statusFilterOptions = Object.entries(statusOptions).map(
@@ -67,21 +67,24 @@ const SessionTable = ({ data, columns, isLoading }) => {
           columns={columns}
           dataSource={paginatedData}
           rowKey="ID"
-          pagination={false}
           scroll={{ x: "max-content" }}
           className="w-full"
           loading={isLoading}
+          pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: filteredData.length,
+          showSizeChanger: true,
+          pageSizeOptions: ["5", "10", "15", "20"],
+          showTotal: (total, range) =>
+            `Showing ${range[0]}-${range[1]} of ${total}`,
+          onChange: (page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          },
+        }}
         />
-        <div className="flex justify-between items-center mt-2 px-4">
-          <span className="text-gray-500 text-sm">{`Showing ${start}-${end} of ${total}`}</span>
-          <Pagination
-            current={currentPage}
-            pageSize={pageSize}
-            total={total}
-            onChange={(page) => setCurrentPage(page)}
-            showSizeChanger={false}
-          />
-        </div>
+       
       </div>
     </div>
   );

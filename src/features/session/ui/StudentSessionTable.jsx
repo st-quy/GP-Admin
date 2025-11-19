@@ -21,7 +21,7 @@ const StudentSessionTable = ({
 
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [pageSize, setPageSize] = useState(5);
   const [levels, setLevels] = useState({});
 
   const { data, isLoading } =
@@ -268,7 +268,7 @@ const StudentSessionTable = ({
         pagination={{
           current: currentPage,
           pageSize: pageSize,
-          total: data?.pagination?.totalItems || 0,
+          total: filteredData.length,
           showSizeChanger: true,
           pageSizeOptions: ["5", "10", "15", "20"],
           showTotal: (total, range) =>
