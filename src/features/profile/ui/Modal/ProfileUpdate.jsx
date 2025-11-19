@@ -2,13 +2,20 @@ import React from "react";
 import { Form, Input, Button, Typography, Modal, DatePicker } from "antd";
 import { useUpdateProfile } from "@features/auth/hooks/index";
 import { UpdateProfileSchema } from "@features/profile/schema";
-import { yupSync } from "@shared/lib/utils";
+import { createFormValidator } from "@shared/lib/utils/form";
 import { useSelector } from "react-redux";
 import dayjs from "dayjs";
 
+// List of disabled fields to skip validation
+const disabledFields = ["teacherCode", "email"];
+const validate = createFormValidator(UpdateProfileSchema, disabledFields);
+
 const ProfileUpdate = ({ isOpen, onClose }) => {
   const { mutate: updateProfile, isPending } = useUpdateProfile();
-  const { user } = useSelector((state) => state.auth);
+  const { user } = useSelector((state) => {
+    // @ts-ignore
+    return state.auth;
+  });
 
   const handleFinish = (values) => {
     updateProfile(values, {
@@ -68,7 +75,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="firstName"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -82,7 +89,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="lastName"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -91,17 +98,16 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             label={
               <div className="flex font-medium">
                 <span>Code</span>
-                <span className="text-red-500 ml-1">*</span>
               </div>
             }
             name="teacherCode"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <Input
               className="h-[46px] w-full max-w-[458px] rounded-lg"
-              disabled
+              disabled  
             />
           </Form.Item>
 
@@ -113,7 +119,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="dob"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full"
           >
             <DatePicker
@@ -129,12 +135,11 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             label={
               <div className="flex font-medium">
                 <span>Email</span>
-                <span className="text-red-500 ml-1">*</span>
               </div>
             }
             name="email"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full md:max-w-[458px]"
           >
             <Input
@@ -150,7 +155,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               </div>
             }
             name="phone"
-            rules={[yupSync(UpdateProfileSchema)]}
+            rules={[{ validator: validate }]}
             className="w-full md:max-w-[458px]"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
@@ -163,6 +168,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               </div>
             }
             name="address"
+            rules={[{ validator: validate }]}
             className="w-full md:max-w-[458px]"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />

@@ -24,6 +24,8 @@ const LoginPage = () => {
     try {
       loginFunc(values);
     } catch (error) {
+      console.log(error);
+      
       setErrorMessage(error.message);
     }
   };

@@ -7,26 +7,65 @@ import {
 } from "@features/teacher/hook/useTeacherQuery";
 import { EditOutlined, PlusCircleOutlined } from "@ant-design/icons";
 
-const yupSync = (schema) => ({
-  async validator({ field }, value) {
-    try {
-      await schema.validateSyncAt(field, { [field]: value });
-    } catch (error) {
-      throw new Error(error.message);
+const createValidator = (fieldName, schema) => ({
+  validator: async (_, value) => {
+    if (fieldName === 'password' && (!value || value.trim() === '')) {
+      return Promise.resolve();
     }
-  },
+    
+    try {
+      await schema.validateSyncAt(fieldName, { [fieldName]: value });
+      return Promise.resolve();
+    } catch (error) {
+      return Promise.reject(error.message);
+    }
+  }
 });
 
-const accountSchema = Yup.object().shape({
-  firstName: Yup.string().required("First name is required"),
-  lastName: Yup.string().required("Last name is required"),
-  email: Yup.string().email("Invalid email").required("Email is required"),
-  teacherCode: Yup.string().required("Teacher Code is required"),
-  password: Yup.string()
-    .transform((value) => (value === "" ? undefined : value))
-    .min(6, "Password must be at least 6 characters")
-    .notRequired(),
+const baseSchema = Yup.object().shape({
+  firstName: Yup.string()
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
+    .required("First name is required"),
+  lastName: Yup.string()
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
+    .required("Last name is required"),
+  email: Yup.string()
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
+    .email("Invalid email")
+    .matches(
+      /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/,
+      "Invalid email format"
+    )
+    .required("Email is required"),
+  teacherCode: Yup.string()
+    .transform((value) => (value && typeof value === 'string' && value.trim() ? value.trim() : undefined))
+    .required("Teacher Code is required"),
 });
+
+const accountCreateSchema = baseSchema.concat(
+  Yup.object().shape({
+    password: Yup.string()
+      .transform((value) => (typeof value === "string" && value.trim() === "" ? undefined : value))
+      .required("Password is required")
+      .min(6, "Password must be at least 6 characters"),
+  })
+);
+
+const passwordCreateSchema = Yup.object().shape({
+  password: Yup.string()
+    .transform((value) => (typeof value === "string" && value.trim() === "" ? undefined : value))
+    .notRequired()
+    .min(6, "Password must be at least 6 characters"),
+});
+
+const accountUpdateSchema = baseSchema.concat(
+  Yup.object().shape({
+    password: Yup.string()
+      .transform((value) => (typeof value === "string" && value.trim() === "" ? undefined : value))
+      .min(6, "Password must be at least 6 characters")
+      .notRequired(),
+  })
+);
 
 const TeacherActionModal = ({ initialData = null }) => {
   const [form] = Form.useForm();
@@ -51,13 +90,15 @@ const TeacherActionModal = ({ initialData = null }) => {
   // @ts-ignore
   const onAction = async (values) => {
     try {
+      const pwd = form.getFieldValue("password");
+      
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
         firstName: values.firstName,
         lastName: values.lastName,
         email: values.email,
         teacherCode: values.teacherCode,
-        password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
+        password: !isEdit ? pwd || passwordValue || `Greenwich@123` : undefined,
         roleIDs: ["teacher"],
         status: values.status,
         phone: values.phone ? values.phone : undefined,
@@ -71,18 +112,35 @@ const TeacherActionModal = ({ initialData = null }) => {
           handleCancel();
         },
         onError: (error) => {
-          message.error(
-            // @ts-ignore
-            error?.response?.data?.message ||
+          // @ts-ignore
+          const apiMsg = error?.response?.data?.message;
+          // @ts-ignore
+          const apiErrors = error?.response?.data?.errors;
+          if (Array.isArray(apiErrors) && apiErrors.length > 0) {
+            message.error(apiErrors[0]);
+          } else if (apiMsg) {
+            message.error(apiMsg);
+          } else {
+            message.error(
               `Failed to ${isEdit ? "update" : "create"} account.`
-          );
+            );
+          }
         },
       });
     } catch (error) {
-      message.error(
-        error.response?.data?.message ||
-          "Failed to send request account. Please try again."
-      );
+      if (error?.errorFields?.length > 0) {
+         return;
+      }
+      
+      const apiMsg = error?.response?.data?.message;
+      const apiErrors = error?.response?.data?.errors;
+      if (Array.isArray(apiErrors) && apiErrors.length > 0) {
+        message.error(apiErrors[0]);
+      } else if (apiMsg) {
+        message.error(apiMsg);
+      } else {
+        message.error("Failed to send request account. Please try again.");
+      }
     }
   };
 
@@ -105,7 +163,6 @@ const TeacherActionModal = ({ initialData = null }) => {
       <Modal
         open={open}
         okText={isEdit ? "Update" : "Create"}
-        // onOk={onAction}
         closable={false}
         confirmLoading={isOnAction}
         width={{
@@ -125,20 +182,20 @@ const TeacherActionModal = ({ initialData = null }) => {
           <p className="mb-8 text-primaryTextColor text-[16px]">
             {isEdit ? "Update a teacher account." : "Create a teacher account."}
           </p>
-          <Form
-            onFinish={onAction}
-            form={form}
-            layout="vertical"
-            initialValues={{
-              firstName: isEdit ? initialData?.firstName : "",
-              lastName: isEdit ? initialData?.lastName : "",
-              email: isEdit ? initialData?.email : "",
-              teacherCode: isEdit ? initialData?.teacherCode : "",
-              password: "",
-              status: isEdit ? initialData?.status : true,
-              phone: isEdit ? initialData?.phone : "",
-            }}
-          >
+            <Form
+              onFinish={onAction}
+              form={form}
+              layout="vertical"
+              initialValues={{
+                firstName: isEdit ? initialData?.firstName : "",
+                lastName: isEdit ? initialData?.lastName : "",
+                email: isEdit ? initialData?.email : "",
+                teacherCode: isEdit ? initialData?.teacherCode : "",
+                password: "",
+                status: isEdit ? initialData?.status : true,
+                phone: isEdit ? initialData?.phone : "",
+              }}
+            >
             <div className="grid grid-cols-2 gap-4">
               <Form.Item
                 label={
@@ -148,7 +205,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[createValidator("firstName", baseSchema)]}
                 name="firstName"
               >
                 <Input className="h-[46px]" placeholder="First name" />
@@ -160,7 +217,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[createValidator("lastName", baseSchema)]}
                 name="lastName"
               >
                 <Input className="h-[46px]" placeholder="Last name" />
@@ -174,7 +231,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[createValidator("email", baseSchema)]}
                 name="email"
               >
                 <Input className="h-[46px]" placeholder="Email" />
@@ -186,7 +243,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   </span>
                 }
                 // @ts-ignore
-                rules={[yupSync(accountSchema)]}
+                rules={[createValidator("teacherCode", baseSchema)]}
                 name="teacherCode"
               >
                 <Input className="h-[46px]" placeholder="Teacher Code" />
@@ -196,14 +253,12 @@ const TeacherActionModal = ({ initialData = null }) => {
               {!isEdit && (
                 <Form.Item
                   label={<span className="text-[16px]">Password</span>}
-                  // @ts-ignore
-                  rules={[yupSync(accountSchema)]}
                   name="password"
+                  rules={[createValidator("password", accountCreateSchema)]}
                 >
                   <Input.Password
                     className="h-[46px]"
                     placeholder="Password"
-                    onChange={(e) => setPasswordValue(e.target.value)}
                   />
                   <div className="text-[14px] text-[#b3b0a5] mt-2">
                     Default Password: Greenwich@123
@@ -226,6 +281,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                   layout="horizontal"
                   // @ts-ignore
                   name="status"
+                  valuePropName="checked"
                 >
                   <Switch className="ml-2" />
                 </Form.Item>
