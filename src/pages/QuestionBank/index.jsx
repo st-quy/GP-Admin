@@ -19,17 +19,16 @@ import {
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import HeaderInfo from "@app/components/HeaderInfo";
-import useConfirm from "@shared/hook/useConfirm"; // 👈 Import hook useConfirm
+import useConfirm from "@shared/hook/useConfirm"; 
 
 const { Text } = Typography;
 const { Option } = Select;
 
 const QuestionBank = () => {
   const navigate = useNavigate();
-  // 👈 Gọi hook useConfirm
   const { openConfirmModal, ModalComponent } = useConfirm(); 
 
-  // 1. Mock Data
+
   const dataSource = [
     {
       key: "1",
@@ -83,27 +82,25 @@ const QuestionBank = () => {
     },
   ];
 
-  // State quản lý phân trang và tìm kiếm
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   
-  // Hàm xử lý khi nhấn nút Xóa, hiển thị modal xác nhận
+  
   const handleDeleteQuestion = (record) => {
     openConfirmModal({
       title: "Are you sure you want to delete this question?",
       message: "After deleting this question it will no longer appear.",
       okText: "Delete",
-      okButtonColor: "#FF4D4F", // Màu đỏ cho nút Delete
-      onConfirm: () => {
-        // 🚨 THAY THẾ BẰNG LOGIC XÓA THỰC TẾ CỦA BẠN 
-        console.log(`Deleting question with key: ${record.key}`);
-        // Ví dụ: gọi API xóa ở đây
-        // deleteQuestionMutation.mutate(record.key);
+      okButtonColor: "#FF4D4F", 
+      onConfirm: () => { 
+     console.log(`Deleting question with key: ${record.key}`);
+        
       },
     });
   };
 
-  // 2. Định nghĩa Columns
+ 
   const columns = [
     {
       title: "Question Text",
@@ -126,7 +123,7 @@ const QuestionBank = () => {
       dataIndex: "skills",
       key: "skills",
       align: "center",
-      // Đã cập nhật: Hiển thị text thường giống các cột khác
+      
       render: (text) => <span className="text-gray-500">{text}</span>,
     },
     {
@@ -163,14 +160,14 @@ const QuestionBank = () => {
             type="text"
             className="text-[#1890FF] hover:bg-blue-50 px-2"
             icon={<EditOutlined />}
-            // Sự kiện chuyển hướng đến trang chi tiết
+          
             onClick={() => navigate(`/question-bank/${record.key}`)}
           />
           <Button
             type="text"
             className="text-[#FF4D4F] hover:bg-red-50 px-2"
             icon={<DeleteOutlined />}
-            // 👈 Sử dụng hàm xóa đã định nghĩa
+            
             onClick={() => handleDeleteQuestion(record)}
           />
         </Space>
@@ -178,7 +175,7 @@ const QuestionBank = () => {
     },
   ];
 
-  // Style tùy chỉnh cho Header Table
+ 
   const tableComponents = {
     header: {
       cell: (props) => (
@@ -209,7 +206,7 @@ const QuestionBank = () => {
 
   return (
     <>
-      {/* 👈 Component Modal được render ở đây */}
+      
       <ModalComponent /> 
       <HeaderInfo
         title="Question List"
@@ -225,9 +222,9 @@ const QuestionBank = () => {
         }
       />
       <div className="p-4 ">
-        {/* --- Main Content Card --- */}
+       
         <Card className="shadow-sm rounded-xl ">
-          {/* Filter Bar */}
+       
           <div className="p-4 flex flex-col lg:flex-row justify-between gap-4">
             <div className="flex flex-wrap gap-4">
               <Select
@@ -273,7 +270,7 @@ const QuestionBank = () => {
             </div>
           </div>
 
-          {/* Table */}
+      
           <Table
             columns={columns}
             dataSource={dataSource}
@@ -282,7 +279,7 @@ const QuestionBank = () => {
             rowClassName="hover:bg-gray-50"
           />
 
-          {/* Custom Pagination Footer */}
+         
           <div className="flex flex-col md:flex-row justify-between items-center p-6 border-t border-gray-100">
             <Text className="text-gray-500">Showing 1–05 of 50</Text>
 
