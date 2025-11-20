@@ -12,7 +12,7 @@ import ClassManagement from "@pages/ClassManagement/index.jsx";
 import RedirectByRole from "./RedirectByRole/index.jsx";
 import ExamManagement from "@pages/ExamManagement/index.jsx";
 import ExamCreate from "@pages/ExamCreate/ExamCreate.jsx";
-import QuestionManagement from "@pages/QuestionManagement/index.jsx";
+
 const PrivateRoute = [
   {
     path: '/',
@@ -136,17 +136,6 @@ const PrivateRoute = [
           }
         ],
       }, 
-      {
-        path: "question",
-        role: ["teacher"],
-        breadcrumb: "Question Management",
-        children: [
-          {
-            index: true,
-            element: <QuestionManagement />,
-          },
-        ],
-      },
     ],
   },
 ];
