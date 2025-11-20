@@ -1,8 +1,8 @@
-import { DownOutlined, LogoutOutlined, UserOutlined } from "@ant-design/icons";
-import { logout } from "@app/providers/reducer/auth/authSlice";
-import { Dropdown, Space, message } from "antd";
-import { useDispatch, useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { RightOutlined, UserOutlined } from '@ant-design/icons';
+import { logout } from '@app/providers/reducer/auth/authSlice';
+import { Button, Divider, Dropdown, Space, message } from 'antd';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const ProfileMenu = () => {
   const navigate = useNavigate();
@@ -11,9 +11,9 @@ const ProfileMenu = () => {
 
   const onClick = ({ key }) => {
     switch (key) {
-      case "logout":
+      case 'logout':
         localStorage.clear();
-        navigate("/login");
+        navigate('/login');
         dispatch(logout());
         break;
       default:
@@ -21,33 +21,33 @@ const ProfileMenu = () => {
         break;
     }
   };
-  const items = [
-    {
-      label: <div className="font-semibold py-2">Profile</div>,
-      key: "profile",
-      icon: <UserOutlined />,
-    },
-    {
-      label: <div className="font-semibold py-2">Logout</div>,
-      key: "logout",
-      icon: <LogoutOutlined />,
-    },
-  ];
+
   return (
-    <>
+    <div className='w-full pb-4'>
       {user && (
-        <Dropdown menu={{ items, onClick }} className="cursor-pointer">
-          <a onClick={(e) => e.preventDefault()}>
-            <Space className="font-semibold !text-[#121212] hover:!text-[#4d4d4d]">
-              <span className="text-[14px] ">
-                {user.firstName + " " + user.lastName}
-              </span>
-              <DownOutlined className="text-[14px]" />
-            </Space>
-          </a>
-        </Dropdown>
+        <Space
+          direction='vertical'
+          className='w-full'
+          split={<Divider type='horizontal' className='my-4' />}
+          size={-20}
+        >
+          <Button
+            icon={<UserOutlined className='text-lg' />}
+            type='text'
+            onClick={(e) => {
+              e.preventDefault();
+              navigate('/profile');
+            }}
+            className='w-full'
+          >
+            <div className='w-full text-[14px] font-semibold !text-[#121212] hover:!text-[#4d4d4d] flex justify-between items-center'>
+              {user.firstName + ' ' + user.lastName}
+              <RightOutlined />
+            </div>
+          </Button>
+        </Space>
       )}
-    </>
+    </div>
   );
 };
 export default ProfileMenu;

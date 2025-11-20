@@ -13,7 +13,7 @@ const RedirectByRole = () => {
   }
 
   // Mặc định fallback nếu role không khớp
-  return <Navigate to="/unauthorized" replace />;
+  return <Navigate to='/unauthorized' replace />;
 };
 
 export default RedirectByRole;
