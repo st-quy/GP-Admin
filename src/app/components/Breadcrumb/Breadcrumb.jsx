@@ -1,5 +1,5 @@
-import { Breadcrumb as AntBreadcrumb } from "antd";
-import { Link } from "react-router-dom";
+import { Breadcrumb as AntBreadcrumb } from 'antd';
+import { Link } from 'react-router-dom';
 
 export const Breadcrumb = ({ paths }) => {
   const breadcrumbItems = paths
@@ -18,8 +18,9 @@ export const Breadcrumb = ({ paths }) => {
 
   return (
     <AntBreadcrumb
-      separator=">"
-      className="p-6 bg-white m-8 mb-0 rounded-xl border border-slate-300 border-solid"
+      separator='>'
+      className='text-xs'
+      // className="p-6 bg-white m-8 mb-0 rounded-xl border border-slate-300 border-solid"
       items={breadcrumbItems}
     />
   );

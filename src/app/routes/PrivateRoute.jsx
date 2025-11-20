@@ -10,54 +10,56 @@ import ClassDetail from "@pages/ClassDetail/ClassDetail.jsx";
 import TeacherAccountManagement from "@pages/TeacherManagement/TeacherAccountManagement.jsx";
 import ClassManagement from "@pages/ClassManagement/index.jsx";
 import RedirectByRole from "./RedirectByRole/index.jsx";
-
+import ExamManagement from "@pages/ExamManagement/index.jsx";
+import ExamCreate from "@pages/ExamCreate/ExamCreate.jsx";
+import QuestionManagement from "@pages/QuestionManagement/index.jsx";
 const PrivateRoute = [
   {
-    path: "/",
+    path: '/',
     element: <ProtectedRoute />,
-    breadcrumb: "Home",
+    breadcrumb: 'Home',
     children: [
       {
         index: true,
         element: <RedirectByRole />,
-        breadcrumb: "Dashboard",
+        breadcrumb: 'Dashboard',
       },
       {
-        path: "dashboard",
+        path: 'dashboard',
         element: <Dashboard />,
-        breadcrumb: "Dashboard",
-        role: ["admin"],
+        breadcrumb: 'Dashboard',
+        role: ['admin'],
       },
       {
-        path: "teacher",
-        role: ["admin"],
-        breadcrumb: "Teacher",
+        path: 'teacher',
+        role: ['admin'],
+        breadcrumb: 'Teacher',
         element: <TeacherAccountManagement />,
       },
       {
-        path: "class",
-        role: ["teacher"],
-        breadcrumb: "Class Management",
+        path: 'class',
+        role: ['teacher'],
+        breadcrumb: 'Class Management',
         children: [
           {
             index: true,
             element: <ClassManagement />,
           },
           {
-            path: ":classId",
-            breadcrumb: "Class Detail",
+            path: ':classId',
+            breadcrumb: 'Class Detail',
             children: [
               {
                 index: true,
                 element: <ClassDetail />,
               },
               {
-                path: "session",
+                path: 'session',
                 element: <SessionLayout />,
                 children: [
                   {
-                    path: ":sessionId",
-                    breadcrumb: "Session Detail",
+                    path: ':sessionId',
+                    breadcrumb: 'Session Detail',
                     children: [
                       {
                         index: true,
@@ -66,11 +68,11 @@ const PrivateRoute = [
                         ),
                       },
                       {
-                        path: "student",
+                        path: 'student',
                         children: [
                           {
-                            path: ":studentId",
-                            breadcrumb: "Student Detail",
+                            path: ':studentId',
+                            breadcrumb: 'Student Detail',
                             children: [
                               {
                                 index: true,
@@ -85,11 +87,11 @@ const PrivateRoute = [
                         ],
                       },
                       {
-                        path: "participant",
+                        path: 'participant',
                         children: [
                           {
-                            path: ":participantId",
-                            breadcrumb: "Participant Detail",
+                            path: ':participantId',
+                            breadcrumb: 'Participant Detail',
                             children: [
                               {
                                 index: true,
@@ -108,13 +110,40 @@ const PrivateRoute = [
         ],
       },
       {
-        path: "profile",
-        breadcrumb: "Profile",
+        path: 'profile',
+        breadcrumb: 'Profile',
         children: [
           {
-            path: "",
+            path: '',
             element: <ProfilePage />,
-            breadcrumb: "",
+            breadcrumb: '',
+          },
+        ],
+      },
+      {
+        path: "exam",
+        role: ["teacher"],
+        breadcrumb: "Exam Management",
+        children: [
+          {
+            index: true,
+            element: <ExamManagement />,
+          },
+          {
+            path: "create",
+            element: <ExamCreate />,
+            breadcrumb: "Create New Exam",
+          }
+        ],
+      }, 
+      {
+        path: "question",
+        role: ["teacher"],
+        breadcrumb: "Question Management",
+        children: [
+          {
+            index: true,
+            element: <QuestionManagement />,
           },
         ],
       },
