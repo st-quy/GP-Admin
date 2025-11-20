@@ -2,6 +2,7 @@ import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
 const RedirectByRole = () => {
+  // @ts-ignore
   const { user } = useSelector((state) => state.auth);
 
   if (user?.role?.includes('admin')) {
