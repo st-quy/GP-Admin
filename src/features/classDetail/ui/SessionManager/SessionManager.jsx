@@ -99,6 +99,7 @@ const SessionManager = ({ data, isLoading }) => {
             <EditOutlined
               onClick={() => openModal("edit", record)}
               className="hover:opacity-50"
+              style={{ color: "#007BFF" }}
             />
           </span>
           {record.SessionParticipants.length === 0 && (
@@ -106,6 +107,7 @@ const SessionManager = ({ data, isLoading }) => {
               <DeleteOutlined
                 onClick={() => openModal("delete", record)}
                 className="hover:opacity-50"
+                style={{ color: "#FF4D4F" }}
               />
             </span>
           )}
