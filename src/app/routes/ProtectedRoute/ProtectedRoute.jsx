@@ -56,7 +56,6 @@ export const ProtectedRoute = () => {
 
   useEffect(() => {
     const path = location.pathname.split('/')[1];
-    console.log(path, 'path');
 
     if (!path) {
       setCurrentKey('dashboard');
@@ -64,7 +63,6 @@ export const ProtectedRoute = () => {
       setCurrentKey(path);
     }
   }, [location.pathname]);
-  console.log(currentKey, 'currentKey');
 
   const requiredRoles =
     routes.find((route) => route.route?.role)?.route?.role || [];
