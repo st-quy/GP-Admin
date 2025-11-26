@@ -1,11 +1,11 @@
 // @ts-nocheck
 // hooks/useCreateSpeaking.ts
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QuestionApi } from '../api';
 
-export const useCreateSpeaking = () => {
+export const useCreateQuestion = () => {
   const navigate = useNavigate();
   const { partId } = useParams();
 
@@ -15,7 +15,6 @@ export const useCreateSpeaking = () => {
         ...params,
         PartID: params.PartID || partId,
       };
-
       const { data } = await QuestionApi.createSpeaking(payload);
 
       message.success(
@@ -24,11 +23,22 @@ export const useCreateSpeaking = () => {
       return data.data;
     },
     onSuccess() {
-      navigate(-1);
+      navigate('/questions');
     },
     onError(error) {
       const msg = error?.response?.data?.message || 'Create speaking failed';
       message.error(msg);
     },
+  });
+};
+
+export const useGetQuestions = (queryParams) => {
+  return useQuery({
+    queryKey: ['questions', queryParams],
+    queryFn: async () => {
+      const res = await QuestionApi.getAll(queryParams);
+      return res.data.data;
+    },
+    keepPreviousData: true,
   });
 };

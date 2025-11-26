@@ -1,7 +1,9 @@
 import axiosInstance from '@shared/config/axios';
 
-export const QuestionApi = {
-  createSpeaking: (payload) => {
-    return axiosInstance.post('/questions', payload);
+export const PartApi = {
+  getListBySkill: (params) => {
+    return axiosInstance.get('/parts', {
+      params: { skillName: params },
+    });
   },
 };

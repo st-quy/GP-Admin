@@ -19,7 +19,11 @@ import {
   DownOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+
 import HeaderInfo from '@app/components/HeaderInfo';
+import useConfirm from '@shared/hook/useConfirm';
+import { useGetQuestions } from '@features/questions/hooks';
+import { useGetPartsBySkillName } from '@features/parts/hooks';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -27,222 +31,66 @@ const { Option } = Select;
 const QuestionBank = () => {
   const navigate = useNavigate();
 
-  // 1. Mock Data (có thêm Topic cho hợp với filter)
-  const dataSource = [
-    {
-      key: '1',
-      questionText: 'Academic Listening Test Section 1...',
-      part: 'Part 1',
-      skills: 'Listening',
-      topic: 'Session1',
-      creator: 'John Smith',
-      creationDay: '2024-01-15',
-      updateDate: '2024-01-20',
-      updater: 'Jane Doe',
-    },
-    {
-      key: '2',
-      questionText: 'Reading Comprehension Exercise...',
-      part: 'Part 2',
-      skills: 'Reading',
-      topic: 'Session2',
-      creator: 'Sarah Wilson',
-      creationDay: '2024-01-14',
-      updateDate: '2024-01-19',
-      updater: 'Mike Johnson',
-    },
-    {
-      key: '3',
-      questionText: 'Grammar Focus: Present Perfect...',
-      part: 'Part 1',
-      skills: 'Grammar',
-      topic: 'Session3',
-      creator: 'Emily Davis',
-      creationDay: '2024-01-13',
-      updateDate: '2024-01-18',
-      updater: 'Tom Brown',
-    },
-    {
-      key: '4',
-      questionText: 'Speaking Task: Describe a Picture...',
-      part: 'Part 3',
-      skills: 'Speaking',
-      topic: 'Session4',
-      creator: 'Alex Chen',
-      creationDay: '2024-01-12',
-      updateDate: '2024-01-17',
-      updater: 'Lisa Wang',
-    },
-    {
-      key: '5',
-      questionText: 'Writing Exercise: Essay Structure...',
-      part: 'Part 2',
-      skills: 'Writing',
-      topic: 'Session5',
-      creator: 'David Miller',
-      creationDay: '2024-01-11',
-      updateDate: '2024-01-16',
-      updater: 'Anna Taylor',
-    },
-    {
-      key: '6',
-      questionText: 'Listening Practice: Daily Conversations...',
-      part: 'Part 2',
-      skills: 'Listening',
-      topic: 'Session6',
-      creator: 'Chris Evans',
-      creationDay: '2024-01-10',
-      updateDate: '2024-01-15',
-      updater: 'Maria Lopez',
-    },
-    {
-      key: '7',
-      questionText: 'Reading Passage: Climate Change Impact...',
-      part: 'Part 3',
-      skills: 'Reading',
-      topic: 'Session7',
-      creator: 'Sophia Turner',
-      creationDay: '2024-01-09',
-      updateDate: '2024-01-14',
-      updater: 'Daniel White',
-    },
-    {
-      key: '8',
-      questionText: 'Grammar Exercise: Passive Voice...',
-      part: 'Part 1',
-      skills: 'Grammar',
-      topic: 'Session8',
-      creator: 'Mark Robinson',
-      creationDay: '2024-01-08',
-      updateDate: '2024-01-13',
-      updater: 'Olivia Green',
-    },
-    {
-      key: '9',
-      questionText: 'Speaking Test: Describe a Person...',
-      part: 'Part 2',
-      skills: 'Speaking',
-      topic: 'Session9',
-      creator: 'Henry Carter',
-      creationDay: '2024-01-07',
-      updateDate: '2024-01-12',
-      updater: 'Emma Clark',
-    },
-    {
-      key: '10',
-      questionText: 'Writing Task: Opinion Essay...',
-      part: 'Part 3',
-      skills: 'Writing',
-      topic: 'Session10',
-      creator: 'Natalie Cooper',
-      creationDay: '2024-01-06',
-      updateDate: '2024-01-11',
-      updater: 'Lucas Scott',
-    },
-    {
-      key: '11',
-      questionText: 'Listening Quiz: Short Talks...',
-      part: 'Part 1',
-      skills: 'Listening',
-      topic: 'Session11',
-      creator: 'Brian Kelly',
-      creationDay: '2024-01-05',
-      updateDate: '2024-01-10',
-      updater: 'Sophia Martinez',
-    },
-    {
-      key: '12',
-      questionText: 'Reading Challenge: Technology & Future...',
-      part: 'Part 2',
-      skills: 'Reading',
-      topic: 'Session12',
-      creator: 'Victoria Reed',
-      creationDay: '2024-01-04',
-      updateDate: '2024-01-09',
-      updater: 'Kevin Lee',
-    },
-    {
-      key: '13',
-      questionText: 'Grammar Drill: Modal Verbs...',
-      part: 'Part 3',
-      skills: 'Grammar',
-      topic: 'Session13',
-      creator: 'Andrew Price',
-      creationDay: '2024-01-03',
-      updateDate: '2024-01-08',
-      updater: 'Diana Foster',
-    },
-    {
-      key: '14',
-      questionText: 'Speaking Practice: Storytelling...',
-      part: 'Part 1',
-      skills: 'Speaking',
-      topic: 'Session14',
-      creator: 'Isabella Diaz',
-      creationDay: '2024-01-02',
-      updateDate: '2024-01-07',
-      updater: 'George Hudson',
-    },
-    {
-      key: '15',
-      questionText: 'Writing Workshop: Reports & Summaries...',
-      part: 'Part 2',
-      skills: 'Writing',
-      topic: 'Session15',
-      creator: 'Samuel Adams',
-      creationDay: '2024-01-01',
-      updateDate: '2024-01-06',
-      updater: 'Grace Ward',
-    },
-  ];
+  // --- Filter & pagination state ---
+  const [selectedSkill, setSelectedSkill] = useState();
+  const [selectedPart, setSelectedPart] = useState();
+  const [searchText, setSearchText] = useState('');
 
   // --- State ---
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [selectedTopic, setSelectedTopic] = useState('All Topics');
-  const [selectedSkill, setSelectedSkill] = useState('All Skills');
-  const [selectedPart, setSelectedPart] = useState('All Part');
-  const [searchText, setSearchText] = useState('');
+  const { data: listPart = [], isLoading: loadingParts } =
+    useGetPartsBySkillName();
 
-  // Reset về page 1 khi filter/search thay đổi
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedTopic, selectedSkill, selectedPart, searchText]);
+  }, [selectedSkill, selectedPart, searchText]);
 
-  // --- Filter + Search ---
-  const filteredData = useMemo(() => {
-    return dataSource.filter((item) => {
-      const matchSkill =
-        selectedSkill === 'All Skills' || item.skills === selectedSkill;
+  // Build params gửi BE
+  const queryParams = useMemo(
+    () => ({
+      page: currentPage,
+      pageSize,
+      search: searchText.trim() || undefined,
+      skillName: selectedSkill ?? undefined,
+      partId: selectedPart ?? undefined,
+    }),
+    [currentPage, pageSize, selectedSkill, selectedPart, searchText]
+  );
 
-      const matchPart =
-        selectedPart === 'All Part' || item.part === selectedPart;
+  const { data, isLoading, isFetching } = useGetQuestions(queryParams);
 
-      const search = searchText.trim().toLowerCase();
-      const matchSearch =
-        !search ||
-        item.questionText.toLowerCase().includes(search) ||
-        item.creator.toLowerCase().includes(search);
+  // data từ BE: { items, pagination }
+  const items = data?.items ?? [];
+  const pagination = data?.pagination ?? {
+    page: currentPage,
+    pageSize,
+    total: 0,
+  };
 
-      return matchSkill && matchPart && matchSearch;
+  const totalItems = pagination.total ?? 0;
+  const startItem =
+    totalItems === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
+  const endItem = Math.min(pagination.page * pagination.pageSize, totalItems);
+
+  const handleDeleteQuestion = (record) => {
+    openConfirmModal({
+      title: 'Are you sure you want to delete this question?',
+      message: 'After deleting this question it will no longer appear.',
+      okText: 'Delete',
+      okButtonColor: '#FF4D4F',
+      onConfirm: () => {
+        console.log(`Deleting question ID: ${record.ID}`);
+      },
     });
-  }, [dataSource, selectedTopic, selectedSkill, selectedPart, searchText]);
+  };
 
-  // --- Phân trang thủ công ---
-  const startIndex = (currentPage - 1) * pageSize;
-  const paginatedData = filteredData.slice(startIndex, startIndex + pageSize);
-
-  const totalItems = filteredData.length;
-  const startItem = totalItems === 0 ? 0 : startIndex + 1;
-  const endItem = Math.min(startIndex + pageSize, totalItems);
-
-  // 2. Columns
   const columns = [
     {
       title: 'Question Text',
-      dataIndex: 'questionText',
-      key: 'questionText',
+      dataIndex: 'Content',
+      key: 'Content',
       width: '30%',
       render: (text) => (
         <span className='font-semibold text-[#1F2937]'>{text}</span>
@@ -250,41 +98,69 @@ const QuestionBank = () => {
     },
     {
       title: 'Part',
-      dataIndex: 'part',
-      key: 'part',
+      dataIndex: 'Part',
+      key: 'Part',
       align: 'center',
-      render: (text) => <span className='text-gray-500'>{text}</span>,
+      render: (_, record) => (
+        <span className='text-gray-500'>
+          {record?.Part?.Content || record?.Part?.SubContent || '-'}
+        </span>
+      ),
     },
     {
       title: 'Skills',
-      dataIndex: 'skills',
-      key: 'skills',
+      dataIndex: 'Skill',
+      key: 'Skill',
       align: 'center',
-      render: (text) => <span className='text-gray-500'>{text}</span>,
+      render: (_, record) => (
+        <span className='text-gray-500'>
+          {record?.Skill?.Name || record?.Part?.Skill?.Name || '-'}
+        </span>
+      ),
     },
     {
       title: 'Creator',
-      dataIndex: 'creator',
+      dataIndex: 'createdBy',
       key: 'creator',
-      render: (text) => <span className='text-gray-500'>{text}</span>,
+      render: (_, record) => (
+        <span className='text-gray-500'>
+          {record?.creator
+            ? record?.creator?.firstName + ' ' + record?.creator?.lastName
+            : '-'}
+        </span>
+      ),
     },
     {
       title: 'Creation Day',
-      dataIndex: 'creationDay',
+      dataIndex: 'createdAt',
       key: 'creationDay',
-      render: (text) => <span className='text-gray-500'>{text}</span>,
+      render: (value) => (
+        <span className='text-gray-500'>
+          {value ? new Date(value).toLocaleDateString() : '-'}
+        </span>
+      ),
     },
     {
       title: 'Update Date',
-      dataIndex: 'updateDate',
+      dataIndex: 'updatedAt',
       key: 'updateDate',
-      render: (text) => <span className='text-gray-500'>{text}</span>,
+      render: (value) => (
+        <span className='text-gray-500'>
+          {value ? new Date(value).toLocaleDateString() : '-'}
+        </span>
+      ),
     },
     {
       title: 'Updater',
-      dataIndex: 'updater',
+      dataIndex: 'updatedBy',
       key: 'updater',
-      render: (text) => <span className='text-gray-500'>{text}</span>,
+      render: (_, record) => (
+        <span className='text-gray-500'>
+          {record?.updater
+            ? record?.updater?.firstName + ' ' + record?.updater?.lastName
+            : '-'}
+        </span>
+      ),
     },
     {
       title: 'Action',
@@ -296,11 +172,19 @@ const QuestionBank = () => {
             type='text'
             className='text-[#1890FF] hover:bg-blue-50 px-2'
             icon={<EditOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`${record.ID}`); // route detail/edit
+            }}
           />
           <Button
             type='text'
             className='text-[#FF4D4F] hover:bg-red-50 px-2'
             icon={<DeleteOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteQuestion(record);
+            }}
           />
         </Space>
       ),
@@ -319,12 +203,12 @@ const QuestionBank = () => {
     },
   };
 
-  const items = [
+  const itemsMenu = [
     { label: 'Speaking', key: 'speaking' },
     { label: 'Reading', key: 'reading' },
     { label: 'Writing', key: 'writing' },
     { label: 'Listening', key: 'listening' },
-    { label: 'Grammar', key: 'grammar' },
+    { label: 'Grammar And Vocabulary', key: 'grammar' },
   ];
 
   return (
@@ -336,7 +220,10 @@ const QuestionBank = () => {
         btnIcon={<FileExcelOutlined />}
         SubAction={
           <Dropdown
-            menu={{ items, onClick: (e) => navigate(`create/${e.key}`) }}
+            menu={{
+              items: itemsMenu,
+              onClick: (e) => navigate(`create/${e.key}`),
+            }}
           >
             <Button
               className='w-full p-5'
@@ -357,27 +244,35 @@ const QuestionBank = () => {
                 size='large'
                 className='w-[160px]'
                 value={selectedSkill}
+                allowClear
                 onChange={(val) => setSelectedSkill(val)}
+                placeholder='All Skills'
               >
-                <Option value='All Skills'>All Skills</Option>
                 <Option value='Listening'>Listening</Option>
                 <Option value='Reading'>Reading</Option>
                 <Option value='Writing'>Writing</Option>
                 <Option value='Speaking'>Speaking</Option>
-                <Option value='Grammar'>Grammar</Option>
+                <Option value='Grammar And Vocabulary'>
+                  Grammar And Vocabulary
+                </Option>
               </Select>
 
+              {/* Tạm thời Part filter chưa map với BE (partId), nên chỉ là UI.
+                  Sau này khi có list Part + ID, mình sẽ dùng dropdown dynamic và gửi partId lên BE. */}
               <Select
                 size='large'
-                className='w-[160px]'
+                className='w-[20rem]'
                 value={selectedPart}
+                options={
+                  listPart?.map((part) => ({
+                    value: part.ID,
+                    label: part.Content,
+                  })) ?? []
+                }
                 onChange={(val) => setSelectedPart(val)}
-              >
-                <Option value='All Part'>All Part</Option>
-                <Option value='Part 1'>Part 1</Option>
-                <Option value='Part 2'>Part 2</Option>
-                <Option value='Part 3'>Part 3</Option>
-              </Select>
+                allowClear
+                placeholder='All Part'
+              />
             </div>
 
             <div className='w-full lg:w-[300px]'>
@@ -394,13 +289,15 @@ const QuestionBank = () => {
 
           {/* Table */}
           <Table
+            rowKey='ID'
             columns={columns}
-            dataSource={paginatedData}
+            dataSource={items}
             components={tableComponents}
             pagination={false}
+            loading={isLoading || isFetching}
             rowClassName='hover:bg-gray-50 cursor-pointer'
             onRow={(record) => ({
-              onClick: () => navigate(`${record.key}`),
+              onClick: () => navigate(`${record.ID}`),
             })}
           />
 
@@ -414,14 +311,14 @@ const QuestionBank = () => {
 
             <div className='flex items-center gap-4 mt-4 md:mt-0'>
               <Pagination
-                current={currentPage}
+                current={pagination.page}
                 total={totalItems}
-                pageSize={pageSize}
+                pageSize={pagination.pageSize}
                 showSizeChanger={false}
                 onChange={(page) => setCurrentPage(page)}
                 itemRender={(page, type, originalElement) => {
                   if (type === 'page') {
-                    const isActive = currentPage === page;
+                    const isActive = pagination.page === page;
 
                     return React.cloneElement(originalElement, {
                       className: `flex items-center justify-center min-w-[32px] h-[32px] rounded border ${
@@ -439,7 +336,8 @@ const QuestionBank = () => {
                 className='w-[120px]'
                 value={String(pageSize)}
                 onChange={(val) => {
-                  setPageSize(parseInt(val));
+                  const size = parseInt(val, 10);
+                  setPageSize(size);
                   setCurrentPage(1);
                 }}
               >

@@ -1,16 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { AuthApi } from "../api"; // You'll need to create this
-import { message } from "antd";
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "@shared/lib/constants/auth";
-import { useNavigate } from "react-router-dom";
-import { login, updateUser } from "@app/providers/reducer/auth/authSlice";
-import { useDispatch, useSelector } from "react-redux";
-import { setStorageData } from "@shared/lib/storage";
-import { jwtDecode } from "jwt-decode";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { AuthApi } from '../api'; // You'll need to create this
+import { message } from 'antd';
+import { ACCESS_TOKEN, REFRESH_TOKEN } from '@shared/lib/constants/auth';
+import { useNavigate } from 'react-router-dom';
+import { login, updateUser } from '@app/providers/reducer/auth/authSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { setStorageData } from '@shared/lib/storage';
+import { jwtDecode } from 'jwt-decode';
 
 export const useFetchProfile = (studentId) => {
   return useQuery({
-    queryKey: ["profileDetail"],
+    queryKey: ['profileDetail'],
     queryFn: async () => {
       const { data } = await AuthApi.getProfile(studentId);
       return data;
@@ -25,25 +25,37 @@ export const useLogin = () => {
   return useMutation({
     mutationFn: async (credentials) => {
       const { data } = await AuthApi.login(credentials);
-      const decodedToken = jwtDecode(data.data.access_token);
+      const accessToken = data?.data?.access_token;
+      const refreshToken = data?.data?.refresh_token;
 
-      if (decodedToken?.role.includes("student")) {
-        return navigate("/unauthorized");
-      }
-      if (decodedToken?.role.includes("teacher")) {
-        navigate("/class");
-      }
-      if (decodedToken?.role.includes("admin")) {
-        navigate("/dashboard");
+      // Decode token
+      const decoded = jwtDecode(accessToken || '');
+
+      const roles = Array.isArray(decoded?.roles) ? decoded.roles : [];
+
+      // Điều hướng theo role
+      if (roles.length > 0 && roles.includes('student')) {
+        return navigate('/unauthorized');
+      } else if (roles.includes('teacher')) {
+        return navigate('/class');
+      } else if (roles.includes('admin')) {
+        navigate('/admin/dashboard');
       }
 
-      setStorageData(ACCESS_TOKEN, data.data.access_token);
-      setStorageData(REFRESH_TOKEN, data.data.refresh_token);
+      // Lưu token
+      setStorageData(ACCESS_TOKEN, accessToken);
+      setStorageData(REFRESH_TOKEN, refreshToken);
+
+      // Update redux
       dispatch(login());
+
       return data.data;
     },
-    onError({ response }) {
-      message.error(response.data.message);
+
+    onError(error) {
+      const msg =
+        error?.response?.data?.message || 'Login failed. Please try again.';
+      message.error(msg);
     },
   });
 };
@@ -53,7 +65,7 @@ export const useRegister = () => {
   return useMutation({
     mutationFn: async (params) => {
       const { data } = await AuthApi.register(params);
-      navigate("/login");
+      navigate('/login');
       message.success(data.message);
       return data.data;
     },
@@ -68,7 +80,13 @@ export const useForgotPassword = () => {
   return useMutation({
     mutationFn: async (params) => {
       const { data } = await AuthApi.forgotPassword(params);
-      return data.data;
+      return data;
+    },
+    onSuccess: (data) => {
+      message.success(
+        data?.message || 'Password reset link sent to your email'
+      );
+      navigate('/login');
     },
     onError({ response }) {
       message.error(response.data.message);
@@ -82,12 +100,12 @@ export const useResetPassword = () => {
     mutationFn: async (params) => {
       const { data } = await AuthApi.resetPassword(params);
       message.success(data.message);
-      navigate("/reset-success");
+      navigate('/reset-success');
       return data.data;
     },
     onError({ response }) {
       message.error(response.data.message);
-      navigate("/reset-password");
+      navigate('/reset-password');
     },
   });
 };
@@ -96,14 +114,15 @@ export const useGetProfile = () => {
   const { userId } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   return useQuery({
-    queryKey: ["profile", userId],
+    queryKey: ['profile', userId],
     queryFn: async () => {
       try {
-        const data = await AuthApi.getProfile(userId);        
+        const data = await AuthApi.getProfile(userId);
+
         dispatch(
           updateUser({
             userId: data.data.ID,
-            role: data.data.roleIDs,
+            role: data.data.roles,
             lastName: data.data.lastName,
             firstName: data.data.firstName,
             email: data.data.email,
@@ -116,7 +135,7 @@ export const useGetProfile = () => {
           })
         );
         if (!data.data.status) {
-          message.error("Your account has been blocked");
+          message.error('Your account has been blocked');
           localStorage.clear();
           window.location.href = `${window.location.origin}/unauthorized`;
         }
@@ -124,7 +143,7 @@ export const useGetProfile = () => {
         return data.data;
       } catch (error) {
         message.error(
-          error.response?.data?.message || "Failed to fetch profile"
+          error.response?.data?.message || 'Failed to fetch profile'
         );
         return null;
       }
@@ -157,7 +176,7 @@ export const useUpdateProfile = () => {
           bod: data.data.bod,
         })
       );
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       message.success(data.message);
       return data.data;
     },
