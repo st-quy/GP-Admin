@@ -7,17 +7,20 @@ import {
   CloudUploadOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
-import { useCreateSpeaking } from '../../../../features/questions/hooks';
 
+import { useCreateQuestion } from '../../../../features/questions/hooks';
 import { yupSync } from '@shared/lib/utils';
-import { createSpeakingSchema } from '../../schemas/createSpeakingSchema';
-
+import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
+import axiosInstance from '@shared/config/axios';
+import { useGetPartsBySkillName } from '../../../../features/parts/hooks';
 const { TextArea } = Input;
 const { Dragger } = Upload;
 
 const CreateSpeaking = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const { data: speakingParts = [], isLoading: loadingParts } =
+    useGetPartsBySkillName('SPEAKING');
 
   const [questions, setQuestions] = useState([
     { id: 1, value: '' },
@@ -25,10 +28,7 @@ const CreateSpeaking = () => {
     { id: 3, value: '' },
   ]);
 
-  // TODO: thay bằng PartID thật (từ props / route / context...)
-  const partIdFromContext = 'da0d2a5a-f256-4226-ab8f-98758ee31deb';
-
-  const { mutate: createSpeaking, isPending: isCreating } = useCreateSpeaking();
+  const { mutate: createSpeaking, isPending: isCreating } = useCreateQuestion();
 
   const addQuestion = () => {
     const newId =
@@ -54,19 +54,38 @@ const CreateSpeaking = () => {
 
   const uploadProps = {
     multiple: false,
+    maxCount: 1,
     customRequest: async ({ file, onSuccess, onError }) => {
       try {
-        // TODO: call real upload API & set url vào response
-        // const formData = new FormData();
-        // formData.append('file', file);
-        // const res = await axios.post('/upload', formData, {...});
-        // onSuccess({ url: res.data.url });
+        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
+          fileName: file.name,
+          type: 'images',
+        });
 
-        onSuccess({
-          url: 'https://10.22.1.4:9000/gp-bucket/Topic14/Photo/P2.png',
-        }); // demo
+        const { uploadUrl, fileUrl } = data;
+
+        if (!uploadUrl || !fileUrl) {
+          throw new Error('Invalid upload URL response');
+        }
+
+        // 2) Upload file trực tiếp lên MinIO
+        const res = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+        });
+        if (!res.ok) {
+          console.error('MinIO upload failed', await res.text());
+          throw new Error(`Upload failed with status ${res.status}`);
+        }
+
+        // 3) Báo thành công cho AntD Upload
+        onSuccess({ fileUrl });
+        message.success('Image uploaded successfully');
       } catch (err) {
-        console.log(err);
+        console.error('Upload image error:', err);
         onError(err);
         message.error('Upload failed!');
       }
@@ -77,26 +96,19 @@ const CreateSpeaking = () => {
     form
       .validateFields()
       .then((values) => {
-        const {
-          partType,
-          description,
-          questions: formQuestions,
-          image,
-        } = values;
+        const { partType, questions: formQuestions, image } = values;
 
-        // Lấy URL image từ upload (tùy backend trả gì)
         let imageUrl = null;
         if (Array.isArray(image) && image.length > 0) {
           const file = image[0];
-          imageUrl = file.response?.url || file.url || null;
+          imageUrl = file?.response?.fileUrl || file.url || null;
         }
 
-        // Build payload theo backend createQuestionGroup
         const payload = {
-          PartID: partIdFromContext,
+          PartID: partType,
           SkillName: 'SPEAKING',
           PartType: partType,
-          Description: description,
+          Description: '',
           questions: (formQuestions || []).map((q, index) => ({
             Type: 'speaking',
             Content: q.value,
@@ -116,7 +128,13 @@ const CreateSpeaking = () => {
 
   return (
     <div className='flex flex-col gap-6 pb-10'>
-      <Form form={form} initialValues={{ questions }} layout='vertical'>
+      <Form
+        form={form}
+        initialValues={{ questions }}
+        layout='vertical'
+        // Nếu muốn dùng Yup:
+        // onFinish={handleSubmit}
+      >
         {/* PART INFO */}
         <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
           <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
@@ -133,24 +151,15 @@ const CreateSpeaking = () => {
               <Select
                 placeholder='Choose part type'
                 size='large'
-                options={[
-                  { value: 'part1', label: 'Part 1: Personal Information' },
-                  { value: 'part2', label: 'Part 2: Picture Description' },
-                  { value: 'part3', label: 'Part 3: Picture Discussion' },
-                  { value: 'part4', label: 'Part 4: Topic Discussion' },
-                ]}
+                options={
+                  speakingParts?.map((part) => ({
+                    value: part.ID,
+                    label: part.Content,
+                  })) ?? []
+                }
               />
             </Form.Item>
           </div>
-
-          {/* <Form.Item
-            name='description'
-            label='Instruction'
-            rules={[{ required: true, message: 'Description is required' }]}
-            required
-          >
-            <TextArea rows={4} placeholder='e.g., Questions 1-5' />
-          </Form.Item> */}
         </div>
 
         {/* QUESTIONS LIST */}
@@ -211,8 +220,6 @@ const CreateSpeaking = () => {
             name='image'
             valuePropName='fileList'
             getValueFromEvent={(e) => e?.fileList}
-            // Nếu muốn bắt buộc image:
-            // rules={[{ required: true, message: 'Image is required' }]}
           >
             <Dragger
               {...uploadProps}
@@ -249,12 +256,12 @@ const CreateSpeaking = () => {
           >
             Cancel
           </Button>
-          <Button
+          {/* <Button
             size='large'
             className='min-w-[140px] border-blue-900 text-blue-900'
           >
             Preview
-          </Button>
+          </Button> */}
           <Button
             type='primary'
             size='large'

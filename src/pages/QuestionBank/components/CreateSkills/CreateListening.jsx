@@ -1,673 +1,859 @@
+// CreateListening.jsx
 import React, { useState } from 'react';
-import { Input, Select, Button, Upload, message, Radio } from 'antd';
+import {
+  Input,
+  Select,
+  Button,
+  Upload,
+  message,
+  Form,
+  Card,
+  Space,
+} from 'antd';
 import {
   DeleteOutlined,
   PlusOutlined,
   AudioOutlined,
   FileImageOutlined,
-  CloseOutlined,
-  ArrowRightOutlined,
-  HolderOutlined,
 } from '@ant-design/icons';
+
+import { useNavigate } from 'react-router-dom';
+import { useGetPartsBySkillName } from '@features/parts/hooks';
+import { useCreateQuestion } from '@features/questions/hooks';
+
+// Reuse MatchingEditor + MatchingPreview của Reading
+import MatchingEditor from './Reading/matching/MatchingEditor';
+import MatchingPreview from './Reading/matching/MatchingPreview';
+import { readingMatchingSchema } from '@pages/QuestionBank/schemas/createQuestionSchema';
+import axiosInstance from '@shared/config/axios';
 
 const { TextArea } = Input;
 const { Dragger } = Upload;
+const { Option } = Select;
+
+const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const CreateListening = () => {
+  const navigate = useNavigate();
+  const [form] = Form.useForm();
+
+  const { data: listeningParts = [], isLoading: loadingParts } =
+    useGetPartsBySkillName('LISTENING');
+
+  const { mutate: createQuestion, isPending: isCreating } = useCreateQuestion();
+
+  const [partId, setPartId] = useState(null);
   const [questionType, setQuestionType] = useState('multiple-choice');
 
+  // Watch instruction text for previews
+  const instructionText = Form.useWatch('instruction', form);
+
+  // Audio/Image URL
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [imageUrl] = useState(null);
+
+  /** ================= MULTIPLE-CHOICE STATE ================= */
   const [mcOptions, setMcOptions] = useState([
     { id: 1, label: 'A', value: '' },
     { id: 2, label: 'B', value: '' },
     { id: 3, label: 'C', value: '' },
     { id: 4, label: 'D', value: '' },
   ]);
+  const [mcCorrectOptionId, setMcCorrectOptionId] = useState(null);
 
+  /** ================= DROPDOWN-LIST (MATCHING STYLE) ================= */
+  const [matchingLeftItems, setMatchingLeftItems] = useState([]);
+  const [matchingRightItems, setMatchingRightItems] = useState([]);
+  // [{ leftIndex, rightId }]
+  const [matchingMapping, setMatchingMapping] = useState([]);
+
+  /** ================= LISTENING-QUESTIONS-GROUP ================= */
   const [groupQuestions, setGroupQuestions] = useState([
     {
       id: 1,
-      text: '',
+      content: '',
       options: [
         { id: 1, label: 'A', value: '' },
         { id: 2, label: 'B', value: '' },
         { id: 3, label: 'C', value: '' },
-        { id: 4, label: 'D', value: '' },
-      ],
-      correctAnswer: null,
-    },
-  ]);
-
-  const [fillBlankSentences, setFillBlankSentences] = useState([
-    {
-      id: 1,
-      text: 'The weather today is [...] than yesterday.',
-      options: [
-        { id: 1, label: 'A', value: 'hotter' },
-        { id: 2, label: 'B', value: 'colder' },
-      ],
-      correctOptionId: 1,
-    },
-  ]);
-
-  const [dropdownSentences, setDropdownSentences] = useState([
-    {
-      id: 1,
-      text: 'The weather today is [Dropdown A] than yesterday.',
-      label: 'A',
-      options: [
-        { id: 1, label: 'A', value: 'hotter' },
-        { id: 2, label: 'B', value: 'colder' },
       ],
       correctOptionId: null,
     },
   ]);
 
-  const [matchingData, setMatchingData] = useState({
-    contents: [
-      { id: 1, label: '1', value: '' },
-      { id: 2, label: '2', value: '' },
-      { id: 3, label: '3', value: '' },
-      { id: 4, label: '4', value: '' },
-    ],
-    options: [
-      { id: 1, label: 'A', value: '' },
-      { id: 2, label: 'B', value: '' },
-      { id: 3, label: 'C', value: '' },
-      { id: 4, label: 'D', value: '' },
-    ],
-    matches: {},
-  });
-
-  const [orderingSentences, setOrderingSentences] = useState([
-    { id: 1, label: 'A', text: '' },
-    { id: 2, label: 'B', text: '' },
-    { id: 3, label: 'C', text: '' },
-    { id: 4, label: 'D', text: '' },
-    { id: 5, label: 'E', text: '' },
-  ]);
-  const [orderingCorrectOrder, setOrderingCorrectOrder] = useState({});
-
+  /** ================= HELPERS ================= */
   const getNextId = (arr) => (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
-  const getLabel = (index) => String.fromCharCode(65 + index);
-  const getOrdinalLabel = (n) => {
-    const s = ['th', 'st', 'nd', 'rd'];
-    const v = n % 100;
-    return n + (s[(v - 20) % 10] || s[v] || s[0]) + ' Position';
-  };
+  const getLetter = (index) => LETTERS[index] || `Opt${index + 1}`;
 
-  const handleAddMcOption = () =>
-    setMcOptions([
-      ...mcOptions,
+  /** ---- MC handlers ---- */
+  const handleAddMcOption = () => {
+    setMcOptions((prev) => [
+      ...prev,
       {
-        id: getNextId(mcOptions),
-        label: getLabel(mcOptions.length),
+        id: getNextId(prev),
+        label: getLetter(prev.length),
         value: '',
       },
     ]);
-  const handleRemoveMcOption = (id) =>
-    setMcOptions(
-      mcOptions
-        .filter((o) => o.id !== id)
-        .map((o, i) => ({ ...o, label: getLabel(i) }))
-    );
+  };
 
-  const addGroupSubQuestion = () =>
-    setGroupQuestions([
-      ...groupQuestions,
+  const handleRemoveMcOption = (id) => {
+    setMcOptions((prev) => {
+      if (prev.length <= 2) return prev; // giữ tối thiểu 2 đáp án
+      const filtered = prev.filter((o) => o.id !== id);
+      const relabeled = filtered.map((o, i) => ({
+        ...o,
+        label: getLetter(i),
+      }));
+      if (mcCorrectOptionId === id) {
+        setMcCorrectOptionId(null);
+      }
+      return relabeled;
+    });
+  };
+
+  const handleMcChange = (id, value) => {
+    setMcOptions((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, value } : o))
+    );
+  };
+
+  /** ---- GROUP-QUESTIONS handlers ---- */
+  const addGroupQuestion = () => {
+    setGroupQuestions((prev) => [
+      ...prev,
       {
-        id: getNextId(groupQuestions),
-        text: '',
+        id: getNextId(prev),
+        content: '',
         options: [
           { id: 1, label: 'A', value: '' },
           { id: 2, label: 'B', value: '' },
           { id: 3, label: 'C', value: '' },
-          { id: 4, label: 'D', value: '' },
         ],
-        correctAnswer: null,
-      },
-    ]);
-  const removeGroupSubQuestion = (id) =>
-    setGroupQuestions(groupQuestions.filter((g) => g.id !== id));
-
-  const addMatchingContent = () =>
-    setMatchingData({
-      ...matchingData,
-      contents: [
-        ...matchingData.contents,
-        {
-          id: getNextId(matchingData.contents),
-          label: (matchingData.contents.length + 1).toString(),
-          value: '',
-        },
-      ],
-    });
-  const addMatchingOption = () =>
-    setMatchingData({
-      ...matchingData,
-      options: [
-        ...matchingData.options,
-        {
-          id: getNextId(matchingData.options),
-          label: getLabel(matchingData.options.length),
-          value: '',
-        },
-      ],
-    });
-
-  const addOrderingSentence = () => {
-    setOrderingSentences([
-      ...orderingSentences,
-      {
-        id: getNextId(orderingSentences),
-        label: getLabel(orderingSentences.length),
-        text: '',
+        correctOptionId: null,
       },
     ]);
   };
 
-  const removeOrderingSentence = (id) => {
-    const newSentences = orderingSentences.filter((item) => item.id !== id);
-    const reindexed = newSentences.map((item, index) => ({
-      ...item,
-      label: getLabel(index),
-    }));
-    setOrderingSentences(reindexed);
+  const removeGroupQuestion = (id) => {
+    setGroupQuestions((prev) =>
+      prev.length === 1 ? prev : prev.filter((q) => q.id !== id)
+    );
   };
 
-  const handleOrderingCorrectChange = (positionIndex, value) => {
-    setOrderingCorrectOrder({
-      ...orderingCorrectOrder,
-      [positionIndex]: value,
-    });
+  const updateGroupQuestionContent = (id, value) => {
+    setGroupQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, content: value } : q))
+    );
   };
+
+  const addGroupOption = (questionId) => {
+    setGroupQuestions((prev) =>
+      prev.map((q) => {
+        if (q.id !== questionId) return q;
+        const nextId = getNextId(q.options);
+        return {
+          ...q,
+          options: [
+            ...q.options,
+            {
+              id: nextId,
+              label: getLetter(q.options.length),
+              value: '',
+            },
+          ],
+        };
+      })
+    );
+  };
+
+  const removeGroupOption = (questionId, optionId) => {
+    setGroupQuestions((prev) =>
+      prev.map((q) => {
+        if (q.id !== questionId) return q;
+        if (q.options.length <= 2) return q; // giữ ít nhất 2 đáp án
+        const filtered = q.options.filter((o) => o.id !== optionId);
+        const relabeled = filtered.map((o, idx) => ({
+          ...o,
+          label: getLetter(idx),
+        }));
+        return {
+          ...q,
+          options: relabeled,
+          correctOptionId:
+            q.correctOptionId === optionId ? null : q.correctOptionId,
+        };
+      })
+    );
+  };
+
+  const updateGroupOptionValue = (questionId, optionId, value) => {
+    setGroupQuestions((prev) =>
+      prev.map((q) => {
+        if (q.id !== questionId) return q;
+        return {
+          ...q,
+          options: q.options.map((o) =>
+            o.id === optionId ? { ...o, value } : o
+          ),
+        };
+      })
+    );
+  };
+
+  const setGroupCorrectOption = (questionId, optionId) => {
+    setGroupQuestions((prev) =>
+      prev.map((q) =>
+        q.id === questionId ? { ...q, correctOptionId: optionId } : q
+      )
+    );
+  };
+
+  /** ================= SAVE / SUBMIT ================= */
+  const handleSave = async () => {
+    try {
+      const values = await form.validateFields();
+
+      if (!partId) {
+        message.error('Part is required');
+        return;
+      }
+
+      const instruction = (values.instruction || '').trim();
+      const subContent = values.subContent || null;
+
+      if (!instruction) {
+        message.error('Instruction text is required');
+        return;
+      }
+
+      let answerContent = null;
+      let groupContent = null;
+
+      /** ---------- TYPE: multiple-choice ---------- */
+      if (questionType === 'multiple-choice') {
+        const normalizedOptions = mcOptions
+          .map((o) => ({
+            key: o.label,
+            value: (o.value || '').trim(),
+            id: o.id,
+          }))
+          .filter((o) => o.value.length > 0);
+
+        if (!normalizedOptions.length) {
+          message.error('Please enter at least 1 option');
+          return;
+        }
+
+        if (!mcCorrectOptionId) {
+          message.error('Please select correct answer');
+          return;
+        }
+
+        const correct = normalizedOptions.find(
+          (o) => o.id === mcCorrectOptionId
+        );
+        if (!correct) {
+          message.error('Correct answer must be one of the options');
+          return;
+        }
+
+        const optionsText = normalizedOptions.map((o) => o.value);
+
+        groupContent = {
+          title: instruction,
+          audioKey: audioUrl || '',
+        };
+
+        // AnswerContent theo mẫu JSON multiple-choice listening
+        answerContent = {
+          content: instruction,
+          groupContent,
+          options: optionsText,
+          correctAnswer: correct.value,
+          partID: partId,
+          type: 'multiple-choice',
+          audioKeys: audioUrl || null,
+        };
+      }
+
+      /** ---------- TYPE: dropdown-list (matching style) ---------- */
+      if (questionType === 'dropdown-list') {
+        const validatePayload = {
+          PartID: partId,
+          Content: instruction,
+          leftItems: matchingLeftItems.map((i) => i.text),
+          rightItems: matchingRightItems.map((i) => i.text),
+          mapping: matchingMapping,
+        };
+
+        await readingMatchingSchema.validate(validatePayload, {
+          abortEarly: false,
+        });
+
+        const leftItems = matchingLeftItems
+          .map((i) => (i.text || '').trim())
+          .filter(Boolean);
+        const rightItems = matchingRightItems
+          .map((i) => (i.text || '').trim())
+          .filter(Boolean);
+
+        const correctAnswer = matchingMapping
+          .map((m) => {
+            const left = matchingLeftItems[m.leftIndex];
+            const right = matchingRightItems.find((r) => r.id === m.rightId);
+            if (!left || !right || !left.text || !right.text) return null;
+            return {
+              key: left.text,
+              value: right.text,
+            };
+          })
+          .filter(Boolean);
+
+        groupContent = {
+          title: instruction,
+          audioKey: audioUrl || '',
+        };
+
+        // AnswerContent theo mẫu JSON dropdown-list listening
+        answerContent = {
+          content: instruction,
+          groupContent,
+          leftItems,
+          rightItems,
+          correctAnswer,
+          partID: partId,
+          type: 'dropdown-list',
+          audioKeys: audioUrl || null,
+        };
+      }
+
+      /** ---------- TYPE: listening-questions-group ---------- */
+      if (questionType === 'listening-questions-group') {
+        if (!groupQuestions.length) {
+          message.error('Please add at least one sub-question');
+          return;
+        }
+
+        const listContent = [];
+
+        for (let i = 0; i < groupQuestions.length; i++) {
+          const q = groupQuestions[i];
+          const qContent = (q.content || '').trim();
+
+          if (!qContent) {
+            message.error(`Sub-question ${i + 1}: content is required`);
+            return;
+          }
+
+          const normalizedOptions = q.options
+            .map((o) => ({
+              id: o.id,
+              label: o.label,
+              value: (o.value || '').trim(),
+            }))
+            .filter((o) => o.value.length > 0);
+
+          if (!normalizedOptions.length) {
+            message.error(
+              `Sub-question ${i + 1}: please enter at least 1 option`
+            );
+            return;
+          }
+
+          if (!q.correctOptionId) {
+            message.error(
+              `Sub-question ${i + 1}: please select correct answer`
+            );
+            return;
+          }
+
+          const correctOpt = normalizedOptions.find(
+            (o) => o.id === q.correctOptionId
+          );
+          if (!correctOpt) {
+            message.error(
+              `Sub-question ${i + 1}: correct answer must be one of the options`
+            );
+            return;
+          }
+
+          listContent.push({
+            ID: i + 1,
+            content: qContent,
+            options: normalizedOptions.map((o) => o.value),
+            type: 'multiple-choice',
+            correctAnswer: correctOpt.value,
+            partID: partId,
+          });
+        }
+
+        groupContent = {
+          title: instruction,
+          audioKey: audioUrl || '',
+          listContent,
+        };
+
+        // AnswerContent theo mẫu JSON listening-questions-group
+        answerContent = {
+          content: instruction,
+          groupContent,
+          partID: partId,
+          type: 'listening-questions-group',
+          audioKeys: audioUrl || null,
+        };
+      }
+
+      const questionRow = {
+        Type: questionType,
+        AudioKeys: audioUrl || null,
+        ImageKeys: imageUrl || null,
+        SkillID: null,
+        PartID: partId,
+        Sequence: 1,
+        Content: instruction,
+        SubContent: subContent,
+        GroupContent: groupContent,
+        AnswerContent: answerContent,
+      };
+
+      const payload = {
+        PartID: partId,
+        SkillName: 'LISTENING',
+        PartType: questionType,
+        Description: instruction,
+        questions: [questionRow],
+      };
+
+      createQuestion(payload, {
+        onSuccess: () => {
+          message.success('Created successfully!');
+          navigate(-1);
+        },
+        onError: (err) => {
+          message.error(err?.response?.data?.message || 'Failed to create');
+        },
+      });
+    } catch (err) {
+      if (err?.name === 'ValidationError') {
+        message.error(err.errors?.[0] || 'Invalid data');
+      } else {
+        console.error('❌ Validation error Listening:', err);
+      }
+    }
+  };
+
+  /** ================= UPLOAD PROPS (audio with presigned URL) ================= */
   const uploadProps = {
-    name: 'file',
     multiple: false,
-    showUploadList: false,
-    action: 'https://run.mocky.io/v3/435ba68c-13a3-4aec-a98f-5369e871a63d',
-    onChange(info) {
-      if (info.file.status === 'done')
-        message.success(`${info.file.name} uploaded.`);
+    maxCount: 1,
+    customRequest: async ({ file, onSuccess, onError }) => {
+      try {
+        // 1) Gọi BE xin presigned URL
+        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
+          fileName: file.name,
+          type: 'audios',
+        });
+
+        const { uploadUrl, fileUrl } = data;
+
+        if (!uploadUrl || !fileUrl) {
+          throw new Error('Invalid upload URL response');
+        }
+
+        // 2) Upload trực tiếp lên MinIO
+        const res = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: {
+            'Content-Type': file.type || 'application/octet-stream',
+          },
+        });
+
+        if (!res.ok) {
+          console.error('MinIO upload failed', await res.text());
+          throw new Error(`Upload failed with status ${res.status}`);
+        }
+
+        // 3) Lưu lại URL audio để preview + gửi BE
+        setAudioUrl(fileUrl);
+
+        // 4) Báo cho AntD Upload là xong
+        onSuccess({ fileUrl });
+        message.success('Audio uploaded successfully');
+      } catch (err) {
+        console.error('Upload audio error:', err);
+        onError(err);
+        message.error('Upload failed!');
+      }
     },
   };
 
+  const customizeRequiredMark = (label, { required }) => (
+    <>
+      {label}
+      {required && <span style={{ color: 'red', marginLeft: 4 }}>*</span>}
+    </>
+  );
+
+  /** ================= RENDER ================= */
   return (
-    <div className='flex flex-col gap-6 pb-10'>
-      <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
-        <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-          <span className='text-blue-900'>🧩</span> Part Information
-        </h3>
-        <div className='flex flex-col gap-4'>
-          <div>
-            <label className='font-medium text-gray-700'>
-              Name <span className='text-red-500'>*</span>
-            </label>
-            <Input
-              placeholder='e.g., Part 1: Short Conversations'
-              size='large'
+    <Form form={form} layout='vertical' requiredMark={customizeRequiredMark}>
+      <Space direction='vertical' size='large' style={{ width: '100%' }}>
+        {/* PART INFO */}
+        <Card title='Part Information'>
+          <Form.Item label='Name' required>
+            <Select
+              placeholder='Choose part'
+              loading={loadingParts}
+              value={partId}
+              onChange={setPartId}
+              options={listeningParts.map((p) => ({
+                value: p.ID,
+                label: p.Content,
+              }))}
             />
-          </div>
-          <div>
-            <label className='font-medium text-gray-700'>Subpart Content</label>
+          </Form.Item>
+          <Form.Item name='subContent' label='Subpart Content'>
             <TextArea
               rows={3}
               placeholder='Enter content or passage description'
             />
-          </div>
-        </div>
-      </div>
-      <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
-        <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-          <span className='text-blue-900'>❓</span> Question Details
-        </h3>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-4'>
-          <div>
-            <label className='font-medium text-gray-700'>
-              Question Name <span className='text-red-500'>*</span>
-            </label>
-            <Input placeholder='e.g., Q1-Listening' size='large' />
-          </div>
-          <div>
-            <label className='font-medium text-gray-700'>
-              Question Type <span className='text-red-500'>*</span>
-            </label>
+          </Form.Item>
+        </Card>
+
+        {/* QUESTION DETAILS */}
+        <Card title='Question Details'>
+          <Form.Item
+            name='instruction'
+            label='Instruction Text'
+            rules={[{ required: true, message: 'Instruction is required' }]}
+          >
+            <TextArea
+              rows={3}
+              placeholder='Enter the question text that students will see...'
+            />
+          </Form.Item>
+
+          <Form.Item label='Question Type' required>
             <Select
               value={questionType}
               onChange={setQuestionType}
               size='large'
               className='w-full'
-              options={[
-                { value: 'multiple-choice', label: 'Multiple Choice' },
-                {
-                  value: 'group-multiple-choice',
-                  label: 'Group Multiple Choice',
-                },
-                { value: 'matching', label: 'Matching' },
-                { value: 'fill-in-blank', label: 'Fill in the blank' },
-                { value: 'dropdown', label: 'Dropdown' },
-                { value: 'ordering', label: 'Ordering' },
-              ]}
-            />
-          </div>
-        </div>
+            >
+              <Option value='multiple-choice'>Multiple Choice</Option>
+              <Option value='dropdown-list'>
+                Dropdown List (Matching-style)
+              </Option>
+              <Option value='listening-questions-group'>
+                Listening Questions Group
+              </Option>
+            </Select>
+          </Form.Item>
 
-        <div className='mb-6'>
-          <label className='font-medium text-gray-700'>
-            Instruction Text <span className='text-red-500'>*</span>
-          </label>
-          <TextArea
-            rows={3}
-            placeholder='Enter the question text that students will see...'
-          />
-        </div>
-        {questionType === 'multiple-choice' && (
-          <div className='flex flex-col gap-4'>
-            <label className='font-medium text-gray-700'>
-              Answer Options <span className='text-red-500'>*</span>
-            </label>
-            {mcOptions.map((opt) => (
-              <div key={opt.id} className='flex items-center gap-3'>
-                <div className='w-10 h-10 rounded bg-blue-50 text-blue-900 font-bold flex items-center justify-center border border-blue-100 flex-shrink-0'>
-                  {opt.label}
-                </div>
-                <Input placeholder={`Enter option ${opt.label}`} size='large' />
-                <Button
-                  type='text'
-                  icon={<DeleteOutlined />}
-                  className='text-gray-400 hover:text-red-500'
-                  onClick={() => handleRemoveMcOption(opt.id)}
-                />
-              </div>
-            ))}
-            <Button
-              type='text'
-              icon={<PlusOutlined />}
-              onClick={handleAddMcOption}
-              className='w-40 text-blue-900 font-medium justify-start pl-0'
-            >
-              Add more option
-            </Button>
-            <div className='mt-2'>
+          {/* ============= MULTIPLE-CHOICE ============= */}
+          {questionType === 'multiple-choice' && (
+            <div className='flex flex-col gap-4'>
               <label className='font-medium text-gray-700'>
-                Correct Answer <span className='text-red-500'>*</span>
+                Answer Options
               </label>
-              <Select
-                className='w-full mt-1'
-                size='large'
-                placeholder='Select correct answer'
-                options={mcOptions.map((o) => ({
-                  value: o.id,
-                  label: `Option ${o.label}`,
-                }))}
-              />
-            </div>
-          </div>
-        )}
-        {questionType === 'group-multiple-choice' && (
-          <div className='flex flex-col gap-6'>
-            <Button
-              icon={<PlusOutlined />}
-              size='large'
-              className='w-48 border-blue-900 text-blue-900 font-medium'
-              onClick={addGroupSubQuestion}
-            >
-              Add Sub-question
-            </Button>
-            {groupQuestions.map((q, idx) => (
-              <div
-                key={q.id}
-                className='border border-gray-200 rounded-lg p-6 bg-gray-50 relative'
-              >
-                <Button
-                  type='text'
-                  danger
-                  icon={<DeleteOutlined />}
-                  className='absolute top-4 right-4 flex items-center gap-1'
-                  onClick={() => removeGroupSubQuestion(q.id)}
-                >
-                  Remove
-                </Button>
-                <h4 className='font-bold text-gray-700 mb-3'>
-                  Sub-question {idx + 1}
-                </h4>
-                <div className='mb-4'>
-                  <label className='text-sm font-medium text-gray-600'>
-                    Sub-question Text <span className='text-red-500'>*</span>
-                  </label>
+              {mcOptions.map((opt) => (
+                <div key={opt.id} className='flex items-center gap-3 mb-1'>
+                  <div className='w-10 h-10 rounded bg-blue-50 text-blue-900 font-bold flex items-center justify-center border border-blue-100 flex-shrink-0'>
+                    {opt.label}
+                  </div>
                   <Input
+                    placeholder={`Enter option ${opt.label}`}
                     size='large'
-                    className='mt-1'
-                    placeholder='Enter text...'
+                    value={opt.value}
+                    onChange={(e) => handleMcChange(opt.id, e.target.value)}
+                  />
+                  <Button
+                    type='text'
+                    icon={<DeleteOutlined />}
+                    className='text-gray-400 hover:text-red-500'
+                    onClick={() => handleRemoveMcOption(opt.id)}
                   />
                 </div>
-                <div className='flex flex-col gap-3 mb-4'>
-                  {q.options.map((opt) => (
-                    <div key={opt.id} className='flex items-center gap-2'>
-                      <span className='w-6 font-bold text-blue-900'>
-                        {opt.label}
-                      </span>
-                      <Input
-                        size='middle'
-                        placeholder={`Option ${opt.label}`}
-                      />
-                      <DeleteOutlined className='text-gray-400 hover:text-red-500 cursor-pointer' />
-                    </div>
-                  ))}
-                </div>
-                <div>
-                  <label className='text-sm font-medium text-gray-600'>
-                    Correct Answer <span className='text-red-500'>*</span>
-                  </label>
-                  <Select
-                    className='w-full mt-1'
-                    placeholder='Select answer'
-                    options={q.options.map((o) => ({
-                      value: o.id,
-                      label: `Option ${o.label}`,
-                    }))}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {questionType === 'fill-in-blank' && (
-          <div className='flex flex-col gap-6'>
-            <Button
-              icon={<PlusOutlined />}
-              size='large'
-              className='w-40 border-blue-900 text-blue-900 font-medium'
-              onClick={() =>
-                setFillBlankSentences([
-                  ...fillBlankSentences,
-                  {
-                    id: Date.now(),
-                    text: '',
-                    options: [],
-                    correctOptionId: null,
-                  },
-                ])
-              }
-            >
-              Add Sentence
-            </Button>
-            {fillBlankSentences.map((sentence, idx) => (
-              <div
-                key={sentence.id}
-                className='border border-gray-200 rounded-lg p-4 bg-gray-50'
-              >
-                <div className='flex items-center gap-3 mb-3'>
-                  <div className='w-8 h-8 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold'>
-                    {idx + 1}
-                  </div>
-                  <span className='font-semibold'>Sentence Text</span>
-                </div>
-                <Input
-                  className='mb-4'
-                  size='large'
-                  defaultValue={sentence.text}
-                  placeholder='Sentence with [...]'
-                />
-                <div className='bg-white p-4 rounded border border-gray-100'>
-                  <div className='flex justify-between mb-2'>
-                    <span className='font-semibold text-gray-700'>
-                      Correct answer:
-                    </span>
-                    <span className='text-blue-600 cursor-pointer'>
-                      + Add Option
-                    </span>
-                  </div>
-                  {sentence.options.map((opt) => (
-                    <div key={opt.id} className='flex items-center gap-3 mb-2'>
-                      <Radio checked={sentence.correctOptionId === opt.id} />
-                      <span className='font-medium w-4'>{opt.label}.</span>
-                      <Input size='middle' defaultValue={opt.value} />
-                      <CloseOutlined className='text-gray-400 hover:text-red-500' />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {questionType === 'dropdown' && (
-          <div className='flex flex-col gap-6'>
-            <div className='flex justify-between items-center'>
-              <h4 className='font-bold text-gray-800'>Sentences with Blanks</h4>
+              ))}
               <Button
-                type='primary'
+                type='text'
                 icon={<PlusOutlined />}
-                className='bg-blue-600'
+                onClick={handleAddMcOption}
+                className='w-40 text-blue-900 font-medium justify-start pl-0'
               >
-                Add Sentence
+                Add more option
               </Button>
-            </div>
-            {dropdownSentences.map((sentence, idx) => (
-              <div
-                key={sentence.id}
-                className='border border-gray-200 rounded-lg p-4 bg-gray-50 relative'
-              >
-                <DeleteOutlined className='absolute top-4 right-4 text-red-500 cursor-pointer' />
-                <p className='font-medium text-gray-700 mb-2'>
-                  Sentence {idx + 1}
-                </p>
-                <Input
-                  className='mb-4'
+              <div className='mt-2'>
+                <label className='font-medium text-gray-700'>
+                  Correct Answer <span className='text-red-500'>*</span>
+                </label>
+                <Select
+                  className='w-full mt-1'
                   size='large'
-                  defaultValue={sentence.text}
+                  placeholder='Select correct answer'
+                  value={mcCorrectOptionId ?? undefined}
+                  onChange={setMcCorrectOptionId}
+                  options={mcOptions.map((o) => ({
+                    value: o.id,
+                    label: `Option ${o.label}`,
+                  }))}
                 />
-                <div className='bg-white p-4 rounded border border-gray-200 shadow-sm'>
-                  <div className='flex justify-between items-center mb-3'>
-                    <span className='font-semibold text-gray-800'>
-                      Dropdown {sentence.label}
-                    </span>
-                    <span className='text-blue-600 cursor-pointer text-sm font-medium'>
-                      + Add Option
-                    </span>
+              </div>
+            </div>
+          )}
+
+          {/* ============= DROPDOWN-LIST (MATCHING) ============= */}
+          {questionType === 'dropdown-list' && (
+            <MatchingEditor
+              leftItems={matchingLeftItems}
+              setLeftItems={setMatchingLeftItems}
+              rightItems={matchingRightItems}
+              setRightItems={setMatchingRightItems}
+              mapping={matchingMapping}
+              setMapping={setMatchingMapping}
+            />
+          )}
+
+          {/* ============= LISTENING-QUESTIONS-GROUP ============= */}
+          {questionType === 'listening-questions-group' && (
+            <div className='flex flex-col gap-6'>
+              <Button
+                icon={<PlusOutlined />}
+                size='large'
+                className='w-56 border-blue-900 text-blue-900 font-medium'
+                onClick={addGroupQuestion}
+              >
+                Add Sub-question
+              </Button>
+
+              {groupQuestions.map((q, idx) => (
+                <Card
+                  key={q.id}
+                  size='small'
+                  className='border border-gray-200 bg-gray-50 relative'
+                  title={`Sub-question ${idx + 1}`}
+                  extra={
+                    groupQuestions.length > 1 && (
+                      <Button
+                        type='text'
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => removeGroupQuestion(q.id)}
+                      >
+                        Remove
+                      </Button>
+                    )
+                  }
+                >
+                  <div className='mb-3'>
+                    <label className='text-sm font-medium text-gray-600'>
+                      Question Text <span className='text-red-500'>*</span>
+                    </label>
+                    <Input
+                      size='large'
+                      className='mt-1'
+                      placeholder='Enter question text...'
+                      value={q.content}
+                      onChange={(e) =>
+                        updateGroupQuestionContent(q.id, e.target.value)
+                      }
+                    />
                   </div>
-                  <div className='flex flex-col gap-3 mb-4'>
-                    {sentence.options.map((opt) => (
+
+                  <div className='flex flex-col gap-3 mb-3'>
+                    {q.options.map((opt) => (
                       <div key={opt.id} className='flex items-center gap-3'>
-                        <span className='text-gray-400 font-medium w-4 text-sm'>
-                          {opt.label}.
-                        </span>
-                        <Input size='middle' defaultValue={opt.value} />
-                        <CloseOutlined className='text-red-400 cursor-pointer text-sm' />
+                        <div className='w-7 h-7 rounded-full bg-blue-50 text-blue-900 font-bold flex items-center justify-center border border-blue-100 flex-shrink-0 text-sm'>
+                          {opt.label}
+                        </div>
+                        <Input
+                          size='middle'
+                          placeholder={`Option ${opt.label}`}
+                          value={opt.value}
+                          onChange={(e) =>
+                            updateGroupOptionValue(q.id, opt.id, e.target.value)
+                          }
+                        />
+                        {q.options.length > 2 && (
+                          <DeleteOutlined
+                            className='text-gray-400 hover:text-red-500 cursor-pointer'
+                            onClick={() => removeGroupOption(q.id, opt.id)}
+                          />
+                        )}
                       </div>
                     ))}
+                    <Button
+                      type='dashed'
+                      icon={<PlusOutlined />}
+                      onClick={() => addGroupOption(q.id)}
+                    >
+                      Add option
+                    </Button>
                   </div>
+
                   <div>
-                    <label className='text-xs font-semibold text-gray-600 block mb-1'>
-                      Correct Answer:
+                    <label className='text-sm font-medium text-gray-600'>
+                      Correct Answer <span className='text-red-500'>*</span>
                     </label>
                     <Select
-                      className='w-40'
-                      placeholder='Select'
-                      options={sentence.options.map((o) => ({
+                      className='w-full mt-1'
+                      placeholder='Select correct answer'
+                      value={q.correctOptionId ?? undefined}
+                      onChange={(val) => setGroupCorrectOption(q.id, val)}
+                      options={q.options.map((o) => ({
                         value: o.id,
                         label: `Option ${o.label}`,
                       }))}
                     />
                   </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-        {questionType === 'matching' && (
-          <div>
-            <div className='grid grid-cols-2 gap-8 mb-6'>
-              <div>
-                <h4 className='font-bold text-blue-900 mb-2'>Contents</h4>
-                <div className='flex flex-col gap-3'>
-                  {matchingData.contents.map((item) => (
-                    <div key={item.id} className='flex items-center gap-2'>
-                      <div className='text-blue-900 font-bold w-4'>
-                        {item.label}
-                      </div>
-                      <Input placeholder='Content item...' />
-                    </div>
-                  ))}
-                  <Button
-                    type='dashed'
-                    block
-                    icon={<PlusOutlined />}
-                    onClick={addMatchingContent}
-                    className='mt-2'
-                  >
-                    Add more content
-                  </Button>
-                </div>
-              </div>
-              <div>
-                <h4 className='font-bold text-green-600 mb-2'>Options</h4>
-                <div className='flex flex-col gap-3'>
-                  {matchingData.options.map((item) => (
-                    <div key={item.id} className='flex items-center gap-2'>
-                      <div className='text-green-600 font-bold w-4 rounded-full border border-green-600 flex items-center justify-center h-6 text-xs'>
-                        {item.label}
-                      </div>
-                      <Input placeholder='Option item...' />
-                    </div>
-                  ))}
-                  <Button
-                    type='dashed'
-                    block
-                    icon={<PlusOutlined />}
-                    onClick={addMatchingOption}
-                    className='mt-2'
-                  >
-                    Add more option
-                  </Button>
-                </div>
-              </div>
-            </div>
-            <div className='bg-gray-50 p-4 rounded-lg'>
-              <h4 className='font-bold text-gray-700 mb-3'>
-                Correct Answer Mapping
-              </h4>
-              <div className='flex flex-wrap gap-4'>
-                {matchingData.contents.map((c) => (
-                  <div
-                    key={c.id}
-                    className='flex items-center gap-2 bg-white px-3 py-2 rounded border border-gray-200'
-                  >
-                    <span className='font-bold text-blue-900'>{c.label}</span>
-                    <ArrowRightOutlined className='text-gray-400' />
-                    <Select
-                      className='w-24'
-                      placeholder='Select'
-                      options={matchingData.options.map((o) => ({
-                        value: o.id,
-                        label: o.label,
-                      }))}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-        {questionType === 'ordering' && (
-          <div className='flex flex-col gap-6'>
-            <Button
-              size='large'
-              icon={<PlusOutlined />}
-              className='w-40 border-blue-900 text-blue-900 font-medium'
-              onClick={addOrderingSentence}
-            >
-              Add Sentence
-            </Button>
-            <div className='flex flex-col gap-3'>
-              {orderingSentences.map((item) => (
-                <div key={item.id} className='flex items-center gap-3'>
-                  <HolderOutlined className='text-gray-400 text-lg cursor-grab' />{' '}
-                  {/* Icon Drag 6 chấm */}
-                  <div className='w-8 h-8 rounded-full bg-blue-900 text-white flex items-center justify-center font-bold flex-shrink-0'>
-                    {item.label}
-                  </div>
-                  <Input
-                    placeholder={`Enter sentence ${item.label}`}
-                    size='large'
-                    className='flex-1'
-                    value={item.text}
-                    onChange={(e) => {
-                      const updated = orderingSentences.map((s) =>
-                        s.id === item.id ? { ...s, text: e.target.value } : s
-                      );
-                      setOrderingSentences(updated);
-                    }}
-                  />
-                  <DeleteOutlined
-                    className='text-red-500 text-lg cursor-pointer hover:bg-red-50 p-2 rounded'
-                    onClick={() => removeOrderingSentence(item.id)}
-                  />
-                </div>
+                </Card>
               ))}
             </div>
-            <div className='mt-2'>
-              <h4 className='font-bold text-gray-800 mb-3'>
-                Correct Answer Order
-              </h4>
-              <div className='grid grid-cols-2 md:grid-cols-5 gap-4'>
-                {orderingSentences.map((_, index) => (
-                  <div key={index} className='flex flex-col gap-1'>
-                    <label className='text-xs font-semibold text-gray-600'>
-                      {getOrdinalLabel(index + 1)}
-                    </label>
-                    <Select
-                      placeholder='Select'
-                      size='large'
-                      className='w-full'
-                      options={orderingSentences.map((s) => ({
-                        value: s.label,
-                        label: s.label,
-                      }))}
-                      value={orderingCorrectOrder[index]}
-                      onChange={(val) =>
-                        handleOrderingCorrectChange(index, val)
-                      }
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
+          )}
+        </Card>
 
-      <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
-        <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-          <span className='text-blue-900'>📎</span> Media Attachments
-        </h3>
-        <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+        {/* MEDIA ATTACHMENTS */}
+        <Card
+          title='Media Attachments'
+          className='[&_.ant-card-body]:overflow-auto'
+        >
           <Dragger {...uploadProps} className='bg-blue-50/50 border-blue-200'>
-            <p className='text-center py-6'>
+            <p className='text-center py-2'>
               <AudioOutlined style={{ fontSize: 24, color: '#1e3a8a' }} />
               <br />
               <span className='font-medium text-gray-700'>Upload Audio</span>
             </p>
           </Dragger>
-          <Dragger {...uploadProps} className='bg-gray-50 border-gray-300'>
-            <p className='text-center py-6'>
-              <FileImageOutlined style={{ fontSize: 24, color: '#1e3a8a' }} />
-              <br />
-              <span className='font-medium text-gray-700'>Upload Image</span>
-            </p>
-          </Dragger>
-        </div>
-      </div>
+        </Card>
 
-      <div className='flex justify-end gap-4 mt-4'>
-        <Button size='large'>Cancel</Button>
-        <Button className='border-blue-900 text-blue-900' size='large'>
-          Preview Question
-        </Button>
-        <Button type='primary' size='large' className='bg-blue-900'>
-          Save Question
-        </Button>
-      </div>
-    </div>
+        {/* PREVIEW */}
+        <Card title='Preview'>
+          {/* Audio preview */}
+          {audioUrl && (
+            <div className='mb-4'>
+              <p className='text-sm font-medium text-gray-700 mb-1'>Audio</p>
+              <audio controls src={audioUrl} className='w-full'>
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
+
+          {questionType === 'multiple-choice' && (
+            <div className='space-y-4'>
+              <p className='font-medium text-gray-900'>
+                {instructionText || 'Instruction preview...'}
+              </p>
+              <div className='flex flex-col gap-3'>
+                {mcOptions.map((opt) => (
+                  <div
+                    key={opt.id}
+                    className={`flex items-center rounded-lg border px-3 py-2 text-sm ${
+                      mcCorrectOptionId === opt.id
+                        ? 'bg-blue-50 border-blue-200'
+                        : 'bg-white border-gray-200'
+                    }`}
+                  >
+                    <span className='w-7 h-7 rounded-full bg-blue-900 text-white flex items-center justify-center text-xs font-bold mr-3'>
+                      {opt.label}
+                    </span>
+                    <span className='text-gray-900'>
+                      {opt.value || (
+                        <span className='text-gray-400 italic'>
+                          Option text...
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {questionType === 'dropdown-list' && (
+            <MatchingPreview
+              content={instructionText || ''}
+              leftItems={matchingLeftItems}
+              rightItems={matchingRightItems}
+              mapping={matchingMapping}
+              onChange={(leftIndex, rightId) => {
+                setMatchingMapping((prev) => {
+                  const exist = prev.find((m) => m.leftIndex === leftIndex);
+                  if (exist) {
+                    return prev.map((m) =>
+                      m.leftIndex === leftIndex ? { ...m, rightId } : m
+                    );
+                  }
+                  return [...prev, { leftIndex, rightId }];
+                });
+              }}
+            />
+          )}
+
+          {questionType === 'listening-questions-group' && (
+            <div className='space-y-4'>
+              <p className='font-medium text-gray-900'>
+                {instructionText || 'Instruction preview...'}
+              </p>
+              <div className='space-y-4'>
+                {groupQuestions.map((q, idx) => (
+                  <div key={q.id} className='border rounded-lg p-3'>
+                    <p className='font-semibold text-gray-800 mb-2'>
+                      {idx + 1}.{' '}
+                      {q.content || (
+                        <span className='text-gray-400 italic'>
+                          Question text...
+                        </span>
+                      )}
+                    </p>
+                    <div className='flex flex-col gap-2'>
+                      {q.options.map((opt) => (
+                        <div
+                          key={opt.id}
+                          className={`flex items-center text-sm rounded border px-3 py-1 ${
+                            q.correctOptionId === opt.id
+                              ? 'bg-blue-50 border-blue-200'
+                              : 'bg-white border-gray-200'
+                          }`}
+                        >
+                          <span className='w-6 text-xs font-bold text-blue-900'>
+                            {opt.label}.
+                          </span>
+                          <span className='text-gray-900'>
+                            {opt.value || (
+                              <span className='text-gray-400 italic'>
+                                Option text...
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* ACTION BUTTONS */}
+        <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+          <Button size='large' onClick={() => navigate(-1)}>
+            Cancel
+          </Button>
+          <Button
+            type='primary'
+            size='large'
+            className='bg-blue-900'
+            loading={isCreating}
+            onClick={handleSave}
+          >
+            Save Question
+          </Button>
+        </Space>
+      </Space>
+    </Form>
   );
 };
 
