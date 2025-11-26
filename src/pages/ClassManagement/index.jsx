@@ -27,6 +27,7 @@ const ClassManagement = () => {
   const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState("");
   const [dataClass, setClassData] = useState(null);
+  // @ts-ignore
   const { userId, user } = useSelector((state) => state.auth);
 
   const { data: classList, isLoading } = useGetAllClass(

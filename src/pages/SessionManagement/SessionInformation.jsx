@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Button, Tabs, message } from "antd";
+import { Button, Tabs, message, Modal } from "antd";
 import "@features/session/css/index.scss";
 import StudentMonitoring from "@features/session/ui/StudentModering";
 import StudentSessionTable from "@/features/session/ui/StudentSessionTable.jsx";
@@ -35,8 +35,23 @@ const SessionInformation = ({ type }) => {
   };
 
   const handlePublishScore = () => {
-    publishScores();
-  };
+  Modal.confirm({
+    title: "Are you sure you want to publish the score?",
+    content:
+      "Once published, the score will be visible to all relevant students and cannot be edited.",
+    okText: "Publish",
+    cancelText: "Cancel",
+    okButtonProps: {
+      className: "bg-primary text-white font-semibold rounded-full",
+    },
+    cancelButtonProps: {
+      className: "rounded-full",
+    },
+    onOk() {
+      publishScores();
+    },
+  });
+};
 
   const items = [
     {

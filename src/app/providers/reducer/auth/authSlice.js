@@ -1,7 +1,7 @@
-import { ACCESS_TOKEN, REFRESH_TOKEN } from "@shared/lib/constants/auth";
-import { createSlice } from "@reduxjs/toolkit";
-import { jwtDecode } from "jwt-decode";
-import { getStorageData, setStorageData } from "@shared/lib/storage";
+import { ACCESS_TOKEN, REFRESH_TOKEN } from '@shared/lib/constants/auth';
+import { createSlice } from '@reduxjs/toolkit';
+import { jwtDecode } from 'jwt-decode';
+import { getStorageData, setStorageData } from '@shared/lib/storage';
 
 const checkAuth = () => Boolean(getStorageData(ACCESS_TOKEN));
 
@@ -12,9 +12,9 @@ const getUserRole = () => {
     const decodedToken = jwtDecode(token);
 
     // @ts-ignore - JWT payload may contain custom fields
-    return decodedToken.RoleIDs || null;
+    return decodedToken.roles || null;
   } catch (error) {
-    console.error("Error decoding token:", error);
+    console.error('Error decoding token:', error);
     return null;
   }
 };
@@ -28,7 +28,7 @@ const getUserId = () => {
 
     return decodedToken.userId || null;
   } catch (error) {
-    console.error("Error decoding token:", error);
+    console.error('Error decoding token:', error);
     return null;
   }
 };
@@ -41,7 +41,7 @@ const initialState = {
 };
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
     login(state) {
