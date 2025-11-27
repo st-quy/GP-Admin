@@ -174,7 +174,7 @@ const QuestionBank = () => {
             icon={<EditOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`${record.ID}`); // route detail/edit
+              // navigate(`${record.ID}`); // route detail/edit
             }}
           />
           <Button
