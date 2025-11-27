@@ -119,7 +119,15 @@ const CreateSpeaking = () => {
           })),
         };
 
-        createSpeaking(payload);
+        createSpeaking(payload, {
+          onSuccess: () => {
+            message.success('Created successfully!');
+            navigate(-1);
+          },
+          onError: (err) => {
+            message.error(err?.response?.data?.message || 'Failed to create');
+          },
+        });
       })
       .catch((err) => console.log('❌ Validation error:', err));
   };
@@ -138,7 +146,7 @@ const CreateSpeaking = () => {
         {/* PART INFO */}
         <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
           <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-            <span className='text-blue-900'>🧩</span> Part Information
+            Part Information
           </h3>
 
           <div className='grid grid-cols-1 gap-6'>
@@ -165,7 +173,7 @@ const CreateSpeaking = () => {
         {/* QUESTIONS LIST */}
         <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
           <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-            <span className='text-blue-900'>📃</span> Instruction
+            Instruction
           </h3>
           <div className='flex flex-col gap-4'>
             {questions.map((q, index) => (
@@ -214,7 +222,7 @@ const CreateSpeaking = () => {
         {/* MEDIA */}
         <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
           <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-            <span className='text-blue-900'>📎</span> Media Attachments
+            Media Attachments
           </h3>
           <Form.Item
             name='image'

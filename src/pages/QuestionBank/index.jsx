@@ -217,8 +217,8 @@ const QuestionBank = () => {
       <HeaderInfo
         title='Question List'
         subtitle='View Question Information'
-        btnText='Add questions from Excel'
-        btnIcon={<FileExcelOutlined />}
+        // btnText='Add questions from Excel'
+        // btnIcon={<FileExcelOutlined />}
         SubAction={
           <Dropdown
             menu={{

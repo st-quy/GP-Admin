@@ -19,12 +19,13 @@ import {
 } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import WritingEditor from './Writing/WritingEditor';
 import WritingPreview from './Writing/WritingPreview';
+import { useNavigate } from 'react-router-dom';
 
 const { Option } = Select;
 
 const CreateWriting = () => {
   const [form] = Form.useForm();
-
+  const navigate = useNavigate();
   const { data: writingParts = [], isLoading } =
     useGetPartsBySkillName('WRITING');
 
@@ -81,8 +82,7 @@ const CreateWriting = () => {
       createQuestion(payload, {
         onSuccess: () => {
           message.success('Created successfully!');
-          // nếu muốn quay lại:
-          // navigate(-1);
+          navigate(-1);
         },
         onError: (err) =>
           message.error(err?.response?.data?.message || 'Error creating'),

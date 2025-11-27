@@ -16,17 +16,10 @@ export const useCreateQuestion = () => {
         PartID: params.PartID || partId,
       };
       const { data } = await QuestionApi.createSpeaking(payload);
-
-      message.success(
-        data.message || 'Created speaking questions successfully!'
-      );
       return data.data;
     },
-    onSuccess() {
-      navigate('/questions');
-    },
     onError(error) {
-      const msg = error?.response?.data?.message || 'Create speaking failed';
+      const msg = error?.response?.data?.message || 'Create failed';
       message.error(msg);
     },
   });

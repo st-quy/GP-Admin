@@ -240,7 +240,7 @@ const CreateGrammarVocab = () => {
       {/* PART INFO */}
       <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
         <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-          <span className='text-blue-900'>🧩</span> Part Information
+          Part Information
         </h3>
         <Form.Item label='Name' required>
           <Select
@@ -265,7 +265,7 @@ const CreateGrammarVocab = () => {
       {/* QUESTION DETAILS */}
       <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
         <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-          <span className='text-blue-900'>❓</span> Question Details
+          Question Details
         </h3>
         <Form.Item
           name='instruction'
