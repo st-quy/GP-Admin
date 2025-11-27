@@ -420,7 +420,7 @@ const CreateReading = () => {
             </div>
           )}
           {questionType === 'ordering' && (
-            <OrderingPreview items={orderingItems} />
+            <OrderingPreview items={orderingItems} initialPositions={null} />
           )}
           {questionType === 'matching' && (
             <MatchingPreview
