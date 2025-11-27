@@ -101,8 +101,7 @@ const QuestionDetail = () => {
     [question, answerContent]
   );
 
-  const audioKey =
-    question.AudioKeys
+  const audioKey = question.AudioKeys;
 
   const skillName = question.Part?.Skill?.Name;
 
@@ -116,15 +115,9 @@ const QuestionDetail = () => {
   const type = question.Type || question.type;
 
   const createdByName =
-    question.CreatedBy?.FullName ||
-    question.creatorName ||
-    question.CreatedByName ||
-    '—';
+    question?.creator?.firstName + ' ' + question?.creator?.lastName || '—';
   const updatedByName =
-    question.UpdatedBy?.FullName ||
-    question.updaterName ||
-    question.UpdatedByName ||
-    '—';
+    question?.updater?.firstName + ' ' + question?.updater?.lastName || '—';
 
   const creatorAvatar =
     question.CreatedBy?.AvatarUrl || question.creatorAvatar || undefined;
