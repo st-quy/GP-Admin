@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Typography } from 'antd';
+import { Card } from 'antd';
 import {
   DndContext,
   useDraggable,
@@ -9,9 +9,13 @@ import {
 import SlotItem from './SlotItem'; // IMPORT COMPONENT FIX HOOK!!
 import { CSS } from '@dnd-kit/utilities';
 
-const { Text } = Typography;
+/**
+ * items: [{ id, text }]
+ * initialPositions (optional): { [itemId]: number | 'pool' }
+ *  - number: index slot (0-based)
+ *  - 'pool': nằm ở pool bên phải
+ */
 
-/* ------------- Draggable Answer ------------- */
 function DraggableAnswer({ item }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: item.id });
@@ -42,30 +46,48 @@ function DraggableAnswer({ item }) {
   );
 }
 
-/* ------------- Pool Droppable ------------- */
 function PoolZone({ children }) {
   const { setNodeRef } = useDroppable({ id: 'POOL' });
-
   return <div ref={setNodeRef}>{children}</div>;
 }
 
-/* ------------- MAIN COMPONENT ------------- */
-export default function OrderingPreview({ items = [] }) {
+export default function OrderingPreview({ items = [], initialPositions }) {
   const [answers, setAnswers] = useState(items);
 
-  const [positions, setPositions] = useState(() => {
+  const buildDefaultPositions = (srcItems) => {
     const map = {};
-    items.forEach((i) => (map[i.id] = 'pool'));
+    srcItems.forEach((i) => {
+      map[i.id] = 'pool';
+    });
     return map;
-  });
+  };
 
-  /* sync items from parent */
+  const buildPositionsFromInitial = (srcItems, init) => {
+    if (!init) return buildDefaultPositions(srcItems);
+
+    const map = buildDefaultPositions(srcItems);
+
+    Object.keys(init).forEach((itemId) => {
+      const pos = init[itemId];
+      if (pos === 'pool' || typeof pos === 'undefined' || pos === null) return;
+      // đảm bảo là số
+      if (typeof pos === 'number' && !Number.isNaN(pos)) {
+        map[itemId] = pos; // slot index (0-based)
+      }
+    });
+
+    return map;
+  };
+
+  const [positions, setPositions] = useState(() =>
+    buildPositionsFromInitial(items, initialPositions)
+  );
+
+  // sync items + initialPositions từ parent
   useEffect(() => {
     setAnswers(items);
-    const map = {};
-    items.forEach((i) => (map[i.id] = 'pool'));
-    setPositions(map);
-  }, [items]);
+    setPositions(buildPositionsFromInitial(items, initialPositions));
+  }, [items, initialPositions]);
 
   const handleDragEnd = ({ active, over }) => {
     if (!over) return;
@@ -84,7 +106,7 @@ export default function OrderingPreview({ items = [] }) {
       setPositions((prev) => {
         const next = { ...prev };
 
-        // clear slot trước
+        // clear slot này khỏi item khác
         Object.keys(next).forEach((key) => {
           if (next[key] === slotIndex) next[key] = 'pool';
         });

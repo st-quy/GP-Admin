@@ -5,4 +5,5 @@ export const QuestionApi = {
     return axiosInstance.post('/questions', payload);
   },
   getAll: (params) => axiosInstance.get('/questions', { params }),
+  getQuestionDetailApi: (id) => axiosInstance.get(`/questions/${id}`),
 };
