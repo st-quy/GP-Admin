@@ -42,3 +42,14 @@ export const useGetQuestions = (queryParams) => {
     keepPreviousData: true,
   });
 };
+
+export const useGetQuestionDetail = (id) => {
+  return useQuery({
+    queryKey: ['question-detail', id],
+    enabled: !!id,
+    queryFn: async () => {
+      const res = await QuestionApi.getQuestionDetailApi(id);
+      return res.data?.data ?? res.data;
+    },
+  });
+};
