@@ -1,60 +1,59 @@
 // @ts-nocheck
-import React, { useState } from 'react';
-import { Input, Select, Button, Upload, message, Form } from 'antd';
+import React, { useState, useEffect } from 'react';
+import { Input, Button, Upload, Form, Card } from 'antd';
 import {
-  DeleteOutlined,
   PlusOutlined,
+  DeleteOutlined,
   CloudUploadOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-import { useCreateQuestion } from '../../../../features/questions/hooks';
-import { yupSync } from '@shared/lib/utils';
-import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
 import axiosInstance from '@shared/config/axios';
+import { useCreateQuestion } from '../../../../features/questions/hooks';
 import { useGetPartsBySkillName } from '../../../../features/parts/hooks';
-const { TextArea } = Input;
-const { Dragger } = Upload;
+
+import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
+import { yupSync } from '@shared/lib/utils';
 
 const CreateSpeaking = () => {
-  const [form] = Form.useForm();
   const navigate = useNavigate();
-  const { data: speakingParts = [], isLoading: loadingParts } =
-    useGetPartsBySkillName('SPEAKING');
+  const [form] = Form.useForm();
 
-  const [questions, setQuestions] = useState([
-    { id: 1, value: '' },
-    { id: 2, value: '' },
-    { id: 3, value: '' },
-  ]);
+  const { mutate: createSpeaking, isPending } = useCreateQuestion();
 
-  const { mutate: createSpeaking, isPending: isCreating } = useCreateQuestion();
+  const [uploadErrors, setUploadErrors] = useState({});
+  const [images, setImages] = useState({});
 
-  const addQuestion = () => {
-    const newId =
-      questions.length > 0 ? questions[questions.length - 1].id + 1 : 1;
-    const newList = [...questions, { id: newId, value: '' }];
-    setQuestions(newList);
-    form.setFieldsValue({ questions: newList });
+  /** Validate file type + size */
+  const beforeUpload = (file, partKey) => {
+    const valid = file.type === 'image/jpeg' || file.type === 'image/png';
+
+    if (!valid) {
+      setUploadErrors((prev) => ({
+        ...prev,
+        [partKey]: 'Only JPG or PNG allowed',
+      }));
+      return Upload.LIST_IGNORE;
+    }
+
+    if (file.size / 1024 / 1024 >= 10) {
+      setUploadErrors((prev) => ({
+        ...prev,
+        [partKey]: 'Image must be < 10MB',
+      }));
+      return Upload.LIST_IGNORE;
+    }
+
+    setUploadErrors((prev) => ({ ...prev, [partKey]: null }));
+    return true;
   };
 
-  const removeQuestion = (id) => {
-    const newList = questions.filter((q) => q.id !== id);
-    setQuestions(newList);
-    form.setFieldsValue({ questions: newList });
-  };
-
-  const updateQuestionValue = (id, newValue) => {
-    const updated = questions.map((q) =>
-      q.id === id ? { ...q, value: newValue } : q
-    );
-    setQuestions(updated);
-    form.setFieldsValue({ questions: updated });
-  };
-
-  const uploadProps = {
-    multiple: false,
+  /** Upload (presigned) */
+  const uploadProps = (partKey) => ({
     maxCount: 1,
+    listType: 'picture-card',
+    beforeUpload: (file) => beforeUpload(file, partKey),
+
     customRequest: async ({ file, onSuccess, onError }) => {
       try {
         const { data } = await axiosInstance.post('/presigned-url/upload-url', {
@@ -64,220 +63,181 @@ const CreateSpeaking = () => {
 
         const { uploadUrl, fileUrl } = data;
 
-        if (!uploadUrl || !fileUrl) {
-          throw new Error('Invalid upload URL response');
-        }
-
-        // 2) Upload file trực tiếp lên MinIO
-        const res = await fetch(uploadUrl, {
+        await fetch(uploadUrl, {
           method: 'PUT',
           body: file,
-          headers: {
-            'Content-Type': file.type || 'application/octet-stream',
-          },
+          headers: { 'Content-Type': file.type },
         });
-        if (!res.ok) {
-          console.error('MinIO upload failed', await res.text());
-          throw new Error(`Upload failed with status ${res.status}`);
-        }
 
-        // 3) Báo thành công cho AntD Upload
+        setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
         onSuccess({ fileUrl });
-        message.success('Image uploaded successfully');
-      } catch (err) {
-        console.error('Upload image error:', err);
-        onError(err);
-        message.error('Upload failed!');
+      } catch (e) {
+        onError(e);
       }
     },
+
+    onPreview: (file) => {
+      const src = file?.response?.fileUrl || file.url;
+      if (src) window.open(src, '_blank');
+    },
+  });
+
+  /** FE submit → BE SPEAKING chuẩn */
+  const handleSubmit = (values) => {
+    const payload = {
+      SkillName: 'SPEAKING',
+      SectionName: values.sectionName,
+      parts: {
+        part1: { ...values.parts.part1, image: images.part1, sequence: 1 },
+        part2: { ...values.parts.part2, image: images.part2, sequence: 2 },
+        part3: { ...values.parts.part3, image: images.part3, sequence: 3 },
+        part4: { ...values.parts.part4, image: images.part4, sequence: 4 },
+      },
+    };
+
+    createSpeaking(payload, {
+      onSuccess: () => navigate(-1),
+    });
   };
 
-  const handleSubmit = () => {
-    form
-      .validateFields()
-      .then((values) => {
-        const { partType, questions: formQuestions, image } = values;
+  /** Render từng Part UI */
+  const renderPart = (key, title) => (
+    <Card title={title} className='mb-6 border rounded-lg shadow-sm'>
+      {/* Hidden fields — bắt buộc để Form không cache */}
+      <Form.Item name={['parts', key, 'id']} hidden>
+        <Input />
+      </Form.Item>
 
-        let imageUrl = null;
-        if (Array.isArray(image) && image.length > 0) {
-          const file = image[0];
-          imageUrl = file?.response?.fileUrl || file.url || null;
-        }
+      <Form.Item name={['parts', key, 'sequence']} hidden>
+        <Input />
+      </Form.Item>
 
-        const payload = {
-          PartID: partType,
-          SkillName: 'SPEAKING',
-          PartType: partType,
-          Description: '',
-          questions: (formQuestions || []).map((q, index) => ({
-            Type: 'speaking',
-            Content: q.value,
-            Sequence: index + 1,
-            ImageKeys: imageUrl ? [imageUrl] : [],
-            GroupContent: null,
-            SubContent: null,
-          })),
-        };
-
-        createSpeaking(payload, {
-          onSuccess: () => {
-            message.success('Created successfully!');
-            navigate(-1);
-          },
-          onError: (err) => {
-            message.error(err?.response?.data?.message || 'Failed to create');
-          },
-        });
-      })
-      .catch((err) => console.log('❌ Validation error:', err));
-  };
-
-  const partTypeValue = Form.useWatch('partType', form);
-
-  return (
-    <div className='flex flex-col gap-6 pb-10'>
-      <Form
-        form={form}
-        initialValues={{ questions }}
-        layout='vertical'
-        // Nếu muốn dùng Yup:
-        // onFinish={handleSubmit}
+      {/* Part Name */}
+      <Form.Item
+        label='Part Name'
+        name={['parts', key, 'name']}
+        rules={[yupSync(createSpeakingSchema, ['parts', key, 'name'])]}
+        validateTrigger={['onChange', 'onBlur']}
+        required
       >
-        {/* PART INFO */}
-        <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
-          <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-            Part Information
-          </h3>
+        <Input placeholder='Enter part name' />
+      </Form.Item>
 
-          <div className='grid grid-cols-1 gap-6'>
-            <Form.Item
-              name='partType'
-              label='Type'
-              rules={[{ required: true, message: 'Please select a part type' }]}
-              required
-            >
-              <Select
-                placeholder='Choose part type'
-                size='large'
-                options={
-                  speakingParts?.map((part) => ({
-                    value: part.ID,
-                    label: part.Content,
-                  })) ?? []
-                }
-              />
-            </Form.Item>
-          </div>
-        </div>
+      {/* Picture Upload */}
+      <Form.Item
+        label='Picture'
+        help={uploadErrors[key]}
+        validateStatus={uploadErrors[key] ? 'error' : ''}
+      >
+        <Upload {...uploadProps(key)}>
+          {!images[key] ? (
+            <div style={{ textAlign: 'center' }}>
+              <CloudUploadOutlined style={{ fontSize: 40 }} />
+              <div>Upload</div>
+            </div>
+          ) : (
+            <img
+              src={images[key]}
+              alt='preview'
+              style={{ width: '100%', borderRadius: 8 }}
+            />
+          )}
+        </Upload>
+      </Form.Item>
 
-        {/* QUESTIONS LIST */}
-        <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
-          <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-            Instruction
-          </h3>
-          <div className='flex flex-col gap-4'>
-            {questions.map((q, index) => (
-              <div key={q.id} className='flex w-full items-center gap-3'>
-                <div className='p-2 w-10 h-full flex justify-center bg-[#1E3A8A] rounded-full text-white'>
-                  {partTypeValue === 'part4' ? '+' : index + 1}
+      {/* Questions */}
+      <Form.List name={['parts', key, 'questions']}>
+        {(fields, { add, remove }) => (
+          <>
+            {fields.map((field) => (
+              <div key={field.key} className='flex gap-3 mb-4'>
+                <div className='w-8 h-8 bg-blue-900 text-white flex items-center justify-center rounded-full'>
+                  {field.name + 1}
                 </div>
+
                 <Form.Item
-                  name={['questions', index, 'value']}
+                  {...field}
+                  className='w-full'
+                  name={[field.name, 'value']}
                   rules={[
-                    { required: true, message: 'Question cannot be empty' },
+                    yupSync(createSpeakingSchema, [
+                      'parts',
+                      key,
+                      'questions',
+                      field.name,
+                      'value',
+                    ]),
                   ]}
-                  className='w-full m-0'
+                  validateTrigger={['onChange', 'onBlur']}
                 >
-                  <Input
-                    value={q.value}
-                    onChange={(e) => updateQuestionValue(q.id, e.target.value)}
-                    placeholder='Enter question'
-                    size='large'
-                  />
+                  <Input placeholder='Enter question' />
                 </Form.Item>
-                {index + 1 > 3 && (
+
+                {field.name >= 3 && (
                   <Button
                     type='text'
-                    icon={
-                      <DeleteOutlined className='text-red-500 hover:text-red-700' />
-                    }
-                    onClick={() => removeQuestion(q.id)}
+                    icon={<DeleteOutlined className='text-red-500' />}
+                    onClick={() => remove(field.name)}
                   />
                 )}
               </div>
             ))}
 
             <Button
-              type='dashed'
               icon={<PlusOutlined />}
-              onClick={addQuestion}
-              className='w-48 mt-2 border-blue-900 text-blue-900 font-medium'
-              size='large'
+              onClick={() => add({ value: '' })}
+              type='dashed'
+              className='border-blue-900 text-blue-900'
             >
               Add More Question
             </Button>
-          </div>
-        </div>
+          </>
+        )}
+      </Form.List>
+    </Card>
+  );
 
-        {/* MEDIA */}
-        <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200'>
-          <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-            Media Attachments
-          </h3>
+  return (
+    /** FORCE REMOUNT FORM TO CLEAR ALL CACHE */
+    <div>
+      <Form
+        form={form}
+        layout='vertical'
+        onFinish={handleSubmit}
+        initialValues={{
+          parts: {
+            part1: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
+            part2: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
+            part3: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
+            part4: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
+          },
+        }}
+      >
+        <Card title='Section information' className='mb-5'>
           <Form.Item
-            name='image'
-            valuePropName='fileList'
-            getValueFromEvent={(e) => e?.fileList}
+            label='Name'
+            className='w-full'
+            name={'sectionName'}
+            required
+            rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Dragger
-              {...uploadProps}
-              style={{ background: 'transparent', border: 'none' }}
-            >
-              <p className='ant-upload-drag-icon'>
-                <CloudUploadOutlined
-                  style={{ color: '#9CA3AF', fontSize: '48px' }}
-                />
-              </p>
-              <p className='text-gray-600 font-medium text-lg'>
-                Upload image file
-              </p>
-              <p className='text-gray-400 mb-4'>
-                Supports JPG, PNG (max 10 MB)
-              </p>
-
-              <Button
-                size='large'
-                className='bg-white border-blue-900 text-blue-900 font-medium'
-              >
-                Choose File
-              </Button>
-            </Dragger>
+            <Input placeholder='Enter section name' />
           </Form.Item>
-        </div>
+        </Card>
+        {renderPart('part1', 'Instruction 1')}
+        {renderPart('part2', 'Instruction 2')}
+        {renderPart('part3', 'Instruction 3')}
+        {renderPart('part4', 'Instruction 4')}
 
-        {/* ACTION BUTTONS */}
-        <div className='flex justify-end gap-4 mt-4'>
-          <Button
-            size='large'
-            className='min-w-[100px]'
-            onClick={() => navigate(-1)}
-          >
-            Cancel
-          </Button>
-          {/* <Button
-            size='large'
-            className='min-w-[140px] border-blue-900 text-blue-900'
-          >
-            Preview
-          </Button> */}
+        <div className='flex justify-end gap-4 mt-6'>
+          <Button onClick={() => navigate(-1)}>Cancel</Button>
           <Button
             type='primary'
-            size='large'
-            className='min-w-[140px] bg-blue-900 hover:bg-blue-800'
-            onClick={handleSubmit}
-            loading={isCreating}
+            htmlType='submit'
+            loading={isPending}
+            className='bg-blue-900'
           >
-            Save Question
+            Save All
           </Button>
         </div>
       </Form>

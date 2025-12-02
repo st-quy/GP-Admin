@@ -1,44 +1,31 @@
+// Reading/ordering/OrderingEditor.jsx
 import React from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import {
   SortableContext,
-  arrayMove,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-import { Card, Button, Input, Space, Typography, Switch } from 'antd';
+import { Card, Button, Input, Space, Typography, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 
 import SortableOrderingItem from './SortableOrderingItem';
 
-const OrderingEditor = ({
-  items,
-  setItems,
-  autoShuffle = false,
-  setAutoShuffle = null,
-}) => {
-  const handleDragEnd = (event) => {
-    const { active, over } = event;
+const OrderingEditor = ({ fields, helpers }) => {
+  const form = Form.useFormInstance();
+
+  const items = fields.map((f) => f.key);
+
+  const handleDragEnd = (e) => {
+    const { active, over } = e;
     if (!over) return;
 
     if (active.id !== over.id) {
-      const oldIndex = items.findIndex((i) => i.id === active.id);
-      const newIndex = items.findIndex((i) => i.id === over.id);
+      const oldIndex = items.indexOf(active.id);
+      const newIndex = items.indexOf(over.id);
 
-      setItems(arrayMove(items, oldIndex, newIndex));
+      helpers.move(oldIndex, newIndex);
     }
-  };
-
-  const addItem = () => {
-    setItems((prev) => [...prev, { id: Date.now(), text: '' }]);
-  };
-
-  const updateItem = (id, text) => {
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, text } : i)));
-  };
-
-  const removeItem = (id) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
   };
 
   return (
@@ -52,90 +39,99 @@ const OrderingEditor = ({
           marginBottom: 16,
         }}
       >
-        <Button type='primary' icon={<PlusOutlined />} onClick={addItem}>
+        <Button
+          type='primary'
+          icon={<PlusOutlined />}
+          onClick={() => helpers.add({ text: '' })}
+        >
           Add Sentence
         </Button>
-
-        <Space>
-          <Switch checked={autoShuffle} onChange={(v) => setAutoShuffle(v)} />
-          <Typography.Text strong>Auto Shuffle Answer Order</Typography.Text>
-        </Space>
       </Space>
 
-      {/* List */}
+      {/* Sortable list */}
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={items.map((i) => i.id)}
-          strategy={verticalListSortingStrategy}
-        >
+        <SortableContext items={items} strategy={verticalListSortingStrategy}>
           <Space direction='vertical' style={{ width: '100%' }}>
-            {items.map((item, index) => (
-              <SortableOrderingItem key={item.id} id={item.id}>
+            {fields.map((field, index) => (
+              <SortableOrderingItem key={field.key} id={field.key}>
                 {(listeners, attributes) => (
-                  <Card
-                    size='small'
-                    style={{
-                      width: '100%',
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '12px 16px',
-                      background: '#fff',
-                      border: '1px solid #e5e7eb',
-                      borderRadius: 10,
-                    }}
-                    // bodyStyle={{ width: '100%' }}
-                    className='[&_.ant-card-body]:!w-full'
+                  <Form.Item
+                    key={field.key}
+                    name={[field.name, 'text']}
+                    rules={[
+                      { required: true, message: 'Sentence is required' },
+                    ]}
+                    style={{ flex: 1, margin: 0 }}
                   >
-                    <Space align='center' style={{ width: '100%' }}>
-                      {/* Drag handle */}
-                      <MenuOutlined
-                        {...listeners}
-                        {...attributes}
+                    <Card
+                      size='small'
+                      style={{
+                        width: '100%',
+                        alignItems: 'center',
+                        padding: '12px 16px',
+                        background: '#fff',
+                        border: '1px solid #e5e7eb',
+                        borderRadius: 10,
+                      }}
+                      className='[&_.ant-card-body]:!w-full [&_.ant-card-body]:!flex'
+                    >
+                      <Space
+                        align='center'
                         style={{
-                          cursor: 'grab',
-                          color: '#888',
-                          fontSize: 18,
-                          paddingRight: 8,
-                        }}
-                      />
-
-                      {/* Number circle */}
-                      <div
-                        style={{
-                          width: 32,
-                          height: 32,
-                          borderRadius: '50%',
-                          background: '#1c2f6d',
-                          color: 'white',
+                          width: '100%',
                           display: 'flex',
-                          justifyContent: 'center',
-                          alignItems: 'center',
-                          fontWeight: 600,
+                          gap: 12,
                         }}
                       >
-                        {index + 1}
-                      </div>
+                        {/* Drag handle */}
+                        <MenuOutlined
+                          {...listeners}
+                          {...attributes}
+                          style={{
+                            cursor: 'grab',
+                            color: '#888',
+                            fontSize: 18,
+                            paddingRight: 4,
+                          }}
+                        />
 
-                      {/* Input */}
-                      <Input
-                        value={item.text}
-                        placeholder={`Enter sentence ${index + 1}`}
-                        onChange={(e) => updateItem(item.id, e.target.value)}
-                        style={{ flex: 1 }}
-                        className='w-full'
-                      />
+                        {/* Number circle */}
+                        <div
+                          style={{
+                            width: 32,
+                            height: 32,
+                            borderRadius: '50%',
+                            background: '#1c2f6d',
+                            color: 'white',
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            fontWeight: 600,
+                          }}
+                        >
+                          {index + 1}
+                        </div>
 
-                      {/* Delete */}
-                      <DeleteOutlined
-                        onClick={() => removeItem(item.id)}
-                        style={{
-                          color: 'red',
-                          fontSize: 18,
-                          cursor: 'pointer',
-                        }}
-                      />
-                    </Space>
-                  </Card>
+                        {/* INPUT EXPANDS FULL WIDTH */}
+                        <div style={{ flex: 1 }}>
+                          <Input
+                            placeholder={`Enter sentence ${index + 1}`}
+                            style={{ width: '100%' }}
+                          />
+                        </div>
+
+                        {/* Delete button */}
+                        <DeleteOutlined
+                          onClick={() => helpers.remove(field.name)}
+                          style={{
+                            color: 'red',
+                            fontSize: 18,
+                            cursor: 'pointer',
+                          }}
+                        />
+                      </Space>
+                    </Card>
+                  </Form.Item>
                 )}
               </SortableOrderingItem>
             ))}

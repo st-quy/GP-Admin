@@ -6,4 +6,7 @@ export const PartApi = {
       params: { skillName: params },
     });
   },
+  getList: (params = {}) => {
+    return axiosInstance.get('/parts', { params });
+  },
 };

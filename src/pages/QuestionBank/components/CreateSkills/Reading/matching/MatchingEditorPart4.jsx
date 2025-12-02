@@ -1,82 +1,115 @@
+// Reading/matching/MatchingEditorPart4.jsx
 import React, { useState, useEffect } from 'react';
 import { Row, Col, Input, Button, Typography, Space, Select, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
+const { Option } = Select;
 
 const letterLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-const MatchingEditor = ({ errors = {} }) => {
+const MatchingEditorPart4 = ({ errors = {} }) => {
   const form = Form.useFormInstance();
 
-  // ⭐ KHÔNG dùng useWatch nữa
+  /* ------------------------------------------
+   * LOCAL STATE — KHÔNG DÙNG useWatch NỮA
+   * ------------------------------------------ */
   const [leftItems, setLeftItems] = useState([]);
   const [rightItems, setRightItems] = useState([]);
   const [mapping, setMapping] = useState([]);
 
-  // ⭐ Khi form có giá trị từ bên ngoài (edit mode) → load vào state
+  /* ------------------------------------------
+   * LOAD INITIAL DATA FROM FORM (EDIT MODE)
+   * ------------------------------------------ */
   useEffect(() => {
-    const part = form.getFieldValue('part3') || {};
+    const part = form.getFieldValue('part4') || {};
     setLeftItems(part.leftItems || []);
     setRightItems(part.rightItems || []);
     setMapping(part.mapping || []);
   }, []);
 
-  // ⭐ Khi state thay đổi → sync vào form
+  /* ------------------------------------------
+   * SYNC LOCAL STATE → FORM FIELD
+   * ------------------------------------------ */
   useEffect(() => {
     form.setFieldsValue({
-      part3: { leftItems, rightItems, mapping },
+      part4: { leftItems, rightItems, mapping },
     });
   }, [leftItems, rightItems, mapping]);
 
-  /* ---------------- LEFT ---------------- */
+  /* ------------------------------------------
+   * LEFT ITEMS
+   * ------------------------------------------ */
   const addLeftItem = () => {
     const id = Date.now();
+
     setLeftItems((prev) => [...prev, { id, text: '' }]);
+
+    // mapping ứng với left mới
     setMapping((prev) => [...prev, { leftIndex: prev.length, rightId: null }]);
   };
 
   const updateLeftItem = (idx, text) => {
-    const copy = [...leftItems];
-    copy[idx].text = text;
-    setLeftItems(copy);
+    const updated = [...leftItems];
+    updated[idx].text = text;
+    setLeftItems(updated);
   };
 
   const removeLeftItem = (idx) => {
-    const item = leftItems[idx];
+    const removed = leftItems[idx];
 
-    setLeftItems((prev) => prev.filter((_, i) => i !== idx));
-    setMapping((prev) => prev.filter((m) => m.leftIndex !== item.id));
+    // remove left
+    const newLeft = leftItems.filter((_, i) => i !== idx);
+    setLeftItems(newLeft);
+
+    // update mapping: remove mapping của index đó + shift index
+    const newMapping = mapping
+      .filter((m) => m.leftIndex !== idx)
+      .map((m) => {
+        if (m.leftIndex > idx) return { ...m, leftIndex: m.leftIndex - 1 };
+        return m;
+      });
+
+    setMapping(newMapping);
   };
 
-  /* ---------------- RIGHT ---------------- */
+  /* ------------------------------------------
+   * RIGHT ITEMS
+   * ------------------------------------------ */
   const addRightItem = () => {
-    setRightItems((prev) => [...prev, { id: Date.now(), text: '' }]);
+    const id = Date.now();
+    setRightItems((prev) => [...prev, { id, text: '' }]);
   };
 
-  const updateRightItem = (idx, text) => {
-    const copy = [...rightItems];
-    copy[idx].text = text;
-    setRightItems(copy);
-  };
-
-  const removeRightItem = (idx) => {
-    const removedId = rightItems[idx]?.id;
-
-    setRightItems((prev) => prev.filter((_, i) => i !== idx));
-    setMapping((prev) =>
-      prev.map((m) => (m.rightId === removedId ? { ...m, rightId: null } : m))
+  const updateRightItem = (id, text) => {
+    setRightItems((prev) =>
+      prev.map((i) => (i.id === id ? { ...i, text } : i))
     );
   };
 
-  /* ---------------- MAPPING ---------------- */
-  const setMappedRightId = (idx, rightId) => {
-    const copy = [...mapping];
-    copy[idx].rightId = rightId;
-    setMapping(copy);
+  const removeRightItem = (id) => {
+    setRightItems((prev) => prev.filter((i) => i.id !== id));
+
+    // Xóa mapping rightId tương ứng
+    setMapping((prev) =>
+      prev.map((m) => (m.rightId === id ? { ...m, rightId: null } : m))
+    );
   };
 
-  /* ---------------- RENDER ---------------- */
+  /* ------------------------------------------
+   * MAPPING
+   * ------------------------------------------ */
+  const setMappedRightId = (leftIndex, rightId) => {
+    const updated = [...mapping];
+    updated[leftIndex] = { leftIndex, rightId };
+    setMapping(updated);
+  };
+
+  const getMappedRightId = (leftIndex) => mapping[leftIndex]?.rightId ?? null;
+
+  /* ------------------------------------------
+   * RENDER
+   * ------------------------------------------ */
   return (
     <Space direction='vertical' size='large' style={{ width: '100%' }}>
       <Row gutter={24}>
@@ -87,14 +120,16 @@ const MatchingEditor = ({ errors = {} }) => {
           {leftItems.map((item, idx) => (
             <div key={item.id} className='w-full mt-3'>
               <Form.Item
-                name={['part3', 'leftItems', idx, 'text']}
+                name={['part4', 'leftItems', idx, 'text']}
                 rules={[{ required: true, message: 'Required' }]}
                 validateStatus={errors?.left?.[idx] ? 'error' : ''}
                 help={errors?.left?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space align='center' className='w-full'>
-                  <Text style={{ width: 24 }}>{idx + 1}</Text>
+                <Space style={{ width: '100%' }} align='center'>
+                  <Text style={{ width: 24, textAlign: 'right' }}>
+                    {idx + 1}
+                  </Text>
 
                   <Input
                     placeholder={`Content ${idx + 1}`}
@@ -103,8 +138,8 @@ const MatchingEditor = ({ errors = {} }) => {
                   />
 
                   <Button
-                    danger
                     type='text'
+                    danger
                     icon={<DeleteOutlined />}
                     onClick={() => removeLeftItem(idx)}
                   />
@@ -114,11 +149,12 @@ const MatchingEditor = ({ errors = {} }) => {
           ))}
 
           <Button
-            style={{ width: '100%', marginTop: 10 }}
+            type='dashed'
             icon={<PlusOutlined />}
             onClick={addLeftItem}
+            style={{ width: '100%', marginTop: 10 }}
           >
-            Add more content
+            Add content
           </Button>
         </Col>
 
@@ -129,13 +165,13 @@ const MatchingEditor = ({ errors = {} }) => {
           {rightItems.map((item, idx) => (
             <div key={item.id} className='w-full mt-3'>
               <Form.Item
-                name={['part3', 'rightItems', idx, 'text']}
+                name={['part4', 'rightItems', idx, 'text']}
                 rules={[{ required: true, message: 'Required' }]}
                 validateStatus={errors?.right?.[idx] ? 'error' : ''}
                 help={errors?.right?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space align='center' className='w-full'>
+                <Space style={{ width: '100%' }} align='center'>
                   <div
                     style={{
                       width: 24,
@@ -149,17 +185,18 @@ const MatchingEditor = ({ errors = {} }) => {
                   >
                     {letterLabels[idx]}
                   </div>
+
                   <Input
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
-                    onChange={(e) => updateRightItem(idx, e.target.value)}
+                    onChange={(e) => updateRightItem(item.id, e.target.value)}
                   />
 
                   <Button
-                    danger
                     type='text'
+                    danger
                     icon={<DeleteOutlined />}
-                    onClick={() => removeRightItem(idx)}
+                    onClick={() => removeRightItem(item.id)}
                   />
                 </Space>
               </Form.Item>
@@ -167,24 +204,32 @@ const MatchingEditor = ({ errors = {} }) => {
           ))}
 
           <Button
-            style={{ width: '100%', marginTop: 10 }}
+            type='dashed'
             icon={<PlusOutlined />}
             onClick={addRightItem}
+            style={{ width: '100%', marginTop: 10 }}
           >
-            Add more option
+            Add option
           </Button>
         </Col>
       </Row>
 
       {/* MAPPING */}
-      <div style={{ background: '#fafafa', padding: 16, borderRadius: 12 }}>
+      <div
+        style={{
+          marginTop: 16,
+          padding: 16,
+          borderRadius: 12,
+          background: '#fafafa',
+        }}
+      >
         <Text strong>Correct Answer Mapping</Text>
 
         <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
           {leftItems.map((item, idx) => (
             <Form.Item
               key={`map-${item.id}`}
-              name={['part3', 'mapping', idx, 'rightId']}
+              name={['part4', 'mapping', idx, 'rightId']}
               rules={[{ required: true, message: 'Required' }]}
               validateStatus={errors?.mapping?.[idx] ? 'error' : ''}
               help={errors?.mapping?.[idx]}
@@ -196,13 +241,13 @@ const MatchingEditor = ({ errors = {} }) => {
                 <Select
                   allowClear
                   placeholder='Select'
-                  value={mapping[idx]?.rightId || null}
+                  value={getMappedRightId(idx)}
                   onChange={(v) => setMappedRightId(idx, v)}
                 >
                   {rightItems.map((opt, optIdx) => (
-                    <Select.Option key={opt.id} value={opt.id}>
+                    <Option key={opt.id} value={opt.id}>
                       {letterLabels[optIdx]}. {opt.text}
-                    </Select.Option>
+                    </Option>
                   ))}
                 </Select>
               </Col>
@@ -214,4 +259,4 @@ const MatchingEditor = ({ errors = {} }) => {
   );
 };
 
-export default MatchingEditor;
+export default MatchingEditorPart4;

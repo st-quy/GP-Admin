@@ -15,7 +15,7 @@ export const useCreateQuestion = () => {
         ...params,
         PartID: params.PartID || partId,
       };
-      const { data } = await QuestionApi.createSpeaking(payload);
+      const { data } = await QuestionApi.createQuestions(payload);
       return data.data;
     },
     onError(error) {
@@ -43,6 +43,22 @@ export const useGetQuestionDetail = (id) => {
     queryFn: async () => {
       const res = await QuestionApi.getQuestionDetailApi(id);
       return res.data?.data ?? res.data;
+    },
+  });
+};
+
+export const useCreateQuestionReading = () => {
+  const navigate = useNavigate();
+  const { partId } = useParams();
+
+  return useMutation({
+    mutationFn: async (params) => {
+      const { data } = await QuestionApi.createReading(params);
+      return data.data;
+    },
+    onError(error) {
+      const msg = error?.response?.data?.message || 'Create failed';
+      message.error(msg);
     },
   });
 };

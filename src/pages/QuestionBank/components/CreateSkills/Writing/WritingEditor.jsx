@@ -53,6 +53,7 @@ const WritingEditor = ({ partType }) => {
                     rules={[
                       { required: true, message: 'Question is required' },
                     ]}
+                    className='!m-0'
                   >
                     <Input placeholder='Enter question...' />
                   </Form.Item>
@@ -223,8 +224,15 @@ const WritingEditor = ({ partType }) => {
     return (
       <div className='flex flex-col gap-4 [&_.ant-form-item]:!mb-0'>
         <Form.Item
-          name={['part4', 'emailText']}
+          name={['part4', 'partName']}
           label='Instruction Text'
+          rules={[{ required: true, message: 'Instruction text is required' }]}
+        >
+          <Input placeholder='e.g., You are a member of the Fitness Club. ...' />
+        </Form.Item>
+        <Form.Item
+          name={['part4', 'emailText']}
+          label='Sub Instruction'
           rules={[{ required: true, message: 'Instruction text is required' }]}
         >
           <TextArea

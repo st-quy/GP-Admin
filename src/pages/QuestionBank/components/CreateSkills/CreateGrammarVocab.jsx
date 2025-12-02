@@ -1,214 +1,134 @@
 // CreateGrammarVocab.jsx
 import React, { useState } from 'react';
-import { Input, Select, Button, message, Form, Card } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { Card, Collapse, Form, Input, Select, Button, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
-
-import GrammarMultipleChoicePreview from './GrammarAndVocabulary/multiple-choice/GrammarMultipleChoicePreview';
-import MatchingEditor from './Reading/matching/MatchingEditor';
-import MatchingPreview from './Reading/matching/MatchingPreview';
-
-import { useGetPartsBySkillName } from '@features/parts/hooks';
 import { useCreateQuestion } from '@features/questions/hooks';
-import { readingMatchingSchema } from '@pages/QuestionBank/schemas/createQuestionSchema';
+import GrammarMatchingEditorForm from './GrammarAndVocabulary/multiple-choice/GrammarMatchingEditorForm';
 
-const { TextArea } = Input;
-const { Option } = Select;
-
+const { Panel } = Collapse;
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const CreateGrammarVocab = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const { mutate: createQuestion, isPending } = useCreateQuestion();
 
-  const { data: grammarvocabParts = [], isLoading: loadingParts } =
-    useGetPartsBySkillName('GRAMMAR AND VOCABULARY');
+  /* -------------------------------------------
+       PART 2 — Local state (for matching)
+  ------------------------------------------- */
+  const [part2Groups, setPart2Groups] = useState(
+    Array.from({ length: 5 }, () => ({
+      content: '',
+      leftItems: [],
+      rightItems: [],
+      mapping: [],
+    }))
+  );
 
-  const { mutate: createQuestion, isPending: isCreating } = useCreateQuestion();
-
-  const [partId, setPartId] = useState(null);
-  const [questionType, setQuestionType] = useState('multiple-choice');
-
-  // Watch instruction text for preview
-  const instructionText = Form.useWatch('instruction', form);
-
-  /** ================= MULTIPLE CHOICE ================= **/
-  const [mcOptions, setMcOptions] = useState([
-    { id: 1, label: 'A', value: '' },
-    { id: 2, label: 'B', value: '' },
-    { id: 3, label: 'C', value: '' },
-    { id: 4, label: 'D', value: '' },
-  ]);
-  const [mcCorrectOptionId, setMcCorrectOptionId] = useState(null);
-
-  /** ================= MATCHING (REUSE FROM READING) ================= **/
-  // leftItems / rightItems / mapping SHAPE GIỐNG HỆT CreateReading
-  const [matchingLeftItems, setMatchingLeftItems] = useState([]);
-
-  const [matchingRightItems, setMatchingRightItems] = useState([]);
-  // [{ leftIndex, rightId }]
-  const [matchingMapping, setMatchingMapping] = useState([]);
-
-  /** ================= HELPERS ================= **/
-  const getNextId = (arr) => (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
-  const getLetter = (index) => LETTERS[index] || `Opt${index + 1}`;
-
-  /** ================= MC HANDLERS ================= **/
-  const handleAddMcOption = () => {
-    setMcOptions((prev) => [
-      ...prev,
-      {
-        id: getNextId(prev),
-        label: getLetter(prev.length),
-        value: '',
-      },
-    ]);
-  };
-
-  const handleRemoveMcOption = (id) => {
-    setMcOptions((prev) => {
-      if (prev.length <= 2) return prev; // giữ tối thiểu 2 đáp án
-
-      const filtered = prev.filter((o) => o.id !== id);
-      const relabeled = filtered.map((o, i) => ({
-        ...o,
-        label: getLetter(i),
-      }));
-
-      if (mcCorrectOptionId === id) {
-        setMcCorrectOptionId(null);
-      }
-
-      return relabeled;
+  const updateGroup = (index, data) => {
+    setPart2Groups((prev) => {
+      const clone = [...prev];
+      clone[index] = { ...clone[index], ...data };
+      return clone;
     });
   };
 
-  const handleMcChange = (id, value) => {
-    setMcOptions((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, value } : o))
-    );
+  /* WATCH PART 1 */
+  const part1Values = Form.useWatch('part1', form) || [];
+
+  /* VALIDATE PART 1 */
+  const validatePart1Question = (q) => {
+    if (!q?.instruction?.trim()) return false;
+    if (!q.options || q.options.some((o) => !o.value?.trim())) return false;
+    if (q.correctOptionId === null || q.correctOptionId === undefined)
+      return false;
+    return true;
   };
 
-  /** ================= SUBMIT ================= **/
-  const handleSubmit = async () => {
+  /* VALIDATE GROUP */
+  const validateGroup = (g) => {
+    if (!g.content.trim()) return false;
+    if (!g.leftItems.length || g.leftItems.some((i) => !i.text.trim()))
+      return false;
+    if (!g.rightItems.length || g.rightItems.some((i) => !i.text.trim()))
+      return false;
+    if (!g.mapping.length) return false;
+    return g.mapping.every((m) => m.rightId !== null);
+  };
+
+  const renderStatus = (valid) => (
+    <span style={{ marginLeft: 8 }}>
+      {valid ? (
+        <span style={{ color: 'green' }}>✔</span>
+      ) : (
+        <span style={{ color: 'red' }}>✖</span>
+      )}
+    </span>
+  );
+
+  /* SAVE */
+  const handleSaveAll = async () => {
     try {
-      const values = await form.validateFields();
+      // await form.validateFields();
 
-      if (!partId) {
-        message.error('Part is required');
-        return;
-      }
+      const values = form.getFieldsValue(true);
+      const { sectionName, part1Name, part2Name, part1 } = values;
 
-      const instruction = (values.instruction || '').trim();
-      if (!instruction) {
-        message.error('Instruction text is required');
-        return;
-      }
-
-      let answerContent = null;
-
-      /** ---------- MULTIPLE CHOICE ---------- */
-      if (questionType === 'multiple-choice') {
-        const normalizedOptions = mcOptions
-          .map((o) => ({
-            key: o.label,
-            value: (o.value || '').trim(),
-            id: o.id,
-          }))
-          .filter((o) => o.value.length > 0);
-
-        if (!normalizedOptions.length) {
-          message.error('Please enter at least 1 option');
-          return;
-        }
-
-        if (!mcCorrectOptionId) {
-          message.error('Please select correct answer');
-          return;
-        }
-
-        const correct = normalizedOptions.find(
-          (o) => o.id === mcCorrectOptionId
-        );
-        if (!correct) {
-          message.error('Correct answer must be one of the options');
-          return;
-        }
-
-        // ĐÚNG FORMAT GRAMMAR MULTIPLE CHOICE (mẫu trong DB)
-        answerContent = {
-          title: instruction,
-          options: normalizedOptions.map(({ key, value }) => ({
-            key,
-            value,
-          })),
-          correctAnswer: correct.value,
+      /* Part 1 build */
+      const part1Questions = part1.map((q, idx) => {
+        const options = q.options.map((o, i) => ({
+          key: LETTERS[i],
+          value: o.value.trim(),
+        }));
+        return {
+          Type: 'multiple-choice',
+          Sequence: idx + 1,
+          Content: q.instruction,
+          AnswerContent: {
+            title: q.instruction,
+            options,
+            correctAnswer: options[q.correctOptionId].value,
+          },
         };
-      }
+      });
 
-      /** ---------- MATCHING (REUSE LOGIC READING) ---------- */
-      if (questionType === 'matching') {
-        const validatePayload = {
-          PartID: partId,
-          Content: instruction,
-          leftItems: matchingLeftItems?.map((i) => i.text),
-          rightItems: matchingRightItems.map((i) => i.text),
-          mapping: matchingMapping,
+      /* Part 2 build */
+      const part2Questions = part2Groups.map((g, idx) => {
+        const leftItems = g.leftItems.map((i) => i.text);
+        const rightItems = g.rightItems.map((i) => i.text);
+
+        return {
+          Type: 'matching',
+          Sequence: idx + 26,
+          Content: g.content,
+          AnswerContent: {
+            content: g.content,
+            leftItems,
+            rightItems,
+            correctAnswer: g.mapping.map((m) => ({
+              left: leftItems[g.leftItems.findIndex((x) => x.id === m.leftId)],
+              right:
+                rightItems[g.rightItems.findIndex((x) => x.id === m.rightId)],
+            })),
+          },
         };
-
-        // dùng lại schema Reading
-        await readingMatchingSchema.validate(validatePayload, {
-          abortEarly: false,
-        });
-
-        const leftItems = matchingLeftItems
-          .map((i) => (i.text || '').trim())
-          .filter(Boolean);
-        const rightItems = matchingRightItems
-          .map((i) => (i.text || '').trim())
-          .filter(Boolean);
-
-        const correctAnswer = matchingMapping
-          .map((m) => {
-            const left = matchingLeftItems[m.leftIndex];
-            const right = matchingRightItems.find((r) => r.id === m.rightId);
-            if (!left || !right || !left.text || !right.text) return null;
-            return {
-              left: left.text,
-              right: right.text,
-            };
-          })
-          .filter(Boolean);
-
-        // ĐÚNG FORMAT GRAMMAR MATCHING (content/leftItems/rightItems/correctAnswer)
-        answerContent = {
-          content: instruction,
-          leftItems,
-          rightItems,
-          correctAnswer,
-        };
-      }
-
-      // Build 1 question cho Grammar & Vocab
-      const baseQuestion = {
-        Type: questionType, // 'multiple-choice' | 'matching'
-        AudioKeys: null,
-        ImageKeys: null,
-        SkillID: null, // BE sẽ set từ SkillName
-        PartID: partId,
-        Sequence: 1,
-        Content: instruction,
-        SubContent: values.subContent || null,
-        GroupContent: null,
-        AnswerContent: answerContent,
-      };
+      });
 
       const payload = {
-        PartID: partId,
         SkillName: 'GRAMMAR AND VOCABULARY',
-        PartType: questionType,
-        Description: instruction,
-        questions: [baseQuestion],
+        SectionName: sectionName,
+        parts: {
+          part1: {
+            name: part1Name,
+            sequence: 1,
+            questions: part1Questions,
+          },
+          part2: {
+            name: part2Name,
+            sequence: 2,
+            questions: part2Questions,
+          },
+        },
       };
 
       createQuestion(payload, {
@@ -216,195 +136,147 @@ const CreateGrammarVocab = () => {
           message.success('Created successfully!');
           navigate(-1);
         },
-        onError: (err) => {
-          message.error(err?.response?.data?.message || 'Failed to create');
-        },
+        onError: () => message.error('Failed to create listening'),
       });
-    } catch (err) {
-      if (err?.name === 'ValidationError') {
-        message.error(err.errors?.[0] || 'Invalid data');
-      } else {
-        console.error('❌ Validation error Grammar & Vocab:', err);
-      }
+    } catch {
+      message.error('Please fix errors in Part 1');
     }
   };
-  const customizeRequiredMark = (label, { required }) => (
-    <>
-      {label}
-      {required && <span style={{ color: 'red', marginLeft: 4 }}>*</span>}
-    </>
-  );
-  /** ================= RENDER ================= **/
+
   return (
-    <Form form={form} layout='vertical' requiredMark={customizeRequiredMark}>
-      {/* PART INFO */}
-      <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
-        <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-          Part Information
-        </h3>
-        <Form.Item label='Name' required>
-          <Select
-            placeholder='Choose part'
-            loading={loadingParts}
-            value={partId}
-            onChange={setPartId}
-            options={grammarvocabParts.map((p) => ({
-              value: p.ID,
-              label: p.Content,
-            }))}
-          />
+    <Form
+      layout='vertical'
+      form={form}
+      initialValues={{
+        sectionName: '',
+        part1Name: '',
+        part2Name: '',
+        part1: Array.from({ length: 25 }, () => ({
+          instruction: '',
+          options: [{ value: '' }, { value: '' }, { value: '' }],
+          correctOptionId: null,
+        })),
+      }}
+    >
+      {/* SECTION */}
+      <Card title='Section Information' className='mb-5'>
+        <Form.Item label='Name' name='sectionName' rules={[{ required: true }]}>
+          <Input />
         </Form.Item>
-        <Form.Item name='subContent' label='Subpart Content'>
-          <TextArea
-            rows={3}
-            placeholder='e.g., Choose the best answer to complete the sentence.'
-          />
-        </Form.Item>
-      </div>
-
-      {/* QUESTION DETAILS */}
-      <div className='bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-4'>
-        <h3 className='text-lg font-bold text-gray-800 mb-4 flex items-center gap-2'>
-          Question Details
-        </h3>
-        <Form.Item
-          name='instruction'
-          label='Instruction Text'
-          rules={[{ required: true, message: 'Question text is required' }]}
-        >
-          <TextArea
-            rows={4}
-            placeholder='Enter the grammar/vocabulary question or sentence stem...'
-          />
-        </Form.Item>
-
-        <Form.Item
-          label='Question Type'
-          required
-          help={null}
-          style={{ marginBottom: 24 }}
-        >
-          <Select
-            value={questionType}
-            onChange={(val) => setQuestionType(val)}
-            size='large'
-            className='w-full'
-          >
-            <Option value='multiple-choice'>Multiple Choice</Option>
-            <Option value='matching'>Matching</Option>
-          </Select>
-        </Form.Item>
-
-        {/* ============= MULTIPLE CHOICE ============= */}
-        {questionType === 'multiple-choice' && (
-          <div className='flex flex-col gap-4'>
-            <label className='font-medium text-gray-700'>Answer Options</label>
-            {mcOptions.map((opt) => (
-              <div key={opt.id} className='flex items-center gap-3 mb-1'>
-                <div className='w-10 h-10 rounded bg-blue-50 text-blue-900 font-bold flex items-center justify-center border border-blue-100'>
-                  {opt.label}
-                </div>
-                <Input
-                  value={opt.value}
-                  onChange={(e) => handleMcChange(opt.id, e.target.value)}
-                  placeholder={`Enter option ${opt.label}`}
-                  size='large'
-                />
-                <Button
-                  type='text'
-                  icon={<DeleteOutlined />}
-                  className='text-gray-400 hover:text-red-500'
-                  onClick={() => handleRemoveMcOption(opt.id)}
-                />
-              </div>
-            ))}
-            <Button
-              type='text'
-              icon={<PlusOutlined />}
-              className='w-40 text-blue-900 font-medium justify-start pl-0'
-              onClick={handleAddMcOption}
-            >
-              Add more option
-            </Button>
-
-            <div className='mt-2'>
-              <label className='font-medium text-gray-700'>
-                Correct Answer <span className='text-red-500'>*</span>
-              </label>
-              <Select
-                className='w-full mt-1'
-                size='large'
-                placeholder='Select correct answer'
-                value={mcCorrectOptionId ?? undefined}
-                onChange={(val) => setMcCorrectOptionId(val)}
-              >
-                {mcOptions.map((o) => (
-                  <Option key={o.id} value={o.id}>
-                    Option {o.label}
-                  </Option>
-                ))}
-              </Select>
-            </div>
-          </div>
-        )}
-
-        {/* ============= MATCHING (REUSE MATCHINGEDITOR) ============= */}
-        {questionType === 'matching' && (
-          <MatchingEditor
-            leftItems={matchingLeftItems}
-            setLeftItems={setMatchingLeftItems}
-            rightItems={matchingRightItems}
-            setRightItems={setMatchingRightItems}
-            mapping={matchingMapping}
-            setMapping={setMatchingMapping}
-          />
-        )}
-      </div>
-
-      {/* PREVIEW */}
-      <Card title='Preview'>
-        {questionType === 'multiple-choice' && (
-          <GrammarMultipleChoicePreview
-            questionText={instructionText}
-            options={mcOptions}
-            correctOptionId={mcCorrectOptionId}
-          />
-        )}
-
-        {questionType === 'matching' && (
-          <MatchingPreview
-            content={instructionText || ''}
-            leftItems={matchingLeftItems}
-            rightItems={matchingRightItems}
-            mapping={matchingMapping}
-            onChange={(leftIndex, rightId) => {
-              setMatchingMapping((prev) => {
-                const exist = prev.find((m) => m.leftIndex === leftIndex);
-                if (exist) {
-                  return prev.map((m) =>
-                    m.leftIndex === leftIndex ? { ...m, rightId } : m
-                  );
-                }
-                return [...prev, { leftIndex, rightId }];
-              });
-            }}
-          />
-        )}
       </Card>
 
-      {/* ACTION BUTTONS */}
-      <div className='flex justify-end gap-4 mt-4'>
-        <Button size='large' onClick={() => navigate(-1)}>
-          Cancel
-        </Button>
-        <Button
-          type='primary'
-          size='large'
-          className='bg-blue-900'
-          loading={isCreating}
-          onClick={handleSubmit}
+      {/* PART 1 */}
+      <Card title='PART 1 — Multiple Choice (25 Questions)' className='mb-6'>
+        <Form.Item
+          label='Part Name'
+          name='part1Name'
+          rules={[{ required: true }]}
         >
-          Save Question
+          <Input />
+        </Form.Item>
+
+        <Collapse accordion>
+          {Array.from({ length: 25 }).map((_, idx) => (
+            <Panel
+              key={idx}
+              header={
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between' }}
+                >
+                  Question {idx + 1}
+                  {renderStatus(validatePart1Question(part1Values[idx] || {}))}
+                </div>
+              }
+            >
+              <Form.Item
+                name={['part1', idx, 'instruction']}
+                label='Instruction'
+                rules={[{ required: true }]}
+              >
+                <Input.TextArea rows={2} />
+              </Form.Item>
+
+              {Array.from({ length: 3 }).map((_, optIdx) => (
+                <div key={optIdx} style={{ display: 'flex', gap: 10 }}>
+                  <b>{LETTERS[optIdx]}</b>
+                  <Form.Item
+                    name={['part1', idx, 'options', optIdx, 'value']}
+                    style={{ flex: 1 }}
+                    rules={[{ required: true }]}
+                  >
+                    <Input />
+                  </Form.Item>
+                </div>
+              ))}
+
+              <Form.Item
+                name={['part1', idx, 'correctOptionId']}
+                label='Correct Answer'
+                rules={[{ required: true }]}
+              >
+                <Select
+                  options={[
+                    { value: 0, label: 'A' },
+                    { value: 1, label: 'B' },
+                    { value: 2, label: 'C' },
+                  ]}
+                />
+              </Form.Item>
+            </Panel>
+          ))}
+        </Collapse>
+      </Card>
+
+      {/* PART 2 */}
+      <Card title='PART 2 — Matching (5 Groups)' className='mb-6'>
+        <Form.Item
+          label='Part Name'
+          name='part2Name'
+          rules={[{ required: true }]}
+        >
+          <Input />
+        </Form.Item>
+
+        <Collapse accordion>
+          {part2Groups.map((g, idx) => (
+            <Panel
+              key={idx}
+              header={
+                <div
+                  style={{ display: 'flex', justifyContent: 'space-between' }}
+                >
+                  Group {idx + 1}
+                  {renderStatus(validateGroup(g))}
+                </div>
+              }
+            >
+              <Form.Item
+                label='Instruction Text'
+                rules={[{ required: true, message: 'Required' }]}
+              >
+                <Input.TextArea
+                  value={g.content}
+                  onChange={(e) =>
+                    updateGroup(idx, { content: e.target.value })
+                  }
+                  rows={2}
+                />
+              </Form.Item>
+
+              {/* Matching Editor */}
+              <GrammarMatchingEditorForm
+                groupIndex={idx}
+                group={g}
+                updateGroup={(data) => updateGroup(idx, data)}
+              />
+            </Panel>
+          ))}
+        </Collapse>
+      </Card>
+
+      <div style={{ textAlign: 'right' }}>
+        <Button type='primary' loading={isPending} onClick={handleSaveAll}>
+          Save
         </Button>
       </div>
     </Form>

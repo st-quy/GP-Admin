@@ -1,455 +1,255 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Input,
-  Select,
-  Button,
-  message,
-  Card,
-  Space,
-  Typography,
-  Form,
-} from 'antd';
+// CreateReading.jsx
+import React from 'react';
+import { Form, Input, Button, Card, Space, Typography, message } from 'antd';
 
-import { useNavigate } from 'react-router-dom';
-import axiosInstance from '@shared/config/axios';
-
-import { useCreateQuestion } from '@features/questions/hooks';
-import { useGetPartsBySkillName } from '@features/parts/hooks';
-
-// DROPDOWN components
 import DropdownEditor from './Reading/dropdown/DropdownEditor';
 import DropdownBlankOptions from './Reading/dropdown/DropdownBlankOptions';
 import DropdownPreview from './Reading/dropdown/DropdownPreview';
 
-// ORDERING components (support DND Kit)
 import OrderingEditor from './Reading/ordering/OrderingEditor';
-import OrderingPreview from './Reading/ordering/OrderingPreview';
-
-// Yup Schemas
-import {
-  buildDropdownPayload,
-  buildMatchingPayload,
-  buildOrderingPayload,
-} from '@features/questions/utils/buildQuestionPayload';
-import {
-  readingDropdownSchema,
-  readingMatchingSchema,
-  readingOrderingSchema,
-} from '@pages/QuestionBank/schemas/createQuestionSchema';
 import MatchingEditor from './Reading/matching/MatchingEditor';
-import MatchingPreview from './Reading/matching/MatchingPreview';
+import MatchingEditorPart4 from './Reading/matching/MatchingEditorPart4';
 
-const { TextArea } = Input;
+import { buildFullReadingPayload } from '@features/questions/utils/buildQuestionPayload';
+import { useCreateQuestion } from '@features/questions/hooks';
+import { useNavigate } from 'react-router-dom';
 
 const CreateReading = () => {
-  const [form] = Form.useForm();
   const navigate = useNavigate();
 
-  /** ================================ STATE ================================ **/
-  const [partId, setPartId] = useState(null);
-  const [questionType, setQuestionType] = useState('dropdown-list');
+  const [form] = Form.useForm();
+  const { mutate: createQuestion, isPending: isCreating } = useCreateQuestion();
 
-  // Dropdown state
-  const [dropdownContent, setDropdownContent] = useState({
-    content: '',
-    blanks: [],
-  });
+  const handleSubmit = async () => {
+    try {
+      const values = await form.validateFields();
+      const payload = buildFullReadingPayload(values);
 
-  const [dropdownBlanks, setDropdownBlanks] = useState([]);
-
-  // Ordering state
-  const [orderingIntro, setOrderingIntro] = useState('');
-  const [orderingItems, setOrderingItems] = useState([]);
-
-  // Matching
-  const [matchingInstruction, setMatchingInstruction] = useState('');
-  const [matchingLeftItems, setMatchingLeftItems] = useState([]);
-  const [matchingRightItems, setMatchingRightItems] = useState([]);
-  const [matchingMapping, setMatchingMapping] = useState([]);
-
-  // Media
-  const [audioUrl, setAudioUrl] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
-
-  // Errors
-  const [errors, setErrors] = useState({
-    partId: '',
-    content: '',
-    blanks: {},
-  });
-
-  const { data: readingParts = [], isLoading: loadingParts } =
-    useGetPartsBySkillName('READING');
-
-  const { mutate: createReading, isPending: isCreating } = useCreateQuestion();
-
-  /** ========================================================================
-   * SYNC DROPDOWN BLANKS
-   * ======================================================================== **/
-  useEffect(() => {
-    if (questionType !== 'dropdown-list') return;
-
-    const newBlankKeys = dropdownContent.blanks.map((b) => b.key);
-
-    setDropdownBlanks((prev) => {
-      const map = {};
-
-      prev.forEach((b) => {
-        map[b.key] = b;
+      createQuestion(payload, {
+        onSuccess: () => {
+          message.success('Created successfully!');
+          navigate(-1);
+        },
+        onError: (err) => {
+          message.error(err?.response?.data?.message || 'Failed to create');
+        },
       });
-
-      return newBlankKeys.map((key) =>
-        map[key]
-          ? map[key] // giữ nguyên options cũ
-          : {
-              key,
-              options: [],
-              correctAnswer: null,
-            }
-      );
-    });
-  }, [dropdownContent, questionType]);
-
-  /** ========================================================================
-   * SAVE HANDLER
-   * ======================================================================== **/
-  const handleSave = async () => {
-    setErrors({ partId: '', content: '', blanks: {} });
-
-    if (!partId) {
-      setErrors((e) => ({ ...e, partId: 'Part is required' }));
-      return;
+      message.success('Created reading successfully!');
+    } catch (err) {
+      console.error(err);
+      message.error('Form error — check again!');
     }
-
-    let payload = null;
-
-    /** ---------------------- DROPDOWN ---------------------- **/
-    if (questionType === 'dropdown-list') {
-      const validatePayload = {
-        PartID: partId,
-        Content: dropdownContent.content,
-        blanks: dropdownBlanks.map((b) => ({
-          key: b.key,
-          options: b.options.map((o) => ({ value: o.value })),
-          correctAnswer:
-            b.options.find((o) => o.id === b.correctAnswer)?.value || '',
-        })),
-      };
-
-      try {
-        await readingDropdownSchema.validate(validatePayload, {
-          abortEarly: false,
-        });
-      } catch (err) {
-        const newErrors = { partId: '', content: '', blanks: {} };
-
-        err.inner.forEach((e) => {
-          if (e.path === 'Content') newErrors.content = e.message;
-
-          if (e.path?.startsWith('blanks[')) {
-            const idx = Number(e.path.match(/blanks\[(\d+)\]/)[1]);
-            const blankKey = validatePayload.blanks[idx]?.key;
-
-            if (!newErrors.blanks[blankKey]) newErrors.blanks[blankKey] = [];
-            newErrors.blanks[blankKey].push(e.message);
-          }
-        });
-
-        setErrors(newErrors);
-        return;
-      }
-
-      payload = buildDropdownPayload({
-        partId,
-        dropdownContent,
-        dropdownBlanks,
-        audioUrl,
-        imageUrl,
-      });
-    }
-
-    /** ---------------------- ORDERING ---------------------- **/
-    if (questionType === 'ordering') {
-      const validatePayload = {
-        PartID: partId,
-        Content: orderingIntro,
-        items: orderingItems.map((i) => i.text),
-      };
-
-      try {
-        await readingOrderingSchema.validate(validatePayload, {
-          abortEarly: false,
-        });
-      } catch (err) {
-        const newErrors = { partId: '', content: '' };
-        err.inner.forEach((e) => {
-          if (e.path === 'Content') newErrors.content = e.message;
-        });
-        setErrors(newErrors);
-        return;
-      }
-
-      payload = buildOrderingPayload({
-        partId,
-        intro: orderingIntro,
-        items: orderingItems,
-        audioUrl,
-        imageUrl,
-      });
-    }
-
-    if (questionType === 'matching') {
-      const validatePayload = {
-        PartID: partId,
-        Content: matchingInstruction,
-        leftItems: matchingLeftItems.map((i) => i.text),
-        rightItems: matchingRightItems.map((i) => i.text),
-        mapping: matchingMapping, // nếu schema cần
-      };
-
-      try {
-        await readingMatchingSchema.validate(validatePayload, {
-          abortEarly: false,
-        });
-      } catch (err) {
-        const newErrors = { partId: '', content: '' };
-        err.inner.forEach((e) => {
-          if (e.path === 'Content') newErrors.content = e.message;
-        });
-        setErrors(newErrors);
-        return;
-      }
-
-      payload = buildMatchingPayload({
-        partId,
-        instruction: matchingInstruction,
-        leftItems: matchingLeftItems,
-        rightItems: matchingRightItems,
-        mapping: matchingMapping,
-        audioUrl,
-        imageUrl,
-      });
-    }
-
-    /** ---------------------- API CALL ---------------------- **/
-    createReading(payload, {
-      onSuccess: () => {
-        message.success('Created successfully!');
-        navigate(-1);
-      },
-      onError: (err) => {
-        message.error(err?.response?.data?.message || 'Failed to create');
-      },
-    });
   };
-  const customizeRequiredMark = (label, { required }) => (
-    <>
-      {label}
-      {required && <span style={{ color: 'red', marginLeft: 4 }}>*</span>}
-    </>
-  );
-  /** ========================================================================
-   * UI
-   * ======================================================================== **/
+
   return (
     <Form
-      layout='vertical'
       form={form}
-      style={{ width: '100%' }}
-      requiredMark={customizeRequiredMark}
+      layout='vertical'
+      initialValues={{
+        part1: { name: '', content: '', blanks: [] },
+        part2A: {
+          name: '',
+          items: [
+            { text: '' },
+            { text: '' },
+            { text: '' },
+            { text: '' },
+            { text: '' },
+          ],
+        },
+        part2B: {
+          name: '',
+          items: [
+            { text: '' },
+            { text: '' },
+            { text: '' },
+            { text: '' },
+            { text: '' },
+          ],
+        },
+        part3: { name: '', leftItems: [], rightItems: [], mapping: [] },
+        part4: {
+          name: '',
+          content: '',
+          leftItems: [],
+          rightItems: [],
+          mapping: [],
+        },
+      }}
     >
       <Space direction='vertical' size='large' style={{ width: '100%' }}>
-        {/* =================== Part & Type =================== */}
-        <Card title='Part Information'>
+        <Card title='Section information'>
           <Form.Item
             label='Name'
-            validateStatus={errors.partId ? 'error' : ''}
-            help={errors.partId}
+            className='w-full'
+            name={'sectionName'}
             required
+            rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Select
-              placeholder='Choose part'
-              loading={loadingParts}
-              value={partId}
-              onChange={setPartId}
-              options={readingParts.map((p) => ({
-                value: p.ID,
-                label: p.Content,
-              }))}
-            />
-          </Form.Item>
-          <Form.Item label='Subpart Content'>
-            <TextArea rows={4} />
+            <Input placeholder='Enter section name' />
           </Form.Item>
         </Card>
 
-        {/* ============ DROPDOWN OPTIONS ============ */}
-        <Card title={'Question Details'}>
-          <Form.Item label='Question Type' required>
-            <Select
-              value={questionType}
-              onChange={setQuestionType}
-              options={[
-                { value: 'dropdown-list', label: 'Dropdown (Fill in blank)' },
-                { value: 'ordering', label: 'Ordering (Drag & Drop)' },
-                { value: 'matching', label: 'Matching' },
-              ]}
-            />
-          </Form.Item>
-
-          {/* ========== Instruction Text ========== */}
+        {/* ----------------------------------------------------------- */}
+        {/* PART 1 — DROPDOWN BLANKS */}
+        {/* ----------------------------------------------------------- */}
+        <Card title='Instruction 1'>
+          {/* 🔥 ADD PART NAME */}
           <Form.Item
-            label='Instruction Text'
-            validateStatus={errors.content ? 'error' : ''}
-            help={errors.content}
-            required
+            label='Part Name'
+            name={['part1', 'name']}
+            rules={[{ required: true, message: 'Part name is required' }]}
           >
-            {questionType === 'dropdown-list' && (
-              <DropdownEditor
-                value={dropdownContent.content}
-                onChange={(content, blanks) => {
-                  setDropdownContent({ content, blanks });
-                }}
-              />
-            )}
-
-            {questionType === 'ordering' && (
-              <TextArea
-                rows={4}
-                placeholder='Enter ordering introduction...'
-                value={orderingIntro}
-                onChange={(e) => setOrderingIntro(e.target.value)}
-              />
-            )}
-
-            {questionType === 'matching' && (
-              <TextArea
-                rows={4}
-                placeholder='Enter reading / instruction text...'
-                value={matchingInstruction}
-                onChange={(e) => setMatchingInstruction(e.target.value)}
-              />
-            )}
+            <Input placeholder='Enter Part 1 Name' />
           </Form.Item>
-          {questionType === 'dropdown-list' && (
-            <DropdownBlankOptions
-              blanks={dropdownBlanks}
-              errors={errors.blanks}
-              addOption={(blankKey) =>
-                setDropdownBlanks((prev) =>
-                  prev.map((b) =>
-                    b.key === blankKey
-                      ? {
-                          ...b,
-                          options: [
-                            ...b.options,
-                            {
-                              id: Date.now(),
-                              value: '',
-                            },
-                          ],
-                        }
-                      : b
-                  )
-                )
-              }
-              updateOptionValue={(blankKey, optId, value) =>
-                setDropdownBlanks((prev) =>
-                  prev.map((b) =>
-                    b.key === blankKey
-                      ? {
-                          ...b,
-                          options: b.options.map((o) =>
-                            o.id === optId ? { ...o, value } : o
-                          ),
-                        }
-                      : b
-                  )
-                )
-              }
-              removeOption={(blankKey, optId) =>
-                setDropdownBlanks((prev) =>
-                  prev.map((b) =>
-                    b.key === blankKey
-                      ? {
-                          ...b,
-                          options: b.options.filter((o) => o.id !== optId),
-                          correctAnswer:
-                            b.correctAnswer === optId ? null : b.correctAnswer,
-                        }
-                      : b
-                  )
-                )
-              }
-              setCorrectAnswer={(blankKey, optId) =>
-                setDropdownBlanks((prev) =>
-                  prev.map((b) =>
-                    b.key === blankKey ? { ...b, correctAnswer: optId } : b
-                  )
-                )
-              }
-            />
-          )}
 
-          {/* ============ ORDERING (DND Ready) ============ */}
-          {questionType === 'ordering' && (
-            <OrderingEditor items={orderingItems} setItems={setOrderingItems} />
-          )}
+          <Form.Item
+            label='Content'
+            name={['part1', 'content']}
+            rules={[{ required: true, message: 'Content is required' }]}
+          >
+            <DropdownEditor />
+          </Form.Item>
 
-          {questionType === 'matching' && (
-            <MatchingEditor
-              leftItems={matchingLeftItems}
-              setLeftItems={setMatchingLeftItems}
-              rightItems={matchingRightItems}
-              setRightItems={setMatchingRightItems}
-              mapping={matchingMapping}
-              setMapping={setMatchingMapping}
-            />
-          )}
-        </Card>
-        {/* Preview */}
-        <Card title='Preview'>
-          {questionType === 'dropdown-list' && (
+          <DropdownBlankOptions />
+
+          <div style={{ marginTop: 12 }}>
+            <Typography.Text strong>Preview:</Typography.Text>
             <div
-              style={{ fontSize: 16, lineHeight: 1.6, whiteSpace: 'pre-wrap' }}
-            >
-              <DropdownPreview
-                content={dropdownContent.content}
-                blanks={dropdownBlanks}
-              />
-            </div>
-          )}
-          {questionType === 'ordering' && (
-            <OrderingPreview items={orderingItems} initialPositions={null} />
-          )}
-          {questionType === 'matching' && (
-            <MatchingPreview
-              content={matchingInstruction} // Instruction Text / đoạn reading
-              leftItems={matchingLeftItems} // list câu hỏi
-              rightItems={matchingRightItems} // list tên (Nina, Harry, Brad…)
-              mapping={matchingMapping}
-              onChange={(leftIndex, rightId) => {
-                setMatchingMapping((prev) => {
-                  const exist = prev.find((m) => m.leftIndex === leftIndex);
-                  if (exist) {
-                    return prev.map((m) =>
-                      m.leftIndex === leftIndex ? { ...m, rightId } : m
-                    );
-                  }
-                  return [...prev, { leftIndex, rightId }];
-                });
+              style={{
+                marginTop: 8,
+                padding: 12,
+                border: '1px solid #eee',
+                borderRadius: 8,
               }}
-            />
-          )}
+            >
+              <div
+                style={{
+                  fontSize: 16,
+                  lineHeight: 2.4,
+                  whiteSpace: 'pre-wrap',
+                }}
+              >
+                <DropdownPreview
+                  content={Form.useWatch(['part1', 'content'], form)}
+                  blanks={Form.useWatch(['part1', 'blanks'], form)}
+                />
+              </div>
+            </div>
+          </div>
         </Card>
 
-        {/* Footer */}
-        <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-          <Button onClick={() => navigate(-1)}>Cancel</Button>
-          <Button type='primary' loading={isCreating} onClick={handleSave}>
-            Save Question
-          </Button>
-        </Space>
+        {/* ----------------------------------------------------------- */}
+        {/* PART 2A — ORDERING */}
+        {/* ----------------------------------------------------------- */}
+        <Card title='Instruction 2'>
+          {/* 🔥 ADD PART NAME */}
+          <Form.Item
+            label='Part Name'
+            name={['part2A', 'name']}
+            rules={[{ required: true, message: 'Part name is required' }]}
+          >
+            <Input placeholder='Enter Part 2A Name' />
+          </Form.Item>
+
+          <Form.Item
+            label='Content'
+            name={['part2A', 'intro']}
+            rules={[{ required: true, message: 'Content is required' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.List name={['part2A', 'items']}>
+            {(fields, helpers) => (
+              <OrderingEditor fields={fields} helpers={helpers} />
+            )}
+          </Form.List>
+        </Card>
+
+        {/* ----------------------------------------------------------- */}
+        {/* PART 2B — ORDERING */}
+        {/* ----------------------------------------------------------- */}
+        <Card title='Instruction 3'>
+          {/* 🔥 ADD PART NAME */}
+          <Form.Item
+            label='Part Name'
+            name={['part2B', 'name']}
+            rules={[{ required: true, message: 'Part name is required' }]}
+          >
+            <Input placeholder='Enter Part 2B Name' />
+          </Form.Item>
+
+          <Form.Item
+            label='Content'
+            name={['part2B', 'intro']}
+            rules={[{ required: true, message: 'Content is required' }]}
+          >
+            <Input />
+          </Form.Item>
+
+          <Form.List name={['part2B', 'items']}>
+            {(fields, helpers) => (
+              <OrderingEditor fields={fields} helpers={helpers} />
+            )}
+          </Form.List>
+        </Card>
+
+        {/* ----------------------------------------------------------- */}
+        {/* PART 3 — DROPDOWN MATCHING */}
+        {/* ----------------------------------------------------------- */}
+        <Card title='Instruction 4'>
+          {/* 🔥 ADD PART NAME */}
+          <Form.Item
+            label='Part Name'
+            name={['part3', 'name']}
+            rules={[{ required: true, message: 'Part name is required' }]}
+          >
+            <Input placeholder='Enter Part 3 Name' />
+          </Form.Item>
+          {/* CONTENT */}
+          <Form.Item
+            label='Content'
+            name={['part3', 'content']}
+            rules={[{ required: true, message: 'Content is required' }]}
+          >
+            <Input.TextArea rows={3} placeholder='Enter content...' />
+          </Form.Item>
+
+          <Form.Item name={['part3']}>
+            <MatchingEditor />
+          </Form.Item>
+        </Card>
+
+        {/* ----------------------------------------------------------- */}
+        {/* PART 4 — FULL MATCHING */}
+        {/* ----------------------------------------------------------- */}
+        <Card title='Instruction 5'>
+          {/* 🔥 ADD PART NAME */}
+          <Form.Item
+            label='Part Name'
+            name={['part4', 'name']}
+            rules={[{ required: true, message: 'Part name is required' }]}
+          >
+            <Input placeholder='Enter Part 4 Name' />
+          </Form.Item>
+          {/* CONTENT */}
+          <Form.Item
+            label='Content'
+            name={['part4', 'content']}
+            rules={[{ required: true, message: 'Content is required' }]}
+          >
+            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' />
+          </Form.Item>
+
+          <Form.Item name={['part4']}>
+            <MatchingEditorPart4 />
+          </Form.Item>
+        </Card>
+
+        <Button type='primary' onClick={handleSubmit}>
+          Save
+        </Button>
       </Space>
     </Form>
   );

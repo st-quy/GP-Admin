@@ -13,3 +13,15 @@ export const useGetPartsBySkillName = (skillName, options = {}) => {
     ...options,
   });
 };
+
+export const useGetParts = (params = {}, options = {}) => {
+  return useQuery({
+    queryKey: ['parts', params],
+    queryFn: async () => {
+      const { data } = await PartApi.getList(params);
+      return data || [];
+    },
+    keepPreviousData: true,
+    ...options,
+  });
+};

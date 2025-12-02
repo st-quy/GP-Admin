@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+// ListeningMatchingEditor.jsx
+import React from 'react';
 import { Row, Col, Input, Button, Typography, Space, Select, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
@@ -6,73 +7,66 @@ const { Text } = Typography;
 
 const letterLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
-const MatchingEditor = ({ errors = {} }) => {
-  const form = Form.useFormInstance();
-
-  // ⭐ KHÔNG dùng useWatch nữa
-  const [leftItems, setLeftItems] = useState([]);
-  const [rightItems, setRightItems] = useState([]);
-  const [mapping, setMapping] = useState([]);
-
-  // ⭐ Khi form có giá trị từ bên ngoài (edit mode) → load vào state
-  useEffect(() => {
-    const part = form.getFieldValue('part3') || {};
-    setLeftItems(part.leftItems || []);
-    setRightItems(part.rightItems || []);
-    setMapping(part.mapping || []);
-  }, []);
-
-  // ⭐ Khi state thay đổi → sync vào form
-  useEffect(() => {
-    form.setFieldsValue({
-      part3: { leftItems, rightItems, mapping },
-    });
-  }, [leftItems, rightItems, mapping]);
-
+const ListeningMatchingEditor = ({
+  leftItems,
+  setLeftItems,
+  rightItems,
+  setRightItems,
+  mapping,
+  setMapping,
+  errors = {},
+}) => {
   /* ---------------- LEFT ---------------- */
   const addLeftItem = () => {
-    const id = Date.now();
-    setLeftItems((prev) => [...prev, { id, text: '' }]);
-    setMapping((prev) => [...prev, { leftIndex: prev.length, rightId: null }]);
+    const newId = Date.now();
+    setLeftItems([...leftItems, { id: newId, text: '' }]);
+
+    setMapping([
+      ...mapping,
+      { leftIndex: leftItems.length, rightId: null }, // leftIndex = index
+    ]);
   };
 
-  const updateLeftItem = (idx, text) => {
+  const updateLeftItem = (idx, value) => {
     const copy = [...leftItems];
-    copy[idx].text = text;
+    copy[idx].text = value;
     setLeftItems(copy);
   };
 
   const removeLeftItem = (idx) => {
-    const item = leftItems[idx];
-
-    setLeftItems((prev) => prev.filter((_, i) => i !== idx));
-    setMapping((prev) => prev.filter((m) => m.leftIndex !== item.id));
+    setLeftItems(leftItems.filter((_, i) => i !== idx));
+    setMapping(mapping.filter((m, i) => i !== idx));
   };
 
   /* ---------------- RIGHT ---------------- */
   const addRightItem = () => {
-    setRightItems((prev) => [...prev, { id: Date.now(), text: '' }]);
+    const newId = Date.now();
+    setRightItems([...rightItems, { id: newId, text: '' }]);
   };
 
-  const updateRightItem = (idx, text) => {
+  const updateRightItem = (idx, value) => {
     const copy = [...rightItems];
-    copy[idx].text = text;
+    copy[idx].text = value;
     setRightItems(copy);
   };
 
   const removeRightItem = (idx) => {
-    const removedId = rightItems[idx]?.id;
+    const removed = rightItems[idx].id;
 
-    setRightItems((prev) => prev.filter((_, i) => i !== idx));
-    setMapping((prev) =>
-      prev.map((m) => (m.rightId === removedId ? { ...m, rightId: null } : m))
+    setRightItems(rightItems.filter((_, i) => i !== idx));
+
+    // Reset mapping with removed option
+    const newMapping = mapping.map((m) =>
+      m.rightId === removed ? { ...m, rightId: null } : m
     );
+
+    setMapping(newMapping);
   };
 
   /* ---------------- MAPPING ---------------- */
-  const setMappedRightId = (idx, rightId) => {
+  const updateMapping = (leftIndex, rightId) => {
     const copy = [...mapping];
-    copy[idx].rightId = rightId;
+    copy[leftIndex].rightId = rightId;
     setMapping(copy);
   };
 
@@ -80,15 +74,13 @@ const MatchingEditor = ({ errors = {} }) => {
   return (
     <Space direction='vertical' size='large' style={{ width: '100%' }}>
       <Row gutter={24}>
-        {/* LEFT */}
+        {/* LEFT ITEMS */}
         <Col span={12}>
           <Text strong>Contents</Text>
 
           {leftItems.map((item, idx) => (
             <div key={item.id} className='w-full mt-3'>
               <Form.Item
-                name={['part3', 'leftItems', idx, 'text']}
-                rules={[{ required: true, message: 'Required' }]}
                 validateStatus={errors?.left?.[idx] ? 'error' : ''}
                 help={errors?.left?.[idx]}
                 style={{ marginBottom: 0 }}
@@ -118,19 +110,17 @@ const MatchingEditor = ({ errors = {} }) => {
             icon={<PlusOutlined />}
             onClick={addLeftItem}
           >
-            Add more content
+            Add content
           </Button>
         </Col>
 
-        {/* RIGHT */}
+        {/* RIGHT ITEMS */}
         <Col span={12}>
           <Text strong>Options</Text>
 
           {rightItems.map((item, idx) => (
             <div key={item.id} className='w-full mt-3'>
               <Form.Item
-                name={['part3', 'rightItems', idx, 'text']}
-                rules={[{ required: true, message: 'Required' }]}
                 validateStatus={errors?.right?.[idx] ? 'error' : ''}
                 help={errors?.right?.[idx]}
                 style={{ marginBottom: 0 }}
@@ -142,13 +132,14 @@ const MatchingEditor = ({ errors = {} }) => {
                       height: 24,
                       borderRadius: '50%',
                       textAlign: 'center',
-                      background: '#e6f7e8',
-                      color: '#36b37e',
+                      background: '#e6f7ff',
+                      color: '#1677ff',
                       fontWeight: 600,
                     }}
                   >
                     {letterLabels[idx]}
                   </div>
+
                   <Input
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
@@ -171,42 +162,42 @@ const MatchingEditor = ({ errors = {} }) => {
             icon={<PlusOutlined />}
             onClick={addRightItem}
           >
-            Add more option
+            Add option
           </Button>
         </Col>
       </Row>
 
       {/* MAPPING */}
       <div style={{ background: '#fafafa', padding: 16, borderRadius: 12 }}>
-        <Text strong>Correct Answer Mapping</Text>
+        <Text strong>Correct Mapping</Text>
 
         <Row gutter={[16, 16]} style={{ marginTop: 12 }}>
           {leftItems.map((item, idx) => (
-            <Form.Item
-              key={`map-${item.id}`}
-              name={['part3', 'mapping', idx, 'rightId']}
-              rules={[{ required: true, message: 'Required' }]}
-              validateStatus={errors?.mapping?.[idx] ? 'error' : ''}
-              help={errors?.mapping?.[idx]}
-              className='!mb-0 ml-2'
-            >
-              <Col span={24} className='flex items-center'>
-                <Text style={{ width: 50 }}>{idx + 1} →</Text>
+            <Col span={24} key={item.id}>
+              <Form.Item
+                validateStatus={errors?.mapping?.[idx] ? 'error' : ''}
+                help={errors?.mapping?.[idx]}
+                style={{ marginBottom: 0 }}
+              >
+                <Space align='center' className='w-full'>
+                  <Text style={{ width: 40 }}>{idx + 1} →</Text>
 
-                <Select
-                  allowClear
-                  placeholder='Select'
-                  value={mapping[idx]?.rightId || null}
-                  onChange={(v) => setMappedRightId(idx, v)}
-                >
-                  {rightItems.map((opt, optIdx) => (
-                    <Select.Option key={opt.id} value={opt.id}>
-                      {letterLabels[optIdx]}. {opt.text}
-                    </Select.Option>
-                  ))}
-                </Select>
-              </Col>
-            </Form.Item>
+                  <Select
+                    allowClear
+                    style={{ flex: 1 }}
+                    placeholder='Select option'
+                    value={mapping[idx]?.rightId || null}
+                    onChange={(v) => updateMapping(idx, v)}
+                  >
+                    {rightItems.map((opt, optIdx) => (
+                      <Select.Option key={opt.id} value={opt.id}>
+                        {letterLabels[optIdx]}. {opt.text}
+                      </Select.Option>
+                    ))}
+                  </Select>
+                </Space>
+              </Form.Item>
+            </Col>
           ))}
         </Row>
       </div>
@@ -214,4 +205,4 @@ const MatchingEditor = ({ errors = {} }) => {
   );
 };
 
-export default MatchingEditor;
+export default ListeningMatchingEditor;
