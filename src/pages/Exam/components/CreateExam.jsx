@@ -44,11 +44,11 @@ const CreateExamPage = () => {
 
     const { mutateAsync: createExam } = useCreateTopic();
     const { mutateAsync: createTopicSection } = useCreateTopicSection();
-    
+
     const handlePartSelect = (sections) => {
         if (!sections || sections.length === 0) return;
 
-        const section = sections[0];      
+        const section = sections[0];
         const sectionId = section.ID;
 
         // --- (1) lưu full section UI
@@ -111,25 +111,25 @@ const CreateExamPage = () => {
     const renderSelectedSectionUI = () => {
         const data = instructions.find(ins => ins.skill === selectedSkill);
         if (!data) {
-        return (
-            <div
-                style={{
-                    width: "100%",
-                    height: 180,
-                    border: "2px dashed #D1D5DB",
-                    borderRadius: 12,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    color: "#9CA3AF",
-                    fontSize: 16,
-                    fontWeight: 500,
-                }}
-            >
-                + Instruction
-            </div>
-        );
-    }
+            return (
+                <div
+                    style={{
+                        width: "100%",
+                        height: 180,
+                        border: "2px dashed #D1D5DB",
+                        borderRadius: 12,
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        color: "#9CA3AF",
+                        fontSize: 16,
+                        fontWeight: 500,
+                    }}
+                >
+                    + Instruction
+                </div>
+            );
+        }
         const { section } = data;
 
         return (
@@ -147,30 +147,73 @@ const CreateExamPage = () => {
                     <Text type="secondary">{section.Description}</Text>
 
                     <div style={{ marginTop: 16 }}>
-                        {(section.Parts || []).map((part) => (
-                            <div
-                                key={part.ID}
-                                style={{
-                                    marginBottom: 12,
-                                    padding: 12,
-                                    border: "1px solid #E5E7EB",
-                                    borderRadius: 8,
-                                    background: "white",
-                                }}
-                            >
-                                <Text strong>{part.Content}</Text>
-                                <br />
-                                <Text type="secondary">{part.SubContent}</Text>
+                        <div style={{ marginTop: 16 }}>
+                            {(section.Parts || []).map((part) => (
+                                <div
+                                    key={part.ID}
+                                    style={{
+                                        marginBottom: 12,
+                                        padding: 12,
+                                        border: "1px solid #E5E7EB",
+                                        borderRadius: 8,
+                                        background: "white",
+                                    }}
+                                >
+                                    {/* Luôn hiện tên Part */}
+                                    <Text strong>{part.Content}</Text>
 
-                                <ul style={{ marginTop: 8 }}>
-                                    {(part.Questions || []).map((q) => (
-                                        <li key={q.ID} style={{ marginBottom: 4 }}>
-                                            <Text> {q.Content}</Text>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
+                                    {/* Nếu không phải Reading/Writing thì hiện thêm SubContent */}
+                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                        <>
+                                            <br />
+                                            <Text type="secondary">{part.SubContent}</Text>
+                                        </>
+                                    )}
+
+                                    {/* Nếu là Speaking/Listening/Grammar thì render Questions */}
+                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                        <div style={{ marginTop: 8 }}>
+                                            {(part.Questions || []).map((q, index) => (
+                                                <div
+                                                    key={q.ID}
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "flex-start",
+                                                        gap: 12,
+                                                        marginBottom: 10,
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            width: 28,
+                                                            height: 28,
+                                                            borderRadius: "50%",
+                                                            background: "#0a2a79",
+                                                            color: "white",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            fontWeight: 600,
+                                                            fontSize: 14,
+                                                            flexShrink: 0,
+                                                        }}
+                                                    >
+                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
+                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
+                                                            : (index + 1)}
+                                                    </div>
+
+                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
+                                                        {q.Content}
+                                                    </Text>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+
                     </div>
                 </Card>
             </div>
@@ -183,10 +226,10 @@ const CreateExamPage = () => {
                 title="Create New Exam"
                 subtitle="Set up exam details, structure, and choose skill-based questions."
             />
-            
+
             <Form form={form} layout="vertical">
                 <div style={{ padding: 24 }}>
-                    
+
                     <Card style={{ marginBottom: 24 }}>
                         <Title level={4}>Exam Information</Title>
 
