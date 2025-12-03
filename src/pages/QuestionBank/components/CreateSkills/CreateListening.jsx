@@ -22,7 +22,6 @@ import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestio
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
-const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const CreateListening = () => {
   const navigate = useNavigate();
@@ -42,7 +41,7 @@ const CreateListening = () => {
   // PART 1 — 13 Multiple Choice
   // ================================
   const [part1, setPart1] = useState(
-    Array.from({ length: 1 }, (_, i) => ({
+    Array.from({ length: 13 }, (_, i) => ({
       id: i + 1,
       instruction: '',
       audioUrl: '',
@@ -206,10 +205,29 @@ const CreateListening = () => {
     );
   };
 
+  const deleteSubQuestion = (gId, sId) => {
+    setPart4((prev) =>
+      prev.map((g) =>
+        g.id === gId
+          ? {
+              ...g,
+              subQuestions: g.subQuestions.filter((s) => s.id !== sId),
+            }
+          : g
+      )
+    );
+  };
+
   // =====================================
-  // UPLOAD AUDIO
+  // UPLOAD AUDIO (only accept mp3)
   // =====================================
   const uploadAudio = async (file, onSuccess, onError, setUrl) => {
+    if (file.type !== 'audio/mpeg') {
+      message.error('Only MP3 files are allowed!');
+      onError('Invalid file type');
+      return;
+    }
+
     try {
       const { data } = await axiosInstance.post('/presigned-url/upload-url', {
         fileName: file.name,
@@ -235,6 +253,7 @@ const CreateListening = () => {
   };
 
   const uploadProps = (setter) => ({
+    accept: '.mp3',
     maxCount: 1,
     customRequest: ({ file, onSuccess, onError }) =>
       uploadAudio(file, onSuccess, onError, setter),
@@ -244,19 +263,21 @@ const CreateListening = () => {
   // VALIDATION ICONS
   // =====================================
   const renderHeader = (title, valid) => (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        width: '100%',
-      }}
-    >
+    <div className='flex justify-between w-full'>
       <span>{title}</span>
-      {valid ? (
-        <span style={{ color: 'green', fontSize: 18 }}>✔</span>
-      ) : (
-        <span style={{ color: 'red', fontSize: 18 }}>✖</span>
-      )}
+      <span style={{ color: valid ? 'green' : 'red', fontSize: 18 }}>
+        {valid ? '✔' : '✖'}
+      </span>
+    </div>
+  );
+
+  // Sử dụng cho từng Panel
+  const renderPanelHeader = (title, valid) => (
+    <div className='flex justify-between w-full'>
+      <span>{title}</span>
+      <span style={{ color: valid ? 'green' : 'red', fontSize: 18 }}>
+        {valid ? '✔' : '✖'}
+      </span>
     </div>
   );
 
@@ -280,27 +301,27 @@ const CreateListening = () => {
 
   const validateMatching = (p, name) => {
     if (!name.trim()) return false;
-
     if (!p.instruction.trim()) return false;
     if (!p.audioUrl) return false;
-
-    // LEFT must have at least 1 non-empty text
     if (!p.leftItems.length) return false;
-    if (p.leftItems.some((i) => !i.text || !i.text.trim())) return false;
-
-    // RIGHT must have at least 1 non-empty text
     if (!p.rightItems.length) return false;
-    if (p.rightItems.some((i) => !i.text || !i.text.trim())) return false;
-
-    // MAPPING must map valid leftIndex → valid rightId
     if (!p.mapping.length) return false;
 
-    for (let m of p.mapping) {
-      const left = p.leftItems[m.leftIndex];
-      const right = p.rightItems.find((r) => r.id === m.rightId);
+    return true;
+  };
 
-      if (!left || !left.text.trim()) return false;
-      if (!right || !right.text.trim()) return false;
+  const validatePart4Group = (g) => {
+    if (!g.instruction.trim()) return false;
+    if (!g.audioUrl) return false;
+
+    for (let s of g.subQuestions) {
+      if (!s.content.trim()) return false;
+
+      const opts = s.options.filter((o) => o.value.trim());
+      if (opts.length < 2) return false;
+
+      const correct = s.options.find((o) => o.id === s.correctId);
+      if (!correct || !correct.value.trim()) return false;
     }
 
     return true;
@@ -308,21 +329,7 @@ const CreateListening = () => {
 
   const validatePart4 = () => {
     if (!part4Name.trim()) return false;
-
-    for (let g of part4) {
-      if (!g.instruction.trim() || !g.audioUrl) return false;
-
-      for (let s of g.subQuestions) {
-        if (!s.content.trim()) return false;
-
-        const opts = s.options.filter((o) => o.value.trim());
-        if (opts.length < 2) return false;
-
-        const correct = s.options.find((o) => o.id === s.correctId);
-        if (!correct || !correct.value.trim()) return false;
-      }
-    }
-    return true;
+    return part4.every((g) => validatePart4Group(g));
   };
 
   const valid1 = validatePart1();
@@ -342,13 +349,10 @@ const CreateListening = () => {
       sectionName,
       part1Name,
       part1,
-
       part2Name,
       part2,
-
       part3Name,
       part3,
-
       part4Name,
       part4,
     };
@@ -376,11 +380,12 @@ const CreateListening = () => {
           rules={[{ required: true, message: 'Section name is required' }]}
         >
           <Input
-            placeholder='e.g., Fitness Club Writing Test'
+            placeholder='e.g., Fitness Club Listening Test'
             onChange={(e) => setSectionName(e.target.value)}
           />
         </Form.Item>
       </Card>
+
       <Space direction='vertical' size='large' style={{ width: '100%' }}>
         {/* PART 1 */}
         <Card
@@ -399,7 +404,18 @@ const CreateListening = () => {
 
           <Collapse accordion>
             {part1.map((q) => (
-              <Panel key={q.id} header={`Question ${q.id}`}>
+              <Panel
+                key={q.id}
+                header={renderPanelHeader(
+                  `Question ${q.id}`,
+                  Boolean(
+                    q.instruction.trim() &&
+                      q.audioUrl &&
+                      q.options.filter((o) => o.value.trim()).length >= 2 &&
+                      q.options.find((o) => o.id === q.correctId)
+                  )
+                )}
+              >
                 <Form.Item label='Instruction' required>
                   <TextArea
                     rows={2}
@@ -411,37 +427,29 @@ const CreateListening = () => {
                 </Form.Item>
 
                 <Upload
+                  accept='.mp3'
                   {...uploadProps((url) =>
                     updatePart1Field(q.id, 'audioUrl', url)
                   )}
                 >
-                  <Button icon={<AudioOutlined />}>Upload audio</Button>
+                  <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
                 </Upload>
 
                 {q.audioUrl && (
                   <audio src={q.audioUrl} controls style={{ marginTop: 10 }} />
                 )}
 
-                <div style={{ marginTop: 10 }}>
-                  {q.options.map((o) => (
-                    <div
-                      key={o.id}
-                      style={{
-                        display: 'flex',
-                        gap: 10,
-                        marginBottom: 4,
-                      }}
-                    >
-                      <div>{o.label}</div>
-                      <Input
-                        value={o.value}
-                        onChange={(e) =>
-                          updatePart1Option(q.id, o.id, e.target.value)
-                        }
-                      />
-                    </div>
-                  ))}
-                </div>
+                {q.options.map((o) => (
+                  <div key={o.id} className='flex gap-2 mb-1'>
+                    <div>{o.label}</div>
+                    <Input
+                      value={o.value}
+                      onChange={(e) =>
+                        updatePart1Option(q.id, o.id, e.target.value)
+                      }
+                    />
+                  </div>
+                ))}
 
                 <Form.Item label='Correct Answer' required>
                   <Select
@@ -479,9 +487,10 @@ const CreateListening = () => {
           </Form.Item>
 
           <Upload
+            accept='.mp3'
             {...uploadProps((url) => setPart2({ ...part2, audioUrl: url }))}
           >
-            <Button icon={<AudioOutlined />}>Upload audio</Button>
+            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
           </Upload>
 
           {part2.audioUrl && <audio src={part2.audioUrl} controls />}
@@ -521,9 +530,10 @@ const CreateListening = () => {
           </Form.Item>
 
           <Upload
+            accept='.mp3'
             {...uploadProps((url) => setPart3({ ...part3, audioUrl: url }))}
           >
-            <Button icon={<AudioOutlined />}>Upload audio</Button>
+            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
           </Upload>
 
           {part3.audioUrl && <audio src={part3.audioUrl} controls />}
@@ -554,7 +564,13 @@ const CreateListening = () => {
 
           <Collapse accordion>
             {part4.map((g) => (
-              <Panel key={g.id} header={`Group ${g.id}`}>
+              <Panel
+                key={g.id}
+                header={renderPanelHeader(
+                  `Group ${g.id}`,
+                  validatePart4Group(g)
+                )}
+              >
                 <Form.Item label='Instruction' required>
                   <TextArea
                     rows={2}
@@ -566,57 +582,68 @@ const CreateListening = () => {
                 </Form.Item>
 
                 <Upload
+                  accept='.mp3'
                   {...uploadProps((url) =>
                     updateGroupField(g.id, 'audioUrl', url)
                   )}
                 >
-                  <Button icon={<AudioOutlined />}>Upload audio</Button>
+                  <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
                 </Upload>
 
                 {g.audioUrl && <audio src={g.audioUrl} controls />}
 
                 {g.subQuestions.map((s) => (
-                  <Card key={s.id} size='small' style={{ marginTop: 15 }}>
-                    <Form.Item label={`Sub question ${s.id}`} required>
-                      <Input
-                        value={s.content}
-                        onChange={(e) =>
-                          updateGroupSub(g.id, s.id, 'content', e.target.value)
-                        }
-                      />
-                    </Form.Item>
-
-                    {s.options.map((o) => (
-                      <div
-                        key={o.id}
-                        style={{
-                          display: 'flex',
-                          gap: 10,
-                          marginBottom: 4,
-                        }}
-                      >
-                        <div>{o.label}</div>
+                  <div key={s.id} className='flex gap-4'>
+                    <Card size='small' className='flex-1 mt-4'>
+                      <Form.Item label={`Sub question ${s.id}`} required>
                         <Input
-                          value={o.value}
+                          value={s.content}
                           onChange={(e) =>
-                            updateGroupOption(g.id, s.id, o.id, e.target.value)
+                            updateGroupSub(
+                              g.id,
+                              s.id,
+                              'content',
+                              e.target.value
+                            )
                           }
                         />
-                      </div>
-                    ))}
+                      </Form.Item>
 
-                    <Select
-                      className='w-full'
-                      value={s.correctId || undefined}
-                      onChange={(v) =>
-                        updateGroupSub(g.id, s.id, 'correctId', v)
-                      }
-                      options={s.options.map((o) => ({
-                        value: o.id,
-                        label: o.label,
-                      }))}
+                      {s.options.map((o) => (
+                        <div key={o.id} className='flex gap-2 mb-1'>
+                          <div>{o.label}</div>
+                          <Input
+                            value={o.value}
+                            onChange={(e) =>
+                              updateGroupOption(
+                                g.id,
+                                s.id,
+                                o.id,
+                                e.target.value
+                              )
+                            }
+                          />
+                        </div>
+                      ))}
+
+                      <Select
+                        className='w-full'
+                        value={s.correctId || undefined}
+                        onChange={(v) =>
+                          updateGroupSub(g.id, s.id, 'correctId', v)
+                        }
+                        options={s.options.map((o) => ({
+                          value: o.id,
+                          label: o.label,
+                        }))}
+                      />
+                    </Card>
+
+                    <DeleteOutlined
+                      className='!cursor-pointer text-red-500 hover:!text-red-600 text-lg mt-6'
+                      onClick={() => deleteSubQuestion(g.id, s.id)}
                     />
-                  </Card>
+                  </div>
                 ))}
 
                 <Button
@@ -632,15 +659,15 @@ const CreateListening = () => {
         </Card>
 
         {/* SAVE ALL */}
-        <div style={{ textAlign: 'right', marginBottom: 60 }}>
+        <div className='flex justify-end gap-4 mb-10'>
+          <Button onClick={() => navigate(-1)}>Cancel</Button>
           <Button
             type='primary'
-            size='large'
             onClick={handleSaveAll}
             loading={isPending}
             className='bg-blue-900'
           >
-            SAVE ALL
+            Save
           </Button>
         </div>
       </Space>
