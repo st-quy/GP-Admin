@@ -79,7 +79,6 @@ const QuestionBank = () => {
     {
       title: 'Section Name',
       dataIndex: 'Name',
-      width: 500,
       ellipsis: { showTitle: false },
       render: (text) => (
         <Tooltip title={text}>
@@ -175,7 +174,7 @@ const QuestionBank = () => {
       />
 
       <div className='p-4'>
-        <Card className='shadow-sm rounded-xl'>
+        <Card className='shadow-sm rounded-xl h-[calc(100vh-200px)]'>
           {/* ==================== FILTER BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
             {/* Left: Search */}
@@ -208,18 +207,18 @@ const QuestionBank = () => {
           </div>
 
           {/* ==================== TABLE ==================== */}
-          <div className='w-full overflow-x-auto'>
+          <div className='w-full'>
             <Table
               rowKey='ID'
               columns={columns}
               dataSource={listPart}
               loading={loadingSections}
               pagination={false}
-              className='min-w-[700px]'
               rowClassName='hover:bg-gray-50 cursor-pointer'
               onRow={(record) => ({
                 onClick: () => navigate(`${record.ID}`),
               })}
+              scroll={{ y: 'calc(100vh - 500px)' }}
             />
           </div>
 

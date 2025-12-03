@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { Table, Input, Pagination } from "antd";
+import React, { useState } from 'react';
+import { Table, Input, Pagination, Card } from 'antd';
 
 const { Search } = Input;
 
 const TableSearch = ({ data, columns, isLoading }) => {
-  const [searchText, setSearchText] = useState("");
+  const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 5;
 
@@ -21,28 +21,28 @@ const TableSearch = ({ data, columns, isLoading }) => {
   const paginatedData = filteredData.slice(start - 1, end);
 
   return (
-    <div className="mt-4">
+    <Card className='mt-4'>
       <Search
-        placeholder={"Search anything..."}
+        placeholder={'Search anything...'}
         onChange={(e) => {
           setSearchText(e.target.value);
           setCurrentPage(1);
         }}
-        className="mb-4 w-full max-w-[300px]"
+        className='mb-4 w-full max-w-[300px]'
         allowClear
       />
-      <div className="w-full">
+      <div className='w-full'>
         <Table
           columns={columns}
           dataSource={paginatedData}
-          rowKey="ID"
+          rowKey='ID'
           pagination={false} // Ẩn pagination mặc định
-          scroll={{ x: "max-content" }}
-          className="w-full"
+          scroll={{ x: 'max-content' }}
+          className='w-full'
           loading={isLoading}
         />
-        <div className="flex justify-between items-center mt-2 px-4">
-          <span className="text-gray-500 text-sm">{`Showing ${start}-${end} of ${total}`}</span>
+        <div className='flex justify-between items-center mt-2 px-4'>
+          <span className='text-gray-500 text-sm'>{`Showing ${start}-${end} of ${total}`}</span>
           <Pagination
             current={currentPage}
             pageSize={pageSize}
@@ -52,7 +52,7 @@ const TableSearch = ({ data, columns, isLoading }) => {
           />
         </div>
       </div>
-    </div>
+    </Card>
   );
 };
 

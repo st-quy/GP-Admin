@@ -128,7 +128,7 @@ export const ProtectedRoute = () => {
   return (
     <Layout hasSider>
       <Sider
-        className='bg-white shadow-xl'
+        className='bg-white shadow-xl min-h-screen'
         breakpoint='lg'
         collapsedWidth='0'
         // style={siderStyle}
