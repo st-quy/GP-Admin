@@ -14,6 +14,7 @@ import CreateQuestion from '@pages/QuestionBank/components/CreateQuestion.jsx';
 import ExamListPage from '@pages/Exam/index.jsx';
 const QuestionBank = lazy(() => import('@pages/QuestionBank/index.jsx'));
 const QuestionDetail = lazy(() => import('@pages/QuestionBank/QuestionDetail'));
+const CreateExamPage = lazy(() => import('@pages/Exam/components/CreateExam.jsx'));
 
 const PrivateRoute = [
   {
@@ -151,6 +152,12 @@ const PrivateRoute = [
           {
             index: true,
             element: <ExamListPage />,
+          },
+          {
+            path: 'create',
+            element: <CreateExamPage />,
+            breadcrumb: 'Create New Exam ',
+            role: ['teacher', 'admin', 'superadmin'],
           },
         ],
       },

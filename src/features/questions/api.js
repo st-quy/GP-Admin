@@ -6,4 +6,7 @@ export const QuestionApi = {
   },
   getAll: (params) => axiosInstance.get('/questions', { params }),
   getQuestionDetailApi: (id) => axiosInstance.get(`/questions/${id}`),
+  getQuestionsByPart: (partId) => {
+    return axiosInstance.get(`/questions/part/${partId}`);
+  }
 };

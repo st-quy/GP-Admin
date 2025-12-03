@@ -46,3 +46,15 @@ export const useGetQuestionDetail = (id) => {
     },
   });
 };
+
+export const useGetQuestionsByPart = (partId, options = {}) => {
+  return useQuery({
+    queryKey: ['questions-by-part', partId],
+    queryFn: async () => {
+      const { data } = await QuestionApi.getQuestionsByPart(partId);
+      return data.data || [];
+    },
+    enabled: !!partId,
+    ...options,
+  });
+};
