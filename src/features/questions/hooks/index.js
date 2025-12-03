@@ -15,7 +15,7 @@ export const useCreateQuestion = () => {
         ...params,
         PartID: params.PartID || partId,
       };
-      const { data } = await QuestionApi.createSpeaking(payload);
+      const { data } = await QuestionApi.createQuestions(payload);
       return data.data;
     },
     onError(error) {
@@ -47,14 +47,18 @@ export const useGetQuestionDetail = (id) => {
   });
 };
 
-export const useGetQuestionsByPart = (partId, options = {}) => {
-  return useQuery({
-    queryKey: ['questions-by-part', partId],
-    queryFn: async () => {
-      const { data } = await QuestionApi.getQuestionsByPart(partId);
-      return data.data || [];
+export const useCreateQuestionReading = () => {
+  const navigate = useNavigate();
+  const { partId } = useParams();
+
+  return useMutation({
+    mutationFn: async (params) => {
+      const { data } = await QuestionApi.createReading(params);
+      return data.data;
     },
-    enabled: !!partId,
-    ...options,
+    onError(error) {
+      const msg = error?.response?.data?.message || 'Create failed';
+      message.error(msg);
+    },
   });
 };

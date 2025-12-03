@@ -6,16 +6,7 @@ export const PartApi = {
       params: { skillName: params },
     });
   },
-
-  // Lấy parts theo skill + sequence
-  getListBySkillAndSequence: (skillName, sequence) => {
-    return axiosInstance.get('/parts', {
-      params: { skillName, sequence },
-    });
-  },
-  getPartById: (id) => {
-    return axiosInstance.get(`/parts/${id}`);
+  getList: (params = {}) => {
+    return axiosInstance.get('/parts', { params });
   },
 };
-
-

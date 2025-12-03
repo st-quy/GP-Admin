@@ -1,130 +1,52 @@
 // CreateWriting.jsx
 import React from 'react';
-import { Card, Select, Button, message, Form } from 'antd';
-
-import { useGetPartsBySkillName } from '@features/parts/hooks';
-import { useCreateQuestion } from '@features/questions/hooks';
-import { WRITING_PART_TYPES } from '@features/questions/constant/writingType';
-import {
-  buildPayloadPart1,
-  buildPayloadPart2,
-  buildPayloadPart3,
-  buildPayloadPart4,
-} from '@features/questions/utils/buildQuestionPayload';
-import {
-  schemaPart1,
-  schemaPart2,
-  schemaPart3,
-  schemaPart4,
-} from '@pages/QuestionBank/schemas/createQuestionSchema';
-import WritingEditor from './Writing/WritingEditor';
-import WritingPreview from './Writing/WritingPreview';
+import { Card, Button, message, Form, Divider, Input } from 'antd';
 import { useNavigate } from 'react-router-dom';
 
-const { Option } = Select;
+import WritingEditor from './Writing/WritingEditor';
+import { WRITING_PART_TYPES } from '@features/questions/constant/writingType';
+import { useCreateQuestion } from '@features/questions/hooks';
+import { buildWritingFullPayload } from '@features/questions/utils/buildQuestionPayload';
 
 const CreateWriting = () => {
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  const { data: writingParts = [], isLoading } =
-    useGetPartsBySkillName('WRITING');
 
-  const { mutate: createQuestion, isPending } = useCreateQuestion();
-
-  // Watch toàn bộ form để feed cho Preview
-  const allValues = Form.useWatch([], form) || {};
-  // Watch partType để switch UI
-  const partType =
-    Form.useWatch('partType', form) || WRITING_PART_TYPES.PART1_SHORT_ANSWERS;
+  const { mutate: createWritingGroup, isPending } = useCreateQuestion();
 
   const handleSave = async () => {
     try {
       const values = await form.validateFields();
 
-      const { partId } = values;
+      // ===== Build payload FE → BE =====
+      const payload = buildWritingFullPayload(values);
+      console.log('FINAL PAYLOAD:', payload);
 
-      if (!partId) {
-        message.error('Please choose a Part.');
-        return;
-      }
-
-      let payload = null;
-
-      if (partType === WRITING_PART_TYPES.PART1_SHORT_ANSWERS) {
-        const data = values.part1 || {};
-        await schemaPart1.validate(data, { abortEarly: false });
-        payload = buildPayloadPart1({ ...data, partId });
-      }
-
-      if (partType === WRITING_PART_TYPES.PART2_FORM_FILLING) {
-        const data = values.part2 || {};
-        await schemaPart2.validate(data, { abortEarly: false });
-        payload = buildPayloadPart2({ ...data, partId });
-      }
-
-      if (partType === WRITING_PART_TYPES.PART3_CHAT_ROOM) {
-        const data = values.part3 || {};
-        await schemaPart3.validate(data, { abortEarly: false });
-        payload = buildPayloadPart3({ ...data, partId });
-      }
-
-      if (partType === WRITING_PART_TYPES.PART4_EMAIL_WRITING) {
-        const data = values.part4 || {};
-        await schemaPart4.validate(data, { abortEarly: false });
-        payload = buildPayloadPart4({ ...data, partId });
-      }
-
-      if (!payload) {
-        message.error('Invalid part type');
-        return;
-      }
-
-      createQuestion(payload, {
+      createWritingGroup(payload, {
         onSuccess: () => {
-          message.success('Created successfully!');
+          message.success('Writing test created successfully!');
           navigate(-1);
         },
-        onError: (err) =>
-          message.error(err?.response?.data?.message || 'Error creating'),
+        onError: (err) => {
+          message.error(
+            err?.response?.data?.message || 'Error creating writing test'
+          );
+        },
       });
     } catch (err) {
-      if (err?.name === 'ValidationError') {
-        return message.error(err.errors[0]);
-      }
       console.error(err);
+      message.error('Validation failed. Please check inputs.');
     }
   };
 
-  const previewData =
-    partType === WRITING_PART_TYPES.PART1_SHORT_ANSWERS
-      ? allValues.part1
-      : partType === WRITING_PART_TYPES.PART2_FORM_FILLING
-        ? allValues.part2
-        : partType === WRITING_PART_TYPES.PART3_CHAT_ROOM
-          ? allValues.part3
-          : allValues.part4;
-  const customizeRequiredMark = (label, { required }) => (
-    <>
-      {label}
-      {required && <span style={{ color: 'red', marginLeft: 4 }}>*</span>}
-    </>
-  );
   return (
     <Form
       form={form}
       layout='vertical'
       initialValues={{
-        partType: WRITING_PART_TYPES.PART1_SHORT_ANSWERS,
-        part1: {
-          title: '',
-          questions: [{ question: '', wordLimit: '' }],
-        },
-        part2: {
-          title: '',
-          question: '',
-          wordLimit: '',
-          fields: [''],
-        },
+        sectionName: '',
+        part1: { title: '', questions: [{ question: '' }] },
+        part2: { title: '', question: '', wordLimit: '', fields: [''] },
         part3: {
           title: '',
           chats: [{ speaker: '', question: '', wordLimit: '' }],
@@ -137,67 +59,44 @@ const CreateWriting = () => {
           q2_wordLimit: '',
         },
       }}
-      className='flex flex-col gap-6 pb-10'
-      requiredMark={customizeRequiredMark}
+      className='flex flex-col gap-8 pb-20'
     >
-      {/* PART INFORMATION */}
-      <Card title='Part Information'>
+      {/* SECTION INFO */}
+      <Card title='Section Information'>
         <Form.Item
-          name='partId'
-          label='Name'
-          rules={[{ required: true, message: 'Please choose a Part' }]}
+          label='Section Name'
+          name='sectionName'
+          rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Select
-            loading={isLoading}
-            placeholder='Select part'
-            size='large'
-            allowClear
-          >
-            {writingParts.map((p) => (
-              <Option key={p.ID} value={p.ID}>
-                {p.Content}
-              </Option>
-            ))}
-          </Select>
-        </Form.Item>
-
-        <Form.Item
-          name='partType'
-          label='Writing Part Type'
-          rules={[
-            { required: true, message: 'Please choose Writing part type' },
-          ]}
-        >
-          <Select size='large'>
-            <Option value={WRITING_PART_TYPES.PART1_SHORT_ANSWERS}>
-              Part 1 — Short Answers
-            </Option>
-            <Option value={WRITING_PART_TYPES.PART2_FORM_FILLING}>
-              Part 2 — Form Filling
-            </Option>
-            <Option value={WRITING_PART_TYPES.PART3_CHAT_ROOM}>
-              Part 3 — Chat Room
-            </Option>
-            <Option value={WRITING_PART_TYPES.PART4_EMAIL_WRITING}>
-              Part 4 — Email Writing
-            </Option>
-          </Select>
+          <Input placeholder='e.g., Fitness Club Writing Test' />
         </Form.Item>
       </Card>
 
-      {/* EDITOR */}
-      <Card title='Question Details'>
-        <WritingEditor partType={partType} />
+      {/* ===== PART 1 ===== */}
+      <Card title='Part 1 — Short Answers'>
+        <WritingEditor partType={WRITING_PART_TYPES.PART1_SHORT_ANSWERS} />
       </Card>
 
-      {/* PREVIEW */}
-      <Card title='Preview'>
-        <WritingPreview partType={partType} data={previewData} />
+      {/* ===== PART 2 ===== */}
+      <Card title='Part 2 — Form Filling'>
+        <WritingEditor partType={WRITING_PART_TYPES.PART2_FORM_FILLING} />
+      </Card>
+
+      {/* ===== PART 3 ===== */}
+      <Card title='Part 3 — Chat Room'>
+        <WritingEditor partType={WRITING_PART_TYPES.PART3_CHAT_ROOM} />
+      </Card>
+
+      {/* ===== PART 4 ===== */}
+      <Card title='Part 4 — Email Writing'>
+        <WritingEditor partType={WRITING_PART_TYPES.PART4_EMAIL_WRITING} />
       </Card>
 
       {/* ACTION BUTTONS */}
       <div className='flex justify-end gap-4'>
-        <Button size='large'>Cancel</Button>
+        <Button size='large' onClick={() => navigate(-1)}>
+          Cancel
+        </Button>
         <Button
           type='primary'
           size='large'
@@ -205,7 +104,7 @@ const CreateWriting = () => {
           className='bg-blue-900'
           onClick={handleSave}
         >
-          Save Question
+          Save All Questions
         </Button>
       </div>
     </Form>

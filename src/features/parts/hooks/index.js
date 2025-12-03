@@ -14,26 +14,14 @@ export const useGetPartsBySkillName = (skillName, options = {}) => {
   });
 };
 
-export const useGetPartsBySkillAndSequence = (skillName, sequence, options = {}) => {
+export const useGetParts = (params = {}, options = {}) => {
   return useQuery({
-    queryKey: ['parts', 'by-skill-sequence', skillName, sequence],
+    queryKey: ['parts', params],
     queryFn: async () => {
-      const { data } = await PartApi.getListBySkillAndSequence(skillName, sequence);
-      return data.data || [];
+      const { data } = await PartApi.getList(params);
+      return data || [];
     },
-    enabled: !!skillName && !!sequence,
-    ...options,
-  });
-};
-
-export const useGetPartById = (partId, options = {}) => {
-  return useQuery({
-    queryKey: ['part', partId],
-    queryFn: async () => {
-      const { data } = await PartApi.getPartById(partId);
-      return data.data || null;
-    },
-    enabled: !!partId, 
+    keepPreviousData: true,
     ...options,
   });
 };
