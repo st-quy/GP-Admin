@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { LogoGreen } from '@assets/images';
 import { Layout, Menu } from 'antd';
 import {
@@ -129,10 +128,10 @@ export const ProtectedRoute = () => {
   return (
     <Layout hasSider>
       <Sider
-        className='bg-white shadow-xl'
+        className='bg-white shadow-xl min-h-screen'
         breakpoint='lg'
         collapsedWidth='0'
-        style={siderStyle}
+        // style={siderStyle}
       >
         <div className='flex flex-col justify-between h-full'>
           <div className='w-full px-2 flex flex-col justify-start items-center p-4'>

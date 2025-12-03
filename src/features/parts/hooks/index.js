@@ -14,11 +14,18 @@ export const useGetPartsBySkillName = (skillName, options = {}) => {
   });
 };
 
-export const useGetPartsBySkillAndSequence = (skillName, sequence, options = {}) => {
+export const useGetPartsBySkillAndSequence = (
+  skillName,
+  sequence,
+  options = {}
+) => {
   return useQuery({
     queryKey: ['parts', 'by-skill-sequence', skillName, sequence],
     queryFn: async () => {
-      const { data } = await PartApi.getListBySkillAndSequence(skillName, sequence);
+      const { data } = await PartApi.getListBySkillAndSequence(
+        skillName,
+        sequence
+      );
       return data.data || [];
     },
     enabled: !!skillName && !!sequence,
@@ -33,7 +40,18 @@ export const useGetPartById = (partId, options = {}) => {
       const { data } = await PartApi.getPartById(partId);
       return data.data || null;
     },
-    enabled: !!partId, 
+    enabled: !!partId,
+  });
+};
+
+export const useGetParts = (params = {}, options = {}) => {
+  return useQuery({
+    queryKey: ['parts', params],
+    queryFn: async () => {
+      const { data } = await PartApi.getList(params);
+      return data || [];
+    },
+    keepPreviousData: true,
     ...options,
   });
 };

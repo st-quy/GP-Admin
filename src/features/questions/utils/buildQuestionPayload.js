@@ -394,3 +394,215 @@ export const buildPayloadPart4 = ({
     },
   ],
 });
+function buildDropdownContent(rawContent, blanks) {
+  let result = rawContent;
+
+  blanks.forEach((b) => {
+    const key = b.key;
+
+    // format: (finds / sdsdsdsd)
+    const optionsText = b.options.map((o) => o.value).join(' / ');
+
+    // final replace: [0] -> 0. (finds / sdsdsdsd)
+    const replaceText = `${key}. (${optionsText})`;
+
+    // replace [0] with new text
+    result = result.replace(`[${key}]`, replaceText);
+  });
+
+  return result;
+}
+
+export const buildFullReadingPayload = (values) => {
+  const result = {
+    SkillName: 'READING',
+    SectionName: values.sectionName,
+    parts: [],
+  };
+
+  /* ======================================================
+   PART 1 — AUTO PARSE BLANKS FROM CONTENT
+   ====================================================== */
+  const p1 = values.part1;
+
+  const finalContent = buildDropdownContent(p1.content, p1.blanks);
+
+  const p1Options = p1.blanks.map((b) => ({
+    key: b.key,
+    value: b.options.map((o) => o.value),
+  }));
+
+  const p1Correct = p1.blanks.map((b) => ({
+    key: b.key,
+    value: b.options.find((o) => o.id === b.correctAnswer)?.value || '',
+  }));
+
+  result.parts.push({
+    PartName: p1.name,
+    Type: 'dropdown-list',
+    Sequence: 1,
+    Content: finalContent,
+
+    AnswerContent: {
+      content: finalContent,
+      options: p1Options,
+      correctAnswer: p1Correct,
+      partID: null,
+      type: 'dropdown-list',
+    },
+  });
+
+  /* ======================================================
+     PART 2A — ORDERING
+     ====================================================== */
+  const p2a = values.part2A;
+
+  const p2aOptions = p2a.items.map((i) => i.text.trim());
+
+  const p2aCorrect = p2a.items.map((i, idx) => ({
+    key: i.text.trim(),
+    value: idx + 1,
+  }));
+
+  result.parts.push({
+    PartName: p2a.name,
+    Type: 'ordering',
+    Sequence: 2,
+    Content: p2a.intro.trim(),
+    AnswerContent: {
+      content: p2a.intro.trim(),
+      options: p2aOptions,
+      correctAnswer: p2aCorrect,
+      type: 'ordering',
+    },
+  });
+
+  /* ======================================================
+     PART 2B — ORDERING
+     ====================================================== */
+  const p2b = values.part2B;
+
+  const p2bOptions = p2b.items.map((i) => i.text.trim());
+
+  const p2bCorrect = p2b.items.map((i, idx) => ({
+    key: i.text.trim(),
+    value: idx + 1,
+  }));
+
+  result.parts.push({
+    PartName: p2b.name,
+    Type: 'ordering',
+    Sequence: 3,
+    Content: p2b.intro.trim(),
+    AnswerContent: {
+      content: p2b.intro.trim(),
+      options: p2bOptions,
+      correctAnswer: p2bCorrect,
+      type: 'ordering',
+    },
+  });
+
+  /* ======================================================
+     PART 3 — DROPDOWN MATCHING (Tên → Person)
+     ====================================================== */
+  const p3 = values.part3;
+
+  const p3Left = p3.leftItems.map((i, idx) => `${idx + 1}. ${i.text.trim()}`);
+  const p3Right = p3.rightItems.map((i) => i.text.trim());
+
+  const p3Correct = p3.mapping.map((m) => ({
+    key: (m.leftIndex + 1).toString(),
+    value: p3.rightItems.find((r) => r.id === m.rightId)?.text.trim() || '',
+  }));
+
+  result.parts.push({
+    PartName: p3.name,
+    Type: 'dropdown-list',
+    Sequence: 4,
+    Content: p3.content.trim(),
+    AnswerContent: {
+      content: p3.content.trim(),
+      leftItems: p3Left,
+      rightItems: p3Right,
+      correctAnswer: p3Correct,
+      type: 'dropdown-list',
+    },
+  });
+
+  /* ======================================================
+     PART 4 — FULL MATCHING
+     ====================================================== */
+  const p4 = values.part4;
+
+  const p4Left = p4.leftItems.map((i) => i.text.trim());
+  const p4Right = p4.rightItems.map((i) => i.text.trim());
+
+  const p4Correct = p4.mapping.map((m) => ({
+    left: p4.leftItems[m.leftIndex]?.text.trim() || '',
+    right: p4.rightItems.find((r) => r.id === m.rightId)?.text.trim() || '',
+  }));
+
+  result.parts.push({
+    PartName: p4.name,
+    Type: 'matching',
+    Sequence: 5,
+    Content: p4.content.trim(),
+    AnswerContent: {
+      content: p4.content.trim(),
+      leftItems: p4Left,
+      rightItems: p4Right,
+      correctAnswer: p4Correct,
+      type: 'matching',
+    },
+  });
+
+  return result;
+};
+
+export function buildWritingFullPayload(values) {
+  if (!values) return null;
+
+  return {
+    SkillName: 'WRITING',
+    SectionName: values.sectionName?.trim() || 'Untitled Writing Section',
+    parts: {
+      // ======================= PART 1 =======================
+      part1: {
+        name: values.part1?.title?.trim() || '',
+        questions:
+          values.part1?.questions?.map((q) => ({
+            question: q.question?.trim() || '',
+          })) || [],
+      },
+
+      // ======================= PART 2 =======================
+      part2: {
+        name: values.part2?.title?.trim() || '',
+        question: values.part2?.question?.trim() || '',
+        wordLimit: values.part2?.wordLimit || null,
+        fields: values.part2?.fields || [],
+      },
+
+      // ======================= PART 3 =======================
+      part3: {
+        name: values.part3?.title?.trim() || '',
+        chats:
+          values.part3?.chats?.map((c) => ({
+            speaker: c.speaker?.trim() || '',
+            question: c.question?.trim() || '',
+            wordLimit: c.wordLimit || null,
+          })) || [],
+      },
+
+      // ======================= PART 4 =======================
+      part4: {
+        name: values.part4?.partName?.trim() || '',
+        subContent: values.part4?.emailText?.trim() || '',
+        q1: values.part4?.q1?.trim() || '',
+        q1_wordLimit: values.part4?.q1_wordLimit || null,
+        q2: values.part4?.q2?.trim() || '',
+        q2_wordLimit: values.part4?.q2_wordLimit || null,
+      },
+    },
+  };
+}

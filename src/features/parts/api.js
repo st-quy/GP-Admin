@@ -16,6 +16,7 @@ export const PartApi = {
   getPartById: (id) => {
     return axiosInstance.get(`/parts/${id}`);
   },
+  getList: (params = {}) => {
+    return axiosInstance.get('/parts', { params });
+  },
 };
-
-

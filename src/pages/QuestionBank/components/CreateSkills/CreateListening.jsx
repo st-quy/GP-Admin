@@ -9,849 +9,640 @@ import {
   Form,
   Card,
   Space,
+  Collapse,
 } from 'antd';
-import {
-  DeleteOutlined,
-  PlusOutlined,
-  AudioOutlined,
-  FileImageOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, AudioOutlined } from '@ant-design/icons';
 
 import { useNavigate } from 'react-router-dom';
-import { useGetPartsBySkillName } from '@features/parts/hooks';
 import { useCreateQuestion } from '@features/questions/hooks';
 
-// Reuse MatchingEditor + MatchingPreview của Reading
-import MatchingEditor from './Reading/matching/MatchingEditor';
-import MatchingPreview from './Reading/matching/MatchingPreview';
-import { readingMatchingSchema } from '@pages/QuestionBank/schemas/createQuestionSchema';
+import ListeningMatchingEditor from './Listening/ListeningMatchingEditor';
 import axiosInstance from '@shared/config/axios';
+import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 
 const { TextArea } = Input;
-const { Dragger } = Upload;
-const { Option } = Select;
-
+const { Panel } = Collapse;
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
 const CreateListening = () => {
   const navigate = useNavigate();
   const [form] = Form.useForm();
+  const { mutate: createQuestion, isPending } = useCreateQuestion();
 
-  const { data: listeningParts = [], isLoading: loadingParts } =
-    useGetPartsBySkillName('LISTENING');
+  // ================================
+  // PART NAME — NEW
+  // ================================
+  const [part1Name, setPart1Name] = useState('');
+  const [part2Name, setPart2Name] = useState('');
+  const [part3Name, setPart3Name] = useState('');
+  const [part4Name, setPart4Name] = useState('');
+  const [sectionName, setSectionName] = useState('');
 
-  const { mutate: createQuestion, isPending: isCreating } = useCreateQuestion();
-
-  const [partId, setPartId] = useState(null);
-  const [questionType, setQuestionType] = useState('multiple-choice');
-
-  // Watch instruction text for previews
-  const instructionText = Form.useWatch('instruction', form);
-
-  // Audio/Image URL
-  const [audioUrl, setAudioUrl] = useState(null);
-  const [imageUrl] = useState(null);
-
-  /** ================= MULTIPLE-CHOICE STATE ================= */
-  const [mcOptions, setMcOptions] = useState([
-    { id: 1, label: 'A', value: '' },
-    { id: 2, label: 'B', value: '' },
-    { id: 3, label: 'C', value: '' },
-    { id: 4, label: 'D', value: '' },
-  ]);
-  const [mcCorrectOptionId, setMcCorrectOptionId] = useState(null);
-
-  /** ================= DROPDOWN-LIST (MATCHING STYLE) ================= */
-  const [matchingLeftItems, setMatchingLeftItems] = useState([]);
-  const [matchingRightItems, setMatchingRightItems] = useState([]);
-  // [{ leftIndex, rightId }]
-  const [matchingMapping, setMatchingMapping] = useState([]);
-
-  /** ================= LISTENING-QUESTIONS-GROUP ================= */
-  const [groupQuestions, setGroupQuestions] = useState([
-    {
-      id: 1,
-      content: '',
+  // ================================
+  // PART 1 — 13 Multiple Choice
+  // ================================
+  const [part1, setPart1] = useState(
+    Array.from({ length: 1 }, (_, i) => ({
+      id: i + 1,
+      instruction: '',
+      audioUrl: '',
       options: [
         { id: 1, label: 'A', value: '' },
         { id: 2, label: 'B', value: '' },
         { id: 3, label: 'C', value: '' },
       ],
-      correctOptionId: null,
-    },
-  ]);
+      correctId: null,
+    }))
+  );
 
-  /** ================= HELPERS ================= */
-  const getNextId = (arr) => (arr.length > 0 ? arr[arr.length - 1].id + 1 : 1);
-  const getLetter = (index) => LETTERS[index] || `Opt${index + 1}`;
-
-  /** ---- MC handlers ---- */
-  const handleAddMcOption = () => {
-    setMcOptions((prev) => [
-      ...prev,
-      {
-        id: getNextId(prev),
-        label: getLetter(prev.length),
-        value: '',
-      },
-    ]);
-  };
-
-  const handleRemoveMcOption = (id) => {
-    setMcOptions((prev) => {
-      if (prev.length <= 2) return prev; // giữ tối thiểu 2 đáp án
-      const filtered = prev.filter((o) => o.id !== id);
-      const relabeled = filtered.map((o, i) => ({
-        ...o,
-        label: getLetter(i),
-      }));
-      if (mcCorrectOptionId === id) {
-        setMcCorrectOptionId(null);
-      }
-      return relabeled;
-    });
-  };
-
-  const handleMcChange = (id, value) => {
-    setMcOptions((prev) =>
-      prev.map((o) => (o.id === id ? { ...o, value } : o))
+  const updatePart1Field = (id, key, value) => {
+    setPart1((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, [key]: value } : q))
     );
   };
 
-  /** ---- GROUP-QUESTIONS handlers ---- */
-  const addGroupQuestion = () => {
-    setGroupQuestions((prev) => [
-      ...prev,
-      {
-        id: getNextId(prev),
-        content: '',
-        options: [
-          { id: 1, label: 'A', value: '' },
-          { id: 2, label: 'B', value: '' },
-          { id: 3, label: 'C', value: '' },
-        ],
-        correctOptionId: null,
-      },
-    ]);
-  };
-
-  const removeGroupQuestion = (id) => {
-    setGroupQuestions((prev) =>
-      prev.length === 1 ? prev : prev.filter((q) => q.id !== id)
-    );
-  };
-
-  const updateGroupQuestionContent = (id, value) => {
-    setGroupQuestions((prev) =>
-      prev.map((q) => (q.id === id ? { ...q, content: value } : q))
-    );
-  };
-
-  const addGroupOption = (questionId) => {
-    setGroupQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id !== questionId) return q;
-        const nextId = getNextId(q.options);
-        return {
-          ...q,
-          options: [
-            ...q.options,
-            {
-              id: nextId,
-              label: getLetter(q.options.length),
-              value: '',
-            },
-          ],
-        };
-      })
-    );
-  };
-
-  const removeGroupOption = (questionId, optionId) => {
-    setGroupQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id !== questionId) return q;
-        if (q.options.length <= 2) return q; // giữ ít nhất 2 đáp án
-        const filtered = q.options.filter((o) => o.id !== optionId);
-        const relabeled = filtered.map((o, idx) => ({
-          ...o,
-          label: getLetter(idx),
-        }));
-        return {
-          ...q,
-          options: relabeled,
-          correctOptionId:
-            q.correctOptionId === optionId ? null : q.correctOptionId,
-        };
-      })
-    );
-  };
-
-  const updateGroupOptionValue = (questionId, optionId, value) => {
-    setGroupQuestions((prev) =>
-      prev.map((q) => {
-        if (q.id !== questionId) return q;
-        return {
-          ...q,
-          options: q.options.map((o) =>
-            o.id === optionId ? { ...o, value } : o
-          ),
-        };
-      })
-    );
-  };
-
-  const setGroupCorrectOption = (questionId, optionId) => {
-    setGroupQuestions((prev) =>
+  const updatePart1Option = (qId, optId, value) => {
+    setPart1((prev) =>
       prev.map((q) =>
-        q.id === questionId ? { ...q, correctOptionId: optionId } : q
+        q.id === qId
+          ? {
+              ...q,
+              options: q.options.map((o) =>
+                o.id === optId ? { ...o, value } : o
+              ),
+            }
+          : q
       )
     );
   };
 
-  /** ================= SAVE / SUBMIT ================= */
-  const handleSave = async () => {
+  // ================================
+  // PART 2 — Matching
+  // ================================
+  const [part2, setPart2] = useState({
+    instruction: '',
+    audioUrl: '',
+    leftItems: [],
+    rightItems: [],
+    mapping: [],
+  });
+
+  // ================================
+  // PART 3 — Matching
+  // ================================
+  const [part3, setPart3] = useState({
+    instruction: '',
+    audioUrl: '',
+    leftItems: [],
+    rightItems: [],
+    mapping: [],
+  });
+
+  // ================================
+  // PART 4 — Groups
+  // ================================
+  const [part4, setPart4] = useState([
+    {
+      id: 1,
+      instruction: '',
+      audioUrl: '',
+      subQuestions: [
+        {
+          id: 1,
+          content: '',
+          options: [
+            { id: 1, label: 'A', value: '' },
+            { id: 2, label: 'B', value: '' },
+            { id: 3, label: 'C', value: '' },
+          ],
+          correctId: null,
+        },
+      ],
+    },
+    {
+      id: 2,
+      instruction: '',
+      audioUrl: '',
+      subQuestions: [
+        {
+          id: 1,
+          content: '',
+          options: [
+            { id: 1, label: 'A', value: '' },
+            { id: 2, label: 'B', value: '' },
+            { id: 3, label: 'C', value: '' },
+          ],
+          correctId: null,
+        },
+      ],
+    },
+  ]);
+
+  const updateGroupField = (id, key, value) => {
+    setPart4((prev) =>
+      prev.map((g) => (g.id === id ? { ...g, [key]: value } : g))
+    );
+  };
+
+  const updateGroupSub = (gId, sId, key, value) => {
+    setPart4((prev) =>
+      prev.map((g) =>
+        g.id === gId
+          ? {
+              ...g,
+              subQuestions: g.subQuestions.map((s) =>
+                s.id === sId ? { ...s, [key]: value } : s
+              ),
+            }
+          : g
+      )
+    );
+  };
+
+  const updateGroupOption = (gId, sId, oId, value) => {
+    setPart4((prev) =>
+      prev.map((g) =>
+        g.id === gId
+          ? {
+              ...g,
+              subQuestions: g.subQuestions.map((s) =>
+                s.id === sId
+                  ? {
+                      ...s,
+                      options: s.options.map((o) =>
+                        o.id === oId ? { ...o, value } : o
+                      ),
+                    }
+                  : s
+              ),
+            }
+          : g
+      )
+    );
+  };
+
+  const addSubQuestion = (gId) => {
+    setPart4((prev) =>
+      prev.map((g) =>
+        g.id === gId
+          ? {
+              ...g,
+              subQuestions: [
+                ...g.subQuestions,
+                {
+                  id: g.subQuestions.length + 1,
+                  content: '',
+                  options: [
+                    { id: 1, label: 'A', value: '' },
+                    { id: 2, label: 'B', value: '' },
+                    { id: 3, label: 'C', value: '' },
+                  ],
+                  correctId: null,
+                },
+              ],
+            }
+          : g
+      )
+    );
+  };
+
+  // =====================================
+  // UPLOAD AUDIO
+  // =====================================
+  const uploadAudio = async (file, onSuccess, onError, setUrl) => {
     try {
-      const values = await form.validateFields();
-
-      if (!partId) {
-        message.error('Part is required');
-        return;
-      }
-
-      const instruction = (values.instruction || '').trim();
-      const subContent = values.subContent || null;
-
-      if (!instruction) {
-        message.error('Instruction text is required');
-        return;
-      }
-
-      let answerContent = null;
-      let groupContent = null;
-
-      /** ---------- TYPE: multiple-choice ---------- */
-      if (questionType === 'multiple-choice') {
-        const normalizedOptions = mcOptions
-          .map((o) => ({
-            key: o.label,
-            value: (o.value || '').trim(),
-            id: o.id,
-          }))
-          .filter((o) => o.value.length > 0);
-
-        if (!normalizedOptions.length) {
-          message.error('Please enter at least 1 option');
-          return;
-        }
-
-        if (!mcCorrectOptionId) {
-          message.error('Please select correct answer');
-          return;
-        }
-
-        const correct = normalizedOptions.find(
-          (o) => o.id === mcCorrectOptionId
-        );
-        if (!correct) {
-          message.error('Correct answer must be one of the options');
-          return;
-        }
-
-        const optionsText = normalizedOptions.map((o) => o.value);
-
-        groupContent = {
-          title: instruction,
-          audioKey: audioUrl || '',
-        };
-
-        // AnswerContent theo mẫu JSON multiple-choice listening
-        answerContent = {
-          content: instruction,
-          groupContent,
-          options: optionsText,
-          correctAnswer: correct.value,
-          partID: partId,
-          type: 'multiple-choice',
-          audioKeys: audioUrl || null,
-        };
-      }
-
-      /** ---------- TYPE: dropdown-list (matching style) ---------- */
-      if (questionType === 'dropdown-list') {
-        const validatePayload = {
-          PartID: partId,
-          Content: instruction,
-          leftItems: matchingLeftItems.map((i) => i.text),
-          rightItems: matchingRightItems.map((i) => i.text),
-          mapping: matchingMapping,
-        };
-
-        await readingMatchingSchema.validate(validatePayload, {
-          abortEarly: false,
-        });
-
-        const leftItems = matchingLeftItems
-          .map((i) => (i.text || '').trim())
-          .filter(Boolean);
-        const rightItems = matchingRightItems
-          .map((i) => (i.text || '').trim())
-          .filter(Boolean);
-
-        const correctAnswer = matchingMapping
-          .map((m) => {
-            const left = matchingLeftItems[m.leftIndex];
-            const right = matchingRightItems.find((r) => r.id === m.rightId);
-            if (!left || !right || !left.text || !right.text) return null;
-            return {
-              key: left.text,
-              value: right.text,
-            };
-          })
-          .filter(Boolean);
-
-        groupContent = {
-          title: instruction,
-          audioKey: audioUrl || '',
-        };
-
-        // AnswerContent theo mẫu JSON dropdown-list listening
-        answerContent = {
-          content: instruction,
-          groupContent,
-          leftItems,
-          rightItems,
-          correctAnswer,
-          partID: partId,
-          type: 'dropdown-list',
-          audioKeys: audioUrl || null,
-        };
-      }
-
-      /** ---------- TYPE: listening-questions-group ---------- */
-      if (questionType === 'listening-questions-group') {
-        if (!groupQuestions.length) {
-          message.error('Please add at least one sub-question');
-          return;
-        }
-
-        const listContent = [];
-
-        for (let i = 0; i < groupQuestions.length; i++) {
-          const q = groupQuestions[i];
-          const qContent = (q.content || '').trim();
-
-          if (!qContent) {
-            message.error(`Sub-question ${i + 1}: content is required`);
-            return;
-          }
-
-          const normalizedOptions = q.options
-            .map((o) => ({
-              id: o.id,
-              label: o.label,
-              value: (o.value || '').trim(),
-            }))
-            .filter((o) => o.value.length > 0);
-
-          if (!normalizedOptions.length) {
-            message.error(
-              `Sub-question ${i + 1}: please enter at least 1 option`
-            );
-            return;
-          }
-
-          if (!q.correctOptionId) {
-            message.error(
-              `Sub-question ${i + 1}: please select correct answer`
-            );
-            return;
-          }
-
-          const correctOpt = normalizedOptions.find(
-            (o) => o.id === q.correctOptionId
-          );
-          if (!correctOpt) {
-            message.error(
-              `Sub-question ${i + 1}: correct answer must be one of the options`
-            );
-            return;
-          }
-
-          listContent.push({
-            ID: i + 1,
-            content: qContent,
-            options: normalizedOptions.map((o) => o.value),
-            type: 'multiple-choice',
-            correctAnswer: correctOpt.value,
-            partID: partId,
-          });
-        }
-
-        groupContent = {
-          title: instruction,
-          audioKey: audioUrl || '',
-          listContent,
-        };
-
-        // AnswerContent theo mẫu JSON listening-questions-group
-        answerContent = {
-          content: instruction,
-          groupContent,
-          partID: partId,
-          type: 'listening-questions-group',
-          audioKeys: audioUrl || null,
-        };
-      }
-
-      const questionRow = {
-        Type: questionType,
-        AudioKeys: audioUrl || null,
-        ImageKeys: imageUrl || null,
-        SkillID: null,
-        PartID: partId,
-        Sequence: 1,
-        Content: instruction,
-        SubContent: subContent,
-        GroupContent: groupContent,
-        AnswerContent: answerContent,
-      };
-
-      const payload = {
-        PartID: partId,
-        SkillName: 'LISTENING',
-        PartType: questionType,
-        Description: instruction,
-        questions: [questionRow],
-      };
-
-      createQuestion(payload, {
-        onSuccess: () => {
-          message.success('Created successfully!');
-          navigate(-1);
-        },
-        onError: (err) => {
-          message.error(err?.response?.data?.message || 'Failed to create');
-        },
+      const { data } = await axiosInstance.post('/presigned-url/upload-url', {
+        fileName: file.name,
+        type: 'audios',
       });
+
+      const res = await fetch(data.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+
+      setUrl(data.fileUrl);
+      onSuccess({ url: data.fileUrl });
+      message.success('Uploaded!');
     } catch (err) {
-      if (err?.name === 'ValidationError') {
-        message.error(err.errors?.[0] || 'Invalid data');
-      } else {
-        console.error('❌ Validation error Listening:', err);
-      }
+      console.error(err);
+      onError(err);
+      message.error('Upload failed');
     }
   };
 
-  /** ================= UPLOAD PROPS (audio with presigned URL) ================= */
-  const uploadProps = {
-    multiple: false,
+  const uploadProps = (setter) => ({
     maxCount: 1,
-    customRequest: async ({ file, onSuccess, onError }) => {
-      try {
-        // 1) Gọi BE xin presigned URL
-        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-          fileName: file.name,
-          type: 'audios',
-        });
+    customRequest: ({ file, onSuccess, onError }) =>
+      uploadAudio(file, onSuccess, onError, setter),
+  });
 
-        const { uploadUrl, fileUrl } = data;
-
-        if (!uploadUrl || !fileUrl) {
-          throw new Error('Invalid upload URL response');
-        }
-
-        // 2) Upload trực tiếp lên MinIO
-        const res = await fetch(uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: {
-            'Content-Type': file.type || 'application/octet-stream',
-          },
-        });
-
-        if (!res.ok) {
-          console.error('MinIO upload failed', await res.text());
-          throw new Error(`Upload failed with status ${res.status}`);
-        }
-
-        // 3) Lưu lại URL audio để preview + gửi BE
-        setAudioUrl(fileUrl);
-
-        // 4) Báo cho AntD Upload là xong
-        onSuccess({ fileUrl });
-        message.success('Audio uploaded successfully');
-      } catch (err) {
-        console.error('Upload audio error:', err);
-        onError(err);
-        message.error('Upload failed!');
-      }
-    },
-  };
-
-  const customizeRequiredMark = (label, { required }) => (
-    <>
-      {label}
-      {required && <span style={{ color: 'red', marginLeft: 4 }}>*</span>}
-    </>
+  // =====================================
+  // VALIDATION ICONS
+  // =====================================
+  const renderHeader = (title, valid) => (
+    <div
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        width: '100%',
+      }}
+    >
+      <span>{title}</span>
+      {valid ? (
+        <span style={{ color: 'green', fontSize: 18 }}>✔</span>
+      ) : (
+        <span style={{ color: 'red', fontSize: 18 }}>✖</span>
+      )}
+    </div>
   );
 
-  /** ================= RENDER ================= */
+  // =====================================
+  // VALIDATION FUNCTIONS
+  // =====================================
+  const validatePart1 = () => {
+    if (!part1Name.trim()) return false;
+
+    for (let q of part1) {
+      if (!q.instruction.trim() || !q.audioUrl) return false;
+
+      const filled = q.options.filter((o) => o.value.trim()).length >= 2;
+      if (!filled) return false;
+
+      const correct = q.options.find((o) => o.id === q.correctId);
+      if (!correct || !correct.value.trim()) return false;
+    }
+    return true;
+  };
+
+  const validateMatching = (p, name) => {
+    if (!name.trim()) return false;
+
+    if (!p.instruction.trim()) return false;
+    if (!p.audioUrl) return false;
+
+    // LEFT must have at least 1 non-empty text
+    if (!p.leftItems.length) return false;
+    if (p.leftItems.some((i) => !i.text || !i.text.trim())) return false;
+
+    // RIGHT must have at least 1 non-empty text
+    if (!p.rightItems.length) return false;
+    if (p.rightItems.some((i) => !i.text || !i.text.trim())) return false;
+
+    // MAPPING must map valid leftIndex → valid rightId
+    if (!p.mapping.length) return false;
+
+    for (let m of p.mapping) {
+      const left = p.leftItems[m.leftIndex];
+      const right = p.rightItems.find((r) => r.id === m.rightId);
+
+      if (!left || !left.text.trim()) return false;
+      if (!right || !right.text.trim()) return false;
+    }
+
+    return true;
+  };
+
+  const validatePart4 = () => {
+    if (!part4Name.trim()) return false;
+
+    for (let g of part4) {
+      if (!g.instruction.trim() || !g.audioUrl) return false;
+
+      for (let s of g.subQuestions) {
+        if (!s.content.trim()) return false;
+
+        const opts = s.options.filter((o) => o.value.trim());
+        if (opts.length < 2) return false;
+
+        const correct = s.options.find((o) => o.id === s.correctId);
+        if (!correct || !correct.value.trim()) return false;
+      }
+    }
+    return true;
+  };
+
+  const valid1 = validatePart1();
+  const valid2 = validateMatching(part2, part2Name);
+  const valid3 = validateMatching(part3, part3Name);
+  const valid4 = validatePart4();
+
+  // =====================================
+  // SAVE ALL
+  // =====================================
+  const handleSaveAll = async () => {
+    if (!valid1 || !valid2 || !valid3 || !valid4) {
+      return message.error('Please complete all parts before saving!');
+    }
+
+    const values = {
+      sectionName,
+      part1Name,
+      part1,
+
+      part2Name,
+      part2,
+
+      part3Name,
+      part3,
+
+      part4Name,
+      part4,
+    };
+
+    const payload = buildListeningPayload(values);
+
+    createQuestion(payload, {
+      onSuccess: () => {
+        message.success('Created Listening successfully!');
+        navigate(-1);
+      },
+      onError: () => message.error('Failed to create listening'),
+    });
+  };
+
+  // =====================================
+  // RENDER
+  // =====================================
   return (
-    <Form form={form} layout='vertical' requiredMark={customizeRequiredMark}>
+    <Form layout='vertical' form={form}>
+      <Card title='Section Information'>
+        <Form.Item
+          label='Section Name'
+          name='sectionName'
+          rules={[{ required: true, message: 'Section name is required' }]}
+        >
+          <Input
+            placeholder='e.g., Fitness Club Writing Test'
+            onChange={(e) => setSectionName(e.target.value)}
+          />
+        </Form.Item>
+      </Card>
       <Space direction='vertical' size='large' style={{ width: '100%' }}>
-        {/* PART INFO */}
-        <Card title='Part Information'>
-          <Form.Item label='Name' required>
-            <Select
-              placeholder='Choose part'
-              loading={loadingParts}
-              value={partId}
-              onChange={setPartId}
-              options={listeningParts.map((p) => ({
-                value: p.ID,
-                label: p.Content,
-              }))}
+        {/* PART 1 */}
+        <Card
+          title={renderHeader(
+            'PART 1 — Multiple Choice (13 questions)',
+            valid1
+          )}
+        >
+          <Form.Item label='Part Name' required>
+            <Input
+              placeholder='Enter Part 1 name...'
+              value={part1Name}
+              onChange={(e) => setPart1Name(e.target.value)}
             />
           </Form.Item>
-          <Form.Item name='subContent' label='Subpart Content'>
-            <TextArea
-              rows={3}
-              placeholder='Enter content or passage description'
-            />
-          </Form.Item>
+
+          <Collapse accordion>
+            {part1.map((q) => (
+              <Panel key={q.id} header={`Question ${q.id}`}>
+                <Form.Item label='Instruction' required>
+                  <TextArea
+                    rows={2}
+                    value={q.instruction}
+                    onChange={(e) =>
+                      updatePart1Field(q.id, 'instruction', e.target.value)
+                    }
+                  />
+                </Form.Item>
+
+                <Upload
+                  {...uploadProps((url) =>
+                    updatePart1Field(q.id, 'audioUrl', url)
+                  )}
+                >
+                  <Button icon={<AudioOutlined />}>Upload audio</Button>
+                </Upload>
+
+                {q.audioUrl && (
+                  <audio src={q.audioUrl} controls style={{ marginTop: 10 }} />
+                )}
+
+                <div style={{ marginTop: 10 }}>
+                  {q.options.map((o) => (
+                    <div
+                      key={o.id}
+                      style={{
+                        display: 'flex',
+                        gap: 10,
+                        marginBottom: 4,
+                      }}
+                    >
+                      <div>{o.label}</div>
+                      <Input
+                        value={o.value}
+                        onChange={(e) =>
+                          updatePart1Option(q.id, o.id, e.target.value)
+                        }
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <Form.Item label='Correct Answer' required>
+                  <Select
+                    value={q.correctId || undefined}
+                    onChange={(v) => updatePart1Field(q.id, 'correctId', v)}
+                    options={q.options.map((o) => ({
+                      value: o.id,
+                      label: o.label,
+                    }))}
+                  />
+                </Form.Item>
+              </Panel>
+            ))}
+          </Collapse>
         </Card>
 
-        {/* QUESTION DETAILS */}
-        <Card title='Question Details'>
-          <Form.Item
-            name='instruction'
-            label='Instruction Text'
-            rules={[{ required: true, message: 'Instruction is required' }]}
-          >
+        {/* PART 2 */}
+        <Card title={renderHeader('PART 2 — Matching', valid2)}>
+          <Form.Item label='Part Name' required>
+            <Input
+              placeholder='Enter Part 2 name...'
+              value={part2Name}
+              onChange={(e) => setPart2Name(e.target.value)}
+            />
+          </Form.Item>
+
+          <Form.Item label='Instruction' required>
             <TextArea
-              rows={3}
-              placeholder='Enter the question text that students will see...'
+              rows={2}
+              value={part2.instruction}
+              onChange={(e) =>
+                setPart2({ ...part2, instruction: e.target.value })
+              }
             />
           </Form.Item>
 
-          <Form.Item label='Question Type' required>
-            <Select
-              value={questionType}
-              onChange={setQuestionType}
-              size='large'
-              className='w-full'
-            >
-              <Option value='multiple-choice'>Multiple Choice</Option>
-              <Option value='dropdown-list'>
-                Dropdown List (Matching-style)
-              </Option>
-              <Option value='listening-questions-group'>
-                Listening Questions Group
-              </Option>
-            </Select>
+          <Upload
+            {...uploadProps((url) => setPart2({ ...part2, audioUrl: url }))}
+          >
+            <Button icon={<AudioOutlined />}>Upload audio</Button>
+          </Upload>
+
+          {part2.audioUrl && <audio src={part2.audioUrl} controls />}
+
+          <ListeningMatchingEditor
+            leftItems={part2.leftItems}
+            setLeftItems={(v) =>
+              setPart2((prev) => ({ ...prev, leftItems: v }))
+            }
+            rightItems={part2.rightItems}
+            setRightItems={(v) =>
+              setPart2((prev) => ({ ...prev, rightItems: v }))
+            }
+            mapping={part2.mapping}
+            setMapping={(v) => setPart2((prev) => ({ ...prev, mapping: v }))}
+          />
+        </Card>
+
+        {/* PART 3 */}
+        <Card title={renderHeader('PART 3 — Matching', valid3)}>
+          <Form.Item label='Part Name' required>
+            <Input
+              placeholder='Enter Part 3 name...'
+              value={part3Name}
+              onChange={(e) => setPart3Name(e.target.value)}
+            />
           </Form.Item>
 
-          {/* ============= MULTIPLE-CHOICE ============= */}
-          {questionType === 'multiple-choice' && (
-            <div className='flex flex-col gap-4'>
-              <label className='font-medium text-gray-700'>
-                Answer Options
-              </label>
-              {mcOptions.map((opt) => (
-                <div key={opt.id} className='flex items-center gap-3 mb-1'>
-                  <div className='w-10 h-10 rounded bg-blue-50 text-blue-900 font-bold flex items-center justify-center border border-blue-100 flex-shrink-0'>
-                    {opt.label}
-                  </div>
-                  <Input
-                    placeholder={`Enter option ${opt.label}`}
-                    size='large'
-                    value={opt.value}
-                    onChange={(e) => handleMcChange(opt.id, e.target.value)}
-                  />
-                  <Button
-                    type='text'
-                    icon={<DeleteOutlined />}
-                    className='text-gray-400 hover:text-red-500'
-                    onClick={() => handleRemoveMcOption(opt.id)}
-                  />
-                </div>
-              ))}
-              <Button
-                type='text'
-                icon={<PlusOutlined />}
-                onClick={handleAddMcOption}
-                className='w-40 text-blue-900 font-medium justify-start pl-0'
-              >
-                Add more option
-              </Button>
-              <div className='mt-2'>
-                <label className='font-medium text-gray-700'>
-                  Correct Answer <span className='text-red-500'>*</span>
-                </label>
-                <Select
-                  className='w-full mt-1'
-                  size='large'
-                  placeholder='Select correct answer'
-                  value={mcCorrectOptionId ?? undefined}
-                  onChange={setMcCorrectOptionId}
-                  options={mcOptions.map((o) => ({
-                    value: o.id,
-                    label: `Option ${o.label}`,
-                  }))}
-                />
-              </div>
-            </div>
-          )}
-
-          {/* ============= DROPDOWN-LIST (MATCHING) ============= */}
-          {questionType === 'dropdown-list' && (
-            <MatchingEditor
-              leftItems={matchingLeftItems}
-              setLeftItems={setMatchingLeftItems}
-              rightItems={matchingRightItems}
-              setRightItems={setMatchingRightItems}
-              mapping={matchingMapping}
-              setMapping={setMatchingMapping}
+          <Form.Item label='Instruction' required>
+            <TextArea
+              rows={2}
+              value={part3.instruction}
+              onChange={(e) =>
+                setPart3({ ...part3, instruction: e.target.value })
+              }
             />
-          )}
+          </Form.Item>
 
-          {/* ============= LISTENING-QUESTIONS-GROUP ============= */}
-          {questionType === 'listening-questions-group' && (
-            <div className='flex flex-col gap-6'>
-              <Button
-                icon={<PlusOutlined />}
-                size='large'
-                className='w-56 border-blue-900 text-blue-900 font-medium'
-                onClick={addGroupQuestion}
-              >
-                Add Sub-question
-              </Button>
+          <Upload
+            {...uploadProps((url) => setPart3({ ...part3, audioUrl: url }))}
+          >
+            <Button icon={<AudioOutlined />}>Upload audio</Button>
+          </Upload>
 
-              {groupQuestions.map((q, idx) => (
-                <Card
-                  key={q.id}
-                  size='small'
-                  className='border border-gray-200 bg-gray-50 relative'
-                  title={`Sub-question ${idx + 1}`}
-                  extra={
-                    groupQuestions.length > 1 && (
-                      <Button
-                        type='text'
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={() => removeGroupQuestion(q.id)}
-                      >
-                        Remove
-                      </Button>
-                    )
-                  }
+          {part3.audioUrl && <audio src={part3.audioUrl} controls />}
+
+          <ListeningMatchingEditor
+            leftItems={part3.leftItems}
+            setLeftItems={(v) =>
+              setPart3((prev) => ({ ...prev, leftItems: v }))
+            }
+            rightItems={part3.rightItems}
+            setRightItems={(v) =>
+              setPart3((prev) => ({ ...prev, rightItems: v }))
+            }
+            mapping={part3.mapping}
+            setMapping={(v) => setPart3((prev) => ({ ...prev, mapping: v }))}
+          />
+        </Card>
+
+        {/* PART 4 */}
+        <Card title={renderHeader('PART 4 — Listening Groups', valid4)}>
+          <Form.Item label='Part Name' required>
+            <Input
+              placeholder='Enter Part 4 name...'
+              value={part4Name}
+              onChange={(e) => setPart4Name(e.target.value)}
+            />
+          </Form.Item>
+
+          <Collapse accordion>
+            {part4.map((g) => (
+              <Panel key={g.id} header={`Group ${g.id}`}>
+                <Form.Item label='Instruction' required>
+                  <TextArea
+                    rows={2}
+                    value={g.instruction}
+                    onChange={(e) =>
+                      updateGroupField(g.id, 'instruction', e.target.value)
+                    }
+                  />
+                </Form.Item>
+
+                <Upload
+                  {...uploadProps((url) =>
+                    updateGroupField(g.id, 'audioUrl', url)
+                  )}
                 >
-                  <div className='mb-3'>
-                    <label className='text-sm font-medium text-gray-600'>
-                      Question Text <span className='text-red-500'>*</span>
-                    </label>
-                    <Input
-                      size='large'
-                      className='mt-1'
-                      placeholder='Enter question text...'
-                      value={q.content}
-                      onChange={(e) =>
-                        updateGroupQuestionContent(q.id, e.target.value)
-                      }
-                    />
-                  </div>
+                  <Button icon={<AudioOutlined />}>Upload audio</Button>
+                </Upload>
 
-                  <div className='flex flex-col gap-3 mb-3'>
-                    {q.options.map((opt) => (
-                      <div key={opt.id} className='flex items-center gap-3'>
-                        <div className='w-7 h-7 rounded-full bg-blue-50 text-blue-900 font-bold flex items-center justify-center border border-blue-100 flex-shrink-0 text-sm'>
-                          {opt.label}
-                        </div>
+                {g.audioUrl && <audio src={g.audioUrl} controls />}
+
+                {g.subQuestions.map((s) => (
+                  <Card key={s.id} size='small' style={{ marginTop: 15 }}>
+                    <Form.Item label={`Sub question ${s.id}`} required>
+                      <Input
+                        value={s.content}
+                        onChange={(e) =>
+                          updateGroupSub(g.id, s.id, 'content', e.target.value)
+                        }
+                      />
+                    </Form.Item>
+
+                    {s.options.map((o) => (
+                      <div
+                        key={o.id}
+                        style={{
+                          display: 'flex',
+                          gap: 10,
+                          marginBottom: 4,
+                        }}
+                      >
+                        <div>{o.label}</div>
                         <Input
-                          size='middle'
-                          placeholder={`Option ${opt.label}`}
-                          value={opt.value}
+                          value={o.value}
                           onChange={(e) =>
-                            updateGroupOptionValue(q.id, opt.id, e.target.value)
+                            updateGroupOption(g.id, s.id, o.id, e.target.value)
                           }
                         />
-                        {q.options.length > 2 && (
-                          <DeleteOutlined
-                            className='text-gray-400 hover:text-red-500 cursor-pointer'
-                            onClick={() => removeGroupOption(q.id, opt.id)}
-                          />
-                        )}
                       </div>
                     ))}
-                    <Button
-                      type='dashed'
-                      icon={<PlusOutlined />}
-                      onClick={() => addGroupOption(q.id)}
-                    >
-                      Add option
-                    </Button>
-                  </div>
 
-                  <div>
-                    <label className='text-sm font-medium text-gray-600'>
-                      Correct Answer <span className='text-red-500'>*</span>
-                    </label>
                     <Select
-                      className='w-full mt-1'
-                      placeholder='Select correct answer'
-                      value={q.correctOptionId ?? undefined}
-                      onChange={(val) => setGroupCorrectOption(q.id, val)}
-                      options={q.options.map((o) => ({
+                      className='w-full'
+                      value={s.correctId || undefined}
+                      onChange={(v) =>
+                        updateGroupSub(g.id, s.id, 'correctId', v)
+                      }
+                      options={s.options.map((o) => ({
                         value: o.id,
-                        label: `Option ${o.label}`,
+                        label: o.label,
                       }))}
                     />
-                  </div>
-                </Card>
-              ))}
-            </div>
-          )}
-        </Card>
-
-        {/* MEDIA ATTACHMENTS */}
-        <Card
-          title='Media Attachments'
-          className='[&_.ant-card-body]:overflow-auto'
-        >
-          <Dragger {...uploadProps} className='bg-blue-50/50 border-blue-200'>
-            <p className='text-center py-2'>
-              <AudioOutlined style={{ fontSize: 24, color: '#1e3a8a' }} />
-              <br />
-              <span className='font-medium text-gray-700'>Upload Audio</span>
-            </p>
-          </Dragger>
-        </Card>
-
-        {/* PREVIEW */}
-        <Card title='Preview'>
-          {/* Audio preview */}
-          {audioUrl && (
-            <div className='mb-4'>
-              <p className='text-sm font-medium text-gray-700 mb-1'>Audio</p>
-              <audio controls src={audioUrl} className='w-full'>
-                Your browser does not support the audio element.
-              </audio>
-            </div>
-          )}
-
-          {questionType === 'multiple-choice' && (
-            <div className='space-y-4'>
-              <p className='font-medium text-gray-900'>
-                {instructionText || 'Instruction preview...'}
-              </p>
-              <div className='flex flex-col gap-3'>
-                {mcOptions.map((opt) => (
-                  <div
-                    key={opt.id}
-                    className={`flex items-center rounded-lg border px-3 py-2 text-sm ${
-                      mcCorrectOptionId === opt.id
-                        ? 'bg-blue-50 border-blue-200'
-                        : 'bg-white border-gray-200'
-                    }`}
-                  >
-                    <span className='w-7 h-7 rounded-full bg-blue-900 text-white flex items-center justify-center text-xs font-bold mr-3'>
-                      {opt.label}
-                    </span>
-                    <span className='text-gray-900'>
-                      {opt.value || (
-                        <span className='text-gray-400 italic'>
-                          Option text...
-                        </span>
-                      )}
-                    </span>
-                  </div>
+                  </Card>
                 ))}
-              </div>
-            </div>
-          )}
 
-          {questionType === 'dropdown-list' && (
-            <MatchingPreview
-              content={instructionText || ''}
-              leftItems={matchingLeftItems}
-              rightItems={matchingRightItems}
-              mapping={matchingMapping}
-              onChange={(leftIndex, rightId) => {
-                setMatchingMapping((prev) => {
-                  const exist = prev.find((m) => m.leftIndex === leftIndex);
-                  if (exist) {
-                    return prev.map((m) =>
-                      m.leftIndex === leftIndex ? { ...m, rightId } : m
-                    );
-                  }
-                  return [...prev, { leftIndex, rightId }];
-                });
-              }}
-            />
-          )}
-
-          {questionType === 'listening-questions-group' && (
-            <div className='space-y-4'>
-              <p className='font-medium text-gray-900'>
-                {instructionText || 'Instruction preview...'}
-              </p>
-              <div className='space-y-4'>
-                {groupQuestions.map((q, idx) => (
-                  <div key={q.id} className='border rounded-lg p-3'>
-                    <p className='font-semibold text-gray-800 mb-2'>
-                      {idx + 1}.{' '}
-                      {q.content || (
-                        <span className='text-gray-400 italic'>
-                          Question text...
-                        </span>
-                      )}
-                    </p>
-                    <div className='flex flex-col gap-2'>
-                      {q.options.map((opt) => (
-                        <div
-                          key={opt.id}
-                          className={`flex items-center text-sm rounded border px-3 py-1 ${
-                            q.correctOptionId === opt.id
-                              ? 'bg-blue-50 border-blue-200'
-                              : 'bg-white border-gray-200'
-                          }`}
-                        >
-                          <span className='w-6 text-xs font-bold text-blue-900'>
-                            {opt.label}.
-                          </span>
-                          <span className='text-gray-900'>
-                            {opt.value || (
-                              <span className='text-gray-400 italic'>
-                                Option text...
-                              </span>
-                            )}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+                <Button
+                  icon={<PlusOutlined />}
+                  onClick={() => addSubQuestion(g.id)}
+                  style={{ marginTop: 10 }}
+                >
+                  Add sub-question
+                </Button>
+              </Panel>
+            ))}
+          </Collapse>
         </Card>
 
-        {/* ACTION BUTTONS */}
-        <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
-          <Button size='large' onClick={() => navigate(-1)}>
-            Cancel
-          </Button>
+        {/* SAVE ALL */}
+        <div style={{ textAlign: 'right', marginBottom: 60 }}>
           <Button
             type='primary'
             size='large'
+            onClick={handleSaveAll}
+            loading={isPending}
             className='bg-blue-900'
-            loading={isCreating}
-            onClick={handleSave}
           >
-            Save Question
+            SAVE ALL
           </Button>
-        </Space>
+        </div>
       </Space>
     </Form>
   );

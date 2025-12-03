@@ -9,7 +9,7 @@ import { Spin } from 'antd';
 
 const PAGE_COMPONENT = {
   speaking: {
-    title: 'Create Listening Questions',
+    title: 'Create Speaking Questions',
     subTitle: 'Design questions for Speaking skill.',
     component: <CreateSpeaking />,
   },

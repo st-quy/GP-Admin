@@ -1,31 +1,45 @@
 // dropdown/DropdownEditor.jsx
-import React, { useState, useEffect } from 'react';
-import { Button, Space, Typography } from 'antd';
+import React from 'react';
+import { Button, Space, Typography, Input, Form } from 'antd';
 
+const { TextArea } = Input;
 const { Text } = Typography;
 
-const DropdownEditor = ({ value, onChange }) => {
-  const [content, setContent] = useState(value || '');
+const BLANK_REGEX = /\[(\d+)\]/g;
 
-  useEffect(() => {
-    setContent(value || '');
-  }, [value]);
+const DropdownEditor = () => {
+  const form = Form.useFormInstance();
 
   const insertBlank = () => {
-    const blankIndex = (content.match(/\[\d+\]/g) || []).length;
-    const newContent = content + ` [${blankIndex}]`;
+    const content = form.getFieldValue(['part1', 'content']) || '';
+    const count = (content.match(/\[\d+\]/g) || []).length;
+    const newContent = content + ` [${count}]`;
     handleChange(newContent);
   };
 
   const handleChange = (val) => {
-    setContent(val);
+    form.setFieldValue(['part1', 'content'], val);
 
-    // Extract blanks dạng: [0], [1], [2]
-    const blanks = [...val.matchAll(/\[(\d+)\]/g)].map((m) => ({
-      key: m[1],
-    }));
+    // Detect blank keys hiện có trong content
+    const detectedKeys = [...val.matchAll(BLANK_REGEX)].map((m) => m[1]);
 
-    onChange && onChange(val, blanks);
+    // Get existing blanks in form
+    const existingBlanks = form.getFieldValue(['part1', 'blanks']) || [];
+
+    // Build new blanks list mà KHÔNG mất options cũ
+    const mergedBlanks = detectedKeys.map((key) => {
+      const found = existingBlanks.find((b) => b.key === key);
+      if (found) return found; // giữ lại options + correctAnswer
+
+      // blank mới → tạo blank rỗng
+      return {
+        key,
+        options: [],
+        correctAnswer: '',
+      };
+    });
+
+    form.setFieldValue(['part1', 'blanks'], mergedBlanks);
   };
 
   return (
@@ -35,25 +49,17 @@ const DropdownEditor = ({ value, onChange }) => {
           Insert Blank
         </Button>
         <Text type='secondary'>
-          Enter để xuống dòng • Preview real-time ở dưới
+          Enter to go to a new line • Real-time preview below
         </Text>
       </Space>
 
-      <textarea
-        value={content}
-        onChange={(e) => handleChange(e.target.value)}
-        placeholder='Type reading text... Example: Dear [0], thank you for [1].'
-        style={{
-          width: '100%',
-          height: 200,
-          padding: 12,
-          fontSize: 16,
-          borderRadius: 8,
-          border: '1px solid #d9d9d9',
-          lineHeight: 1.6,
-          whiteSpace: 'pre-wrap',
-        }}
-      />
+      <Form.Item name={['part1', 'content']} noStyle>
+        <TextArea
+          rows={6}
+          placeholder='Type reading text... Example: Dear [0], thank you for [1].'
+          onChange={(e) => handleChange(e.target.value)}
+        />
+      </Form.Item>
     </div>
   );
 };
