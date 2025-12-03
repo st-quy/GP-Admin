@@ -185,7 +185,7 @@ const ExamListPage = () => {
         title='Exam List'
         subtitle='Manage and track all your English exams'
       />
-      <div className='min-h-screen bg-gray-50 p-6'>
+      <div className='bg-gray-50 p-6'>
         <div className='mx-auto space-y-6'>
           {/* Top Summary Cards */}
           <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
