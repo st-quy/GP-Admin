@@ -1,15 +1,14 @@
-// ExamListPage.tsx
+// @ts-nocheck
 import React, { useMemo, useState } from 'react';
 import {
   Card,
   Table,
-  Tag,
-  Avatar,
   Input,
   Select,
-  Tooltip,
   Pagination,
   Space,
+  Button,
+  Typography,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -22,53 +21,19 @@ import {
   SearchOutlined,
 } from '@ant-design/icons';
 import HeaderInfo from '@app/components/HeaderInfo';
+import { useNavigate } from 'react-router-dom';
+import {
+  useGetTopics,
+  useDeleteTopic,
+  useDeleteTopicSectionByTopicId,
+} from '../../features/topic/hooks';
+import useConfirm from '@shared/hook/useConfirm';
 
 const { Option } = Select;
-
-const MOCK_DATA = [
-  {
-    id: 1,
-    name: 'Advanced Grammar Assessment',
-    duration: '90 minutes',
-    status: 'Approved',
-    creator: 'John Smith',
-  },
-  {
-    id: 2,
-    name: 'Reading Comprehension Test',
-    duration: '75 minutes',
-    status: 'Pending Review',
-    creator: 'Emily Davis',
-  },
-  {
-    id: 3,
-    name: 'Vocabulary Building Quiz',
-    duration: '45 minutes',
-    status: 'Needs Revision',
-    creator: 'Michael Brown',
-  },
-  {
-    id: 4,
-    name: 'Writing Skills Evaluation',
-    duration: '120 minutes',
-    status: 'Closed',
-    creator: 'Lisa Wilson',
-  },
-  {
-    id: 5,
-    name: 'Listening Comprehension',
-    duration: '60 minutes',
-    status: 'Approved',
-    creator: 'David Lee',
-  },
-];
+const { Text } = Typography;
 
 const statusTagConfig = {
-  'Pending Review': {
-    bg: 'bg-gray-100',
-    text: 'text-gray-700',
-    label: 'Pending Review',
-  },
+  Pending: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Pending' },
   Approved: {
     bg: 'bg-emerald-100',
     text: 'text-emerald-700',
@@ -79,70 +44,95 @@ const statusTagConfig = {
     text: 'text-amber-700',
     label: 'Needs Revision',
   },
-  Closed: {
-    bg: 'bg-rose-100',
-    text: 'text-rose-700',
-    label: 'Closed',
-  },
+  Closed: { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Closed' },
 };
 
-const ExamListPage = () => {
+const TopicListPage = () => {
+  const navigate = useNavigate();
+  const { openConfirmModal, ModalComponent } = useConfirm();
+
+  const { data: topics = [], isLoading } = useGetTopics();
+  const deleteTopic = useDeleteTopic();
+  const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
+
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const pageSize = 5;
+  const [pageSize, setPageSize] = useState(5);
 
   const filteredData = useMemo(() => {
-    return MOCK_DATA.filter((item) => {
-      const matchSearch = item.name
-        .toLowerCase()
-        .includes(search.toLowerCase());
+    return topics.filter((item) => {
+      const matchSearch = item?.Name?.toLowerCase().includes(
+        search.toLowerCase()
+      );
       const matchStatus =
-        statusFilter === 'all' ? true : item.status === statusFilter;
+        statusFilter === 'all' ? true : item.Status === statusFilter;
       return matchSearch && matchStatus;
     });
-  }, [search, statusFilter]);
+  }, [topics, search, statusFilter]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredData.slice(start, start + pageSize);
-  }, [filteredData, page]);
+  }, [filteredData, page, pageSize]);
 
-  const counts = useMemo(() => {
-    const pending = MOCK_DATA.filter(
-      (x) => x.status === 'Pending Review'
-    ).length;
-    const approved = MOCK_DATA.filter((x) => x.status === 'Approved').length;
-    const needs = MOCK_DATA.filter((x) => x.status === 'Needs Revision').length;
-    const closed = MOCK_DATA.filter((x) => x.status === 'Closed').length;
+  const totalItems = filteredData.length;
+  const startItem = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalItems);
 
-    return { pending, approved, needs, closed };
-  }, []);
+  const counts = useMemo(
+    () => ({
+      pending: topics.filter((t) => t.Status === 'Pending').length,
+      approved: topics.filter((t) => t.Status === 'Approved').length,
+      needs: topics.filter((t) => t.Status === 'Needs Revision').length,
+      closed: topics.filter((t) => t.Status === 'Closed').length,
+    }),
+    [topics]
+  );
+
+  const handleDeleteTopic = (topic) => {
+    openConfirmModal({
+      title: 'Are you sure you want to delete this topic?',
+      message: 'After deleting this topic it will no longer appear.',
+      okText: 'Delete',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          await deleteTopicSectionsByTopicId.mutateAsync(topic.ID);
+
+          await deleteTopic.mutateAsync(topic.ID);
+
+          message.success('Topic and its TopicSections deleted successfully');
+        } catch (error) {
+          console.error(error);
+          message.error('Failed to delete topic or its Sections');
+        }
+      },
+    });
+  };
 
   const columns = [
     {
-      title: 'Exam Name',
-      dataIndex: 'name',
-      key: 'name',
+      title: 'Topic Name',
+      dataIndex: 'Name',
+      key: 'Name',
       render: (text) => (
         <span className='font-medium text-gray-800'>{text}</span>
       ),
     },
     {
-      title: 'Duration',
-      dataIndex: 'duration',
-      key: 'duration',
-      render: (text) => <span className='text-gray-500 text-sm'>{text}</span>,
-    },
-    {
       title: 'Status',
-      dataIndex: 'status',
-      key: 'status',
+      dataIndex: 'Status',
+      key: 'Status',
       render: (status) => {
-        const cfg = statusTagConfig[status];
+        const cfg = statusTagConfig[status] || {
+          bg: 'bg-gray-200',
+          text: 'text-gray-600',
+          label: status,
+        };
         return (
           <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}
+            className={`inline-flex items-center rounded-full text-base font-medium ${cfg.bg} ${cfg.text}`}
           >
             {cfg.label}
           </span>
@@ -150,30 +140,72 @@ const ExamListPage = () => {
       },
     },
     {
-      title: 'Created By',
-      dataIndex: 'creator',
-      key: 'creator',
-      render: (creator) => (
-        <div className='flex items-center gap-2'>
-          <Avatar size='small'>{creator.charAt(0)}</Avatar>
-          <span className='text-gray-700 text-sm'>{creator}</span>
-        </div>
+      title: 'Creator',
+      dataIndex: 'createdBy',
+      key: 'createdBy',
+      render: (text) => (
+        <span className='font-medium text-gray-800'>{text}</span>
       ),
     },
     {
-      title: 'Actions',
-      key: 'actions',
-      render: () => (
+      title: 'Creation day',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (date) => (
+        <span className='text-gray-500 text-sm'>
+          {new Date(date).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      title: 'Update date',
+      dataIndex: 'updatedAt',
+      key: 'updatedAt',
+      render: (date) => (
+        <span className='text-gray-500 text-sm'>
+          {new Date(date).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      title: 'Updator',
+      dataIndex: 'updatedBy',
+      key: 'updatedBy',
+      render: (text) => (
+        <span className='font-medium text-gray-800'>{text}</span>
+      ),
+    },
+    {
+      title: 'Action',
+      key: 'action',
+      align: 'center',
+      render: (_, record) => (
         <Space size='middle'>
-          <Tooltip title='View'>
-            <EyeOutlined className='cursor-pointer text-gray-400 hover:text-gray-600' />
-          </Tooltip>
-          <Tooltip title='Edit'>
-            <EditOutlined className='cursor-pointer text-gray-400 hover:text-gray-600' />
-          </Tooltip>
-          <Tooltip title='Delete'>
-            <DeleteOutlined className='cursor-pointer text-rose-400 hover:text-rose-600' />
-          </Tooltip>
+          <Button
+            type='text'
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/topics/${record.ID}`);
+            }}
+          />
+          <Button
+            type='text'
+            icon={<EditOutlined />}
+            className='text-[#1890FF]'
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/topics/edit/${record.ID}`);
+            }}
+          />
+          <Button
+            type='text'
+            icon={<DeleteOutlined />}
+            className='text-[#FF4D4F]'
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteTopic(record);
+            }}
+          />
         </Space>
       ),
     },
@@ -181,9 +213,18 @@ const ExamListPage = () => {
 
   return (
     <>
+      <ModalComponent />
       <HeaderInfo
-        title='Exam List'
-        subtitle='Manage and track all your English exams'
+        title='Topic List'
+        subtitle='Manage and track all topics'
+        SubAction={
+          <Button
+            className='w-full p-5 bg-white text-black border border-gray-300 hover:!bg-gray-100 rounded-lg shadow-sm'
+            onClick={() => navigate('create')}
+          >
+            Create New Topic
+          </Button>
+        }
       />
       <div className='bg-gray-50 p-6'>
         <div className='mx-auto space-y-6'>
@@ -192,7 +233,7 @@ const ExamListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-gray-500 text-sm'>Pending Review</div>
+                  <div className='text-gray-500 text-sm'>Pending</div>
                   <div className='text-2xl font-semibold mt-1'>
                     {counts.pending}
                   </div>
@@ -202,7 +243,6 @@ const ExamListPage = () => {
                 </div>
               </div>
             </Card>
-
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
@@ -216,7 +256,6 @@ const ExamListPage = () => {
                 </div>
               </div>
             </Card>
-
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
@@ -230,7 +269,6 @@ const ExamListPage = () => {
                 </div>
               </div>
             </Card>
-
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
@@ -246,13 +284,13 @@ const ExamListPage = () => {
             </Card>
           </div>
 
-          {/* Table + Filters */}
+          {/* Table & Filters */}
           <Card className='shadow-sm border-none'>
             <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4'>
               <Input
                 allowClear
                 className='sm:max-w-xs'
-                placeholder='Search by exam name...'
+                placeholder='Search topic name...'
                 prefix={<SearchOutlined />}
                 value={search}
                 onChange={(e) => {
@@ -269,34 +307,52 @@ const ExamListPage = () => {
                 }}
               >
                 <Option value='all'>All Statuses</Option>
-                <Option value='Pending Review'>Pending Review</Option>
-                <Option value='Approved'>Approved</Option>
-                <Option value='Needs Revision'>Needs Revision</Option>
-                <Option value='Closed'>Closed</Option>
+                <Option value='submited'>submited</Option>
+                <Option value='draft'>draft</Option>
+                <Option value='approved'>approved</Option>
+                <Option value='rejected'>rejected</Option>
               </Select>
             </div>
 
             <Table
-              rowKey='id'
+              rowKey='ID'
               columns={columns}
               dataSource={paginatedData}
               pagination={false}
+              rowClassName='hover:bg-gray-50 cursor-pointer'
+              onRow={(record) => ({
+                onClick: () => navigate(`/topics/${record.ID}`),
+              })}
             />
 
-            {/* Footer text + Pagination */}
-            <div className='flex flex-col sm:flex-row items-center justify-between gap-3 mt-4'>
-              <span className='text-sm text-gray-500'>
-                Showing {(page - 1) * pageSize + 1}-
-                {Math.min(page * pageSize, filteredData.length)} of{' '}
-                {filteredData.length}
-              </span>
-              <Pagination
-                current={page}
-                pageSize={pageSize}
-                total={filteredData.length}
-                onChange={(p) => setPage(p)}
-                showSizeChanger={false}
-              />
+            {/* Custom Pagination Footer */}
+            <div className='flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 p-4 border-t border-gray-100'>
+              <Text className='text-gray-500'>
+                {totalItems === 0
+                  ? 'No data'
+                  : `Showing ${startItem}–${endItem} of ${totalItems}`}
+              </Text>
+              <div className='flex items-center gap-4'>
+                <Pagination
+                  current={page}
+                  total={totalItems}
+                  pageSize={pageSize}
+                  showSizeChanger={false}
+                  onChange={(p) => setPage(p)}
+                />
+                <Select
+                  className='w-[120px]'
+                  value={String(pageSize)}
+                  onChange={(val) => {
+                    setPageSize(Number(val));
+                    setPage(1);
+                  }}
+                >
+                  <Option value='5'>5 / pages</Option>
+                  <Option value='10'>10 / pages</Option>
+                  <Option value='20'>20 / pages</Option>
+                </Select>
+              </div>
             </div>
           </Card>
         </div>
@@ -305,4 +361,4 @@ const ExamListPage = () => {
   );
 };
 
-export default ExamListPage;
+export default TopicListPage;
