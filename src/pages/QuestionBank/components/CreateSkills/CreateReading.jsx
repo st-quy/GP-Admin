@@ -18,7 +18,7 @@ const CreateReading = () => {
   const navigate = useNavigate();
 
   const [form] = Form.useForm();
-  const { mutate: createQuestion, isPending: isCreating } = useCreateQuestion();
+  const { mutate: createQuestion, isPending } = useCreateQuestion();
 
   const handleSubmit = async () => {
     try {
@@ -247,9 +247,17 @@ const CreateReading = () => {
           </Form.Item>
         </Card>
 
-        <Button type='primary' onClick={handleSubmit}>
-          Save
-        </Button>
+        <div className='flex justify-end gap-4'>
+          <Button onClick={() => navigate(-1)}>Cancel</Button>
+          <Button
+            type='primary'
+            onClick={handleSubmit}
+            loading={isPending}
+            className='bg-blue-900'
+          >
+            Save
+          </Button>
+        </div>
       </Space>
     </Form>
   );
