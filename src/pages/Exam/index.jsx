@@ -9,6 +9,7 @@ import {
   Space,
   Button,
   Typography,
+  message,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -82,10 +83,10 @@ const TopicListPage = () => {
 
   const counts = useMemo(
     () => ({
-      pending: topics.filter((t) => t.Status === 'Pending').length,
-      approved: topics.filter((t) => t.Status === 'Approved').length,
-      needs: topics.filter((t) => t.Status === 'Needs Revision').length,
-      closed: topics.filter((t) => t.Status === 'Closed').length,
+      Submited: topics.filter((t) => t.Status === 'submited').length,
+      approved: topics.filter((t) => t.Status === 'approved').length,
+      Draft: topics.filter((t) => t.Status === 'draft').length,
+      Rejected: topics.filter((t) => t.Status === 'rejected').length,
     }),
     [topics]
   );
@@ -98,11 +99,17 @@ const TopicListPage = () => {
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
         try {
+          if (topic.Status === 'approved' || topic.Status === 'submited') {
+            message.error('Cannot delete topic with status Approved or Submited');
+            return;
+          } else{
           await deleteTopicSectionsByTopicId.mutateAsync(topic.ID);
 
           await deleteTopic.mutateAsync(topic.ID);
 
           message.success('Topic and its TopicSections deleted successfully');
+          }
+
         } catch (error) {
           console.error(error);
           message.error('Failed to delete topic or its Sections');
@@ -110,6 +117,14 @@ const TopicListPage = () => {
       },
     });
   };
+
+  const handleEditTopic = (topic) => {
+    if (topic.Status === 'approved' || topic.Status === 'submited') {
+      message.error('Cannot edit topic with status Approved or Submited');
+      return;
+    }
+    navigate(`edit/${topic.ID}`);
+  }
 
   const columns = [
     {
@@ -185,7 +200,7 @@ const TopicListPage = () => {
             type='text'
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/topics/${record.ID}`);
+              navigate(`${record.ID}`);
             }}
           />
           <Button
@@ -194,7 +209,7 @@ const TopicListPage = () => {
             className='text-[#1890FF]'
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/topics/edit/${record.ID}`);
+              navigate(handleEditTopic(record));
             }}
           />
           <Button
@@ -233,9 +248,9 @@ const TopicListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-gray-500 text-sm'>Pending</div>
+                  <div className='text-gray-500 text-sm'>Submited</div>
                   <div className='text-2xl font-semibold mt-1'>
-                    {counts.pending}
+                    {counts.Submited}
                   </div>
                 </div>
                 <div className='w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center'>
@@ -259,9 +274,9 @@ const TopicListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-amber-500 text-sm'>Needs Revision</div>
+                  <div className='text-amber-500 text-sm'>Draft</div>
                   <div className='text-2xl font-semibold mt-1'>
-                    {counts.needs}
+                    {counts.Draft}
                   </div>
                 </div>
                 <div className='w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center'>
@@ -272,9 +287,9 @@ const TopicListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-rose-500 text-sm'>Closed</div>
+                  <div className='text-rose-500 text-sm'>Rejected</div>
                   <div className='text-2xl font-semibold mt-1'>
-                    {counts.closed}
+                    {counts.Rejected}
                   </div>
                 </div>
                 <div className='w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center'>

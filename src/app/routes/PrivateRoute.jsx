@@ -159,6 +159,12 @@ const PrivateRoute = [
             breadcrumb: 'Create New Exam ',
             role: ['teacher', 'admin', 'superadmin'],
           },
+          {
+            path: 'edit/:id',
+            element: <CreateExamPage />,
+            breadcrumb: 'Edit Exam ',
+            role: ['teacher', 'admin', 'superadmin'],
+          },
         ],
       },
     ],

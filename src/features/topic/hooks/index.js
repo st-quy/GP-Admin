@@ -108,4 +108,45 @@ export const useDeleteTopicSectionByTopicId = () => {
   });
 };
 
+export const useGetTopicWithRelations = (topicId, params) => {
+  return useQuery({
+    queryKey: ["topics", topicId, params],
+    queryFn: async () => {
+      try {
+        const { data } = await TopicApi.getTopicWithRelations(topicId);  
+        return data;
+      } catch (error) {
+        message.error(error.response?.data?.message);
+        return null;
+      } 
+    },
+    enabled: !!topicId,
+  });
+};
 
+export const useUpdateTopic = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }) => TopicApi.updateTopic(id, data),
+    onSuccess: () => {  
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onError: (error) => {
+      console.error("Error updating topic:", error);
+    },
+  });
+};
+
+export const useUpdateTopicSection = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ topicId, data }) => TopicApi.updateTopicSection(topicId, data),  
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["topicSections"] });
+    }
+    ,
+    onError: (error) => {
+      console.error("Error updating topic section:", error);
+    },
+  });
+};
