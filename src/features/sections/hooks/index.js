@@ -15,6 +15,16 @@ export const useGetSections = (params = {}, options = {}) => {
   });
 };
 
+export const useGetSectionDetail = (id, skillName) => {
+  return useQuery({
+    queryKey: ['sectionsDetail', id, skillName],
+    queryFn: async () => {
+      const { data } = await SectionApi.getDetail(id, skillName);
+      return data.data || [];
+    },
+  });
+};
+
 export const useDeleteSection = () => {
   const queryClient = useQueryClient();
   return useMutation({

@@ -16,6 +16,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   DownOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
@@ -113,6 +114,15 @@ const QuestionBank = () => {
       align: 'center',
       render: (_, record) => (
         <Space size='middle'>
+          <Button
+            type='text'
+            className='text-green-600 hover:bg-blue-50 px-2'
+            icon={<EyeOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`${record.ID}?skillName=${record.Skill.Name}`);
+            }}
+          />
           <Button
             type='text'
             className='text-blue-600 hover:bg-blue-50 px-2'
@@ -215,9 +225,6 @@ const QuestionBank = () => {
               loading={loadingSections}
               pagination={false}
               rowClassName='hover:bg-gray-50 cursor-pointer'
-              onRow={(record) => ({
-                onClick: () => navigate(`${record.ID}`),
-              })}
               scroll={{ y: 'calc(100vh - 500px)' }}
             />
           </div>
