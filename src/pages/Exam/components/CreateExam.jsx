@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import HeaderInfo from '@app/components/HeaderInfo';
 import {
     AudioOutlined,
@@ -17,8 +17,8 @@ import {
     Divider,
     message
 } from "antd";
-import { useNavigate } from "react-router-dom";
-import { useCreateTopic, useCreateTopicSection } from "@features/topic/hooks";
+import { useNavigate, useParams } from "react-router-dom";
+import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
 import ChooseSectionModal from "@features/topic/ui/ChooseSectionModal";
 
 const { Text, Title } = Typography;
@@ -35,15 +35,19 @@ const CreateExamPage = () => {
     const navigate = useNavigate();
     const [form] = Form.useForm();
 
+    const { id: topicId } = useParams();
+
     const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
     const [openModal, setOpenModal] = useState(false);
-
     const [selectedParts, setSelectedParts] = useState([]); // chỉ chứa ID section
     const [selectedSectionBySkill, setSelectedSectionBySkill] = useState({}); // chứa ID theo skill
     const [instructions, setInstructions] = useState([]); // chứa full section để hiển thị UI
 
     const { mutateAsync: createExam } = useCreateTopic();
     const { mutateAsync: createTopicSection } = useCreateTopicSection();
+    const { data: topicData, isLoading } = useGetTopicWithRelations(topicId);
+    const { mutateAsync: updateTopic } = useUpdateTopic();
+    const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
 
     const handlePartSelect = (sections) => {
         if (!sections || sections.length === 0) return;
@@ -51,25 +55,27 @@ const CreateExamPage = () => {
         const section = sections[0];
         const sectionId = section.ID;
 
-        // --- (1) lưu full section UI
-        setInstructions((prev) => {
-            const filtered = prev.filter(i => i.skill !== selectedSkill);
-            return [...filtered, { skill: selectedSkill, section }];
+        // Lấy section cũ của skill này từ state hiện tại
+        const oldSectionId = selectedSectionBySkill[selectedSkill];
+
+        // --- Cập nhật selectedParts
+        setSelectedParts((prevParts) => {
+            const filtered = prevParts.filter(id => id !== oldSectionId);
+            const updated = [...filtered, sectionId];
+            console.log("Selected Parts after update:", updated);
+            return [...filtered, sectionId];
         });
 
-        // --- (2) lưu id theo từng skill
+        // --- Cập nhật selectedSectionBySkill
         setSelectedSectionBySkill((prev) => ({
             ...prev,
             [selectedSkill]: sectionId,
         }));
 
-        // --- (3) lưu vào mảng selectedParts
-        setSelectedParts((prev) => {
-            const newSelected = prev.filter(id => id !== selectedSectionBySkill[selectedSkill]);
-            if (!newSelected.includes(sectionId)) {
-                newSelected.push(sectionId);
-            }
-            return newSelected;
+        // --- Cập nhật instructions UI
+        setInstructions((prev) => {
+            const filtered = prev.filter(i => i.skill !== selectedSkill);
+            return [...filtered, { skill: selectedSkill, section }];
         });
 
         setOpenModal(false);
@@ -78,35 +84,63 @@ const CreateExamPage = () => {
     const handleSaveExam = async () => {
         try {
             const values = form.getFieldsValue();
-            if (!values.name) {
-                return message.error("Name is required");
+            if (!values.name) return message.error("Name is required");
+
+            let topicResponse;
+            if (topicId) {
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name } });
+                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
+                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
+
+            } else {
+                topicResponse = await createExam({ Name: values.name });
+                const savedTopicId = topicResponse.ID || topicResponse._ID;
+
+                if (!savedTopicId) return message.error("Cannot get topic ID");
+                for (const sectionId of selectedParts) {
+                    await createTopicSection({ topicId: savedTopicId, sectionId });
+                }
             }
 
-            const payload = { Name: values.name };
-            const topic = await createExam(payload);
-            const topicId = topic?._ID || topic?.ID;
-
-            if (!topicId) {
-                return message.error("Cannot get topic ID");
-            }
-
-            if (selectedParts.length === 0) {
-                message.warning("Exam created but no parts selected");
-                return navigate("/exam");
-            }
-
-            for (const sectionId of selectedParts) {
-                await createTopicSection({ topicId, sectionId });
-            }
-
-            message.success("Create exam successfully!");
+            message.success(topicId ? "Topic updated successfully!" : "Topic created successfully!");
             navigate("/exam");
 
         } catch (error) {
             console.error(error);
-            message.error("Failed to create exam");
+            message.error("Failed to save topic");
         }
     };
+
+    const handleSubmitExam = async () => {
+        try {
+            const values = form.getFieldsValue();
+            if (!values.name) return message.error("Name is required");
+
+            let topicResponse;
+            if (topicId) {
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'submited' } });
+                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
+                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
+
+            } else {
+                topicResponse = await createExam({ Name: values.name, Status: 'submited' });
+                const savedTopicId = topicResponse.ID || topicResponse._ID;
+
+                if (!savedTopicId) return message.error("Cannot get topic ID");
+                for (const sectionId of selectedParts) {
+                    await createTopicSection({ topicId: savedTopicId, sectionId });
+                }
+            }
+
+            message.success(topicId ? "Topic updated successfully!" : "Topic created successfully!");
+            navigate("/exam");
+
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to save topic");
+        }
+    };
+
 
     const renderSelectedSectionUI = () => {
         const data = instructions.find(ins => ins.skill === selectedSkill);
@@ -159,10 +193,8 @@ const CreateExamPage = () => {
                                         background: "white",
                                     }}
                                 >
-                                    {/* Luôn hiện tên Part */}
-                                    <Text strong>{part.Content}</Text>
 
-                                    {/* Nếu không phải Reading/Writing thì hiện thêm SubContent */}
+                                    <Text strong>{part.Content}</Text>
                                     {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
                                         <>
                                             <br />
@@ -170,7 +202,6 @@ const CreateExamPage = () => {
                                         </>
                                     )}
 
-                                    {/* Nếu là Speaking/Listening/Grammar thì render Questions */}
                                     {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
                                         <div style={{ marginTop: 8 }}>
                                             {(part.Questions || []).map((q, index) => (
@@ -220,11 +251,34 @@ const CreateExamPage = () => {
         );
     };
 
+    useEffect(() => {
+        if (!topicData) return;
+        form.setFieldsValue({ name: topicData.Name });
+        const sectionsBySkill = {};
+        const instructionsData = [];
+        const selectedIds = [];
+
+        (topicData.Sections || []).forEach(section => {
+            const skill = section.Skill.Name;
+            sectionsBySkill[skill] = section.ID;
+            selectedIds.push(section.ID);
+            instructionsData.push({ skill, section });
+        });
+
+        setSelectedSectionBySkill(sectionsBySkill);
+        setInstructions(instructionsData);
+        setSelectedParts(selectedIds);
+    }, [topicData]);
+
     return (
         <>
             <HeaderInfo
-                title="Create New Exam"
-                subtitle="Set up exam details, structure, and choose skill-based questions."
+                title={topicId ? "Edit Exam" : "Create New Exam"}
+                subtitle={
+                    topicId
+                        ? "Modify exam information, structure, and skill-based questions."
+                        : "Set up exam details, structure, and choose skill-based questions."
+                }
             />
 
             <Form form={form} layout="vertical">
@@ -297,7 +351,8 @@ const CreateExamPage = () => {
                         <Button>Start Exam Preview</Button>
                         <Space>
                             <Button onClick={() => navigate(-1)}>Cancel</Button>
-                            <Button type="primary" onClick={handleSaveExam}>Save & Submit For Review</Button>
+                            <Button type="primary" onClick={handleSaveExam}>Save </Button>
+                            <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
                         </Space>
                     </div>
                     <ChooseSectionModal
@@ -305,6 +360,7 @@ const CreateExamPage = () => {
                         onClose={() => setOpenModal(false)}
                         skillName={selectedSkill}
                         onSelect={handlePartSelect}
+                        selectedSectionId={selectedSectionBySkill[selectedSkill]}
                     />
 
                 </div>
