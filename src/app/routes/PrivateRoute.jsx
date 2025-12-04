@@ -12,6 +12,8 @@ import ClassManagement from '@pages/ClassManagement/index.jsx';
 import RedirectByRole from './RedirectByRole/index.jsx';
 import CreateQuestion from '@pages/QuestionBank/components/CreateQuestion.jsx';
 import ExamListPage from '@pages/Exam/index.jsx';
+import SectionListeningDetail from '@pages/Section/detail/components/SectionListeningDetail.jsx';
+import SectionDetail from '@pages/Section/detail/index.jsx';
 const QuestionBank = lazy(() => import('@pages/QuestionBank/index.jsx'));
 const QuestionDetail = lazy(() => import('@pages/QuestionBank/QuestionDetail'));
 const CreateExamPage = lazy(() => import('@pages/Exam/components/CreateExam.jsx'));
@@ -133,7 +135,7 @@ const PrivateRoute = [
           },
           {
             path: ':id',
-            element: <QuestionDetail />,
+            element: <SectionDetail />,
             breadcrumb: 'Detail',
             role: ['teacher', 'admin', 'superadmin'],
           },
