@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Modal, Checkbox, Spin, Typography, Card } from "antd";
 import { DownOutlined, RightOutlined } from "@ant-design/icons";
 import { useGetSections } from "@features/section/hooks";
 
 const { Title, Text } = Typography;
 
-const ChooseSectionModal = ({ open, onClose, skillName, onSelect }) => {
+const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectionId }) => {
   const [selectedSectionsBySkill, setSelectedSectionsBySkill] = useState({}); 
   const [expanded, setExpanded] = useState([]); 
 
@@ -38,6 +38,14 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect }) => {
   };
 
   const selectedSections = selectedSectionsBySkill[skillName] || [];
+
+  useEffect(() => {
+    if (selectedSectionId) {
+      setSelectedSectionsBySkill(prev => ({ ...prev, [skillName]: [{ ID: selectedSectionId }] }));
+    } else {
+      setSelectedSectionsBySkill(prev => ({ ...prev, [skillName]: [] }));
+    }
+  }, [selectedSectionId, skillName]);
 
   return (
     <Modal
