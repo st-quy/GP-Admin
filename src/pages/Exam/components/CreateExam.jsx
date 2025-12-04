@@ -350,8 +350,8 @@ const CreateExamPage = () => {
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
                         <Button>Start Exam Preview</Button>
                         <Space>
-                            <Button onClick={() => navigate(-1)}>Cancel</Button>
-                            <Button type="primary" onClick={handleSaveExam}>Save </Button>
+                            <Button onClick={() => navigate('/exam')}>Cancel</Button>
+                            <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
                             <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
                         </Space>
                     </div>

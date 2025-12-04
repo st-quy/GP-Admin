@@ -34,18 +34,18 @@ const { Option } = Select;
 const { Text } = Typography;
 
 const statusTagConfig = {
-  Pending: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Pending' },
+  Submited: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Submited' },
   Approved: {
     bg: 'bg-emerald-100',
     text: 'text-emerald-700',
     label: 'Approved',
   },
-  'Needs Revision': {
+  Draft: {
     bg: 'bg-amber-100',
     text: 'text-amber-700',
-    label: 'Needs Revision',
+    label: 'Draft',
   },
-  Closed: { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Closed' },
+  Rejected: { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Rejected' },
 };
 
 const TopicListPage = () => {
@@ -194,35 +194,36 @@ const TopicListPage = () => {
       title: 'Action',
       key: 'action',
       align: 'center',
-      render: (_, record) => (
-        <Space size='middle'>
-          <Button
-            type='text'
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`${record.ID}`);
-            }}
-          />
-          <Button
-            type='text'
-            icon={<EditOutlined />}
-            className='text-[#1890FF]'
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(handleEditTopic(record));
-            }}
-          />
-          <Button
-            type='text'
-            icon={<DeleteOutlined />}
-            className='text-[#FF4D4F]'
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteTopic(record);
-            }}
-          />
-        </Space>
-      ),
+      render: (_, record) => {
+    const canModify = record.Status === 'draft' || record.Status === 'rejected';
+    return (
+      <Space size="middle">
+        {canModify && (
+          <>
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              className="text-[#1890FF]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditTopic(record);
+              }}
+            />
+
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              className="text-[#FF4D4F]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteTopic(record);
+              }}
+            />
+          </>
+        )}
+      </Space>
+    );
+    },
     },
   ];
 
@@ -336,7 +337,7 @@ const TopicListPage = () => {
               pagination={false}
               rowClassName='hover:bg-gray-50 cursor-pointer'
               onRow={(record) => ({
-                onClick: () => navigate(`/topics/${record.ID}`),
+                // onClick: () => navigate(`/topics/${record.ID}`),
               })}
             />
 
@@ -347,7 +348,7 @@ const TopicListPage = () => {
                   ? 'No data'
                   : `Showing ${startItem}–${endItem} of ${totalItems}`}
               </Text>
-              <div className='flex items-center gap-4'>
+              <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600"'>
                 <Pagination
                   current={page}
                   total={totalItems}
