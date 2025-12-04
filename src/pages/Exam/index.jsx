@@ -10,6 +10,7 @@ import {
   Button,
   Typography,
   message,
+  Tag,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -34,18 +35,16 @@ const { Option } = Select;
 const { Text } = Typography;
 
 const statusTagConfig = {
-  Submited: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Submited' },
-  Approved: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-700',
+  submited: { bg: 'bg-amber-100', text: 'text-gray-700', label: 'Submited' },
+  approved: {
+    bg: 'bg-emerald-100', text: 'text-gray-700',
     label: 'Approved',
   },
-  Draft: {
-    bg: 'bg-amber-100',
-    text: 'text-amber-700',
+  draft: {
+    bg: 'bg-gray-100', text: 'text-gray-700',
     label: 'Draft',
   },
-  Rejected: { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Rejected' },
+  rejected: { bg: 'bg-rose-100', text: 'text-gray-700', label: 'Rejected' },
 };
 
 const TopicListPage = () => {
@@ -146,11 +145,11 @@ const TopicListPage = () => {
           label: status,
         };
         return (
-          <span
-            className={`inline-flex items-center rounded-full text-base font-medium ${cfg.bg} ${cfg.text}`}
+          <Tag 
+            className={`inline-flex items-center rounded-full text-base font-normal ${cfg.bg} ${cfg.text}`}
           >
             {cfg.label}
-          </span>
+          </Tag>
         );
       },
     },
@@ -249,7 +248,7 @@ const TopicListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-gray-500 text-sm'>Submited</div>
+                  <div className='text-amber-500 text-sm'>Submited</div>
                   <div className='text-2xl font-semibold mt-1'>
                     {counts.Submited}
                   </div>
@@ -275,7 +274,7 @@ const TopicListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-amber-500 text-sm'>Draft</div>
+                  <div className='text-gray-500 text-sm'>Draft</div>
                   <div className='text-2xl font-semibold mt-1'>
                     {counts.Draft}
                   </div>
@@ -323,10 +322,10 @@ const TopicListPage = () => {
                 }}
               >
                 <Option value='all'>All Statuses</Option>
-                <Option value='submited'>submited</Option>
-                <Option value='draft'>draft</Option>
-                <Option value='approved'>approved</Option>
-                <Option value='rejected'>rejected</Option>
+                <Option value='submited'>Submited</Option>
+                <Option value='draft'>Draft</Option>
+                <Option value='approved'>Approved</Option>
+                <Option value='rejected'>Rejected</Option>
               </Select>
             </div>
 
