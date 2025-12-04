@@ -10,6 +10,7 @@ import {
   Button,
   Typography,
   message,
+  Tag,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -34,18 +35,16 @@ const { Option } = Select;
 const { Text } = Typography;
 
 const statusTagConfig = {
-  Pending: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Pending' },
-  Approved: {
-    bg: 'bg-emerald-100',
-    text: 'text-emerald-700',
+  submited: { bg: 'bg-amber-100', text: 'text-gray-700', label: 'Submited' },
+  approved: {
+    bg: 'bg-emerald-100', text: 'text-gray-700',
     label: 'Approved',
   },
-  'Needs Revision': {
-    bg: 'bg-amber-100',
-    text: 'text-amber-700',
-    label: 'Needs Revision',
+  draft: {
+    bg: 'bg-gray-100', text: 'text-gray-700',
+    label: 'Draft',
   },
-  Closed: { bg: 'bg-rose-100', text: 'text-rose-700', label: 'Closed' },
+  rejected: { bg: 'bg-rose-100', text: 'text-gray-700', label: 'Rejected' },
 };
 
 const TopicListPage = () => {
@@ -146,11 +145,11 @@ const TopicListPage = () => {
           label: status,
         };
         return (
-          <span
-            className={`inline-flex items-center rounded-full text-base font-medium ${cfg.bg} ${cfg.text}`}
+          <Tag 
+            className={`inline-flex items-center rounded-full text-base font-normal ${cfg.bg} ${cfg.text}`}
           >
             {cfg.label}
-          </span>
+          </Tag>
         );
       },
     },
@@ -194,35 +193,36 @@ const TopicListPage = () => {
       title: 'Action',
       key: 'action',
       align: 'center',
-      render: (_, record) => (
-        <Space size='middle'>
-          <Button
-            type='text'
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`${record.ID}`);
-            }}
-          />
-          <Button
-            type='text'
-            icon={<EditOutlined />}
-            className='text-[#1890FF]'
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(handleEditTopic(record));
-            }}
-          />
-          <Button
-            type='text'
-            icon={<DeleteOutlined />}
-            className='text-[#FF4D4F]'
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteTopic(record);
-            }}
-          />
-        </Space>
-      ),
+      render: (_, record) => {
+    const canModify = record.Status === 'draft' || record.Status === 'rejected';
+    return (
+      <Space size="middle">
+        {canModify && (
+          <>
+            <Button
+              type="text"
+              icon={<EditOutlined />}
+              className="text-[#1890FF]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleEditTopic(record);
+              }}
+            />
+
+            <Button
+              type="text"
+              icon={<DeleteOutlined />}
+              className="text-[#FF4D4F]"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteTopic(record);
+              }}
+            />
+          </>
+        )}
+      </Space>
+    );
+    },
     },
   ];
 
@@ -248,7 +248,7 @@ const TopicListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-gray-500 text-sm'>Submited</div>
+                  <div className='text-amber-500 text-sm'>Submited</div>
                   <div className='text-2xl font-semibold mt-1'>
                     {counts.Submited}
                   </div>
@@ -274,7 +274,7 @@ const TopicListPage = () => {
             <Card className='shadow-sm border-none'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <div className='text-amber-500 text-sm'>Draft</div>
+                  <div className='text-gray-500 text-sm'>Draft</div>
                   <div className='text-2xl font-semibold mt-1'>
                     {counts.Draft}
                   </div>
@@ -322,10 +322,10 @@ const TopicListPage = () => {
                 }}
               >
                 <Option value='all'>All Statuses</Option>
-                <Option value='submited'>submited</Option>
-                <Option value='draft'>draft</Option>
-                <Option value='approved'>approved</Option>
-                <Option value='rejected'>rejected</Option>
+                <Option value='submited'>Submited</Option>
+                <Option value='draft'>Draft</Option>
+                <Option value='approved'>Approved</Option>
+                <Option value='rejected'>Rejected</Option>
               </Select>
             </div>
 
@@ -336,7 +336,7 @@ const TopicListPage = () => {
               pagination={false}
               rowClassName='hover:bg-gray-50 cursor-pointer'
               onRow={(record) => ({
-                onClick: () => navigate(`/topics/${record.ID}`),
+                // onClick: () => navigate(`/topics/${record.ID}`),
               })}
             />
 
@@ -347,7 +347,7 @@ const TopicListPage = () => {
                   ? 'No data'
                   : `Showing ${startItem}–${endItem} of ${totalItems}`}
               </Text>
-              <div className='flex items-center gap-4'>
+              <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600"'>
                 <Pagination
                   current={page}
                   total={totalItems}
