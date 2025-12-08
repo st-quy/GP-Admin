@@ -104,7 +104,7 @@ const CreateWriting = () => {
           className='bg-blue-900'
           onClick={handleSave}
         >
-          Save All Questions
+          Save
         </Button>
       </div>
     </Form>

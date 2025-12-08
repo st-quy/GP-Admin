@@ -274,7 +274,8 @@ const CreateGrammarVocab = () => {
         </Collapse>
       </Card>
 
-      <div style={{ textAlign: 'right' }}>
+      <div className='flex justify-end gap-4 mt-6'>
+        <Button onClick={() => navigate(-1)}>Cancel</Button>
         <Button type='primary' loading={isPending} onClick={handleSaveAll}>
           Save
         </Button>

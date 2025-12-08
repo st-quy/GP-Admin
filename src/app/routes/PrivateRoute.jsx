@@ -153,10 +153,10 @@ const PrivateRoute = [
             element: <QuestionBank />,
           },
           {
-            path: ":id",
-            element: <QuestionDetail />,
-            breadcrumb: "Detail",
-            role: ["teacher", "admin", "superadmin"],
+            path: ':id',
+            element: <SectionDetail />,
+            breadcrumb: 'Detail',
+            role: ['teacher', 'admin', 'superadmin'],
           },
           {
             path: "create/:skill",

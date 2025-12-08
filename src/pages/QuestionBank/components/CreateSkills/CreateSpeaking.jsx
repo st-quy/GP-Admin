@@ -237,7 +237,7 @@ const CreateSpeaking = () => {
             loading={isPending}
             className='bg-blue-900'
           >
-            Save All
+            Save
           </Button>
         </div>
       </Form>
