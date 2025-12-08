@@ -6,11 +6,12 @@ import {
   Avatar,
   Input,
   Select,
-  Tooltip,
   Pagination,
   Space,
-  message,
   Button,
+  Typography,
+  message,
+  Tag,
 } from "antd";
 import {
   ClockCircleOutlined,
@@ -28,38 +29,43 @@ import HeaderInfo from "@app/components/HeaderInfo";
 import { TopicApi } from "@features/topic/api";
 import { useNavigate } from "react-router-dom";
 import useGlobalData from "@shared/hook/useGlobalData";
+import {
+  useGetTopics,
+  useDeleteTopic,
+  useDeleteTopicSectionByTopicId,
+} from "../../features/topic/hooks";
+import useConfirm from "@shared/hook/useConfirm";
 
 const { Option } = Select;
+const { Text } = Typography;
 
 const statusTagConfig = {
-  "Pending Review": {
-    bg: "bg-gray-100",
-    text: "text-gray-700",
-    label: "Pending Review",
-  },
-  Approved: {
+  submited: { bg: "bg-amber-100", text: "text-gray-700", label: "Submited" },
+  approved: {
     bg: "bg-emerald-100",
-    text: "text-emerald-700",
+    text: "text-gray-700",
     label: "Approved",
   },
-  "Needs Revision": {
-    bg: "bg-amber-100",
-    text: "text-amber-700",
-    label: "Needs Revision",
+  draft: {
+    bg: "bg-gray-100",
+    text: "text-gray-700",
+    label: "Draft",
   },
-  Closed: {
-    bg: "bg-rose-100",
-    text: "text-rose-700",
-    label: "Closed",
-  },
+  rejected: { bg: "bg-rose-100", text: "text-gray-700", label: "Rejected" },
 };
 
-const ExamListPage = () => {
+const TopicListPage = () => {
+  const navigate = useNavigate();
+  const { openConfirmModal, ModalComponent } = useConfirm();
+
+  const { data: topics = [], isLoading } = useGetTopics();
+  const deleteTopic = useDeleteTopic();
+  const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
+
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const pageSize = 5;
-  const navigate = useNavigate();
+  const [pageSize, setPageSize] = useState(5);
   const { globalData, setGlobalData } = useGlobalData();
 
   const onStartHandler = (record) => {
@@ -73,23 +79,8 @@ const ExamListPage = () => {
     localStorage.removeItem("writingAnswers");
     localStorage.removeItem("timeRemainingData");
     localStorage.removeItem("readingSubmitted");
-    navigate(`/${record.id}/waiting-for-approval`);
+    navigate(`/waiting-for-approval/${record.ID}`);
   };
-
-  const { data: topics = [], isLoading } = useQuery({
-    queryKey: ["topics"],
-    queryFn: async () => {
-      try {
-        const { data } = await TopicApi.getAllTopic();
-        return data?.data ?? [];
-      } catch (error) {
-        message.error(
-          error?.response?.data?.message || "Failed to load exams."
-        );
-        return [];
-      }
-    },
-  });
 
   // Map backend topics -> exams used by the UI
   const exams = useMemo(() => {
@@ -107,117 +98,203 @@ const ExamListPage = () => {
   }, [topics]);
 
   const filteredData = useMemo(() => {
-    return exams.filter((item) => {
-      const matchSearch = item.name
-        ?.toLowerCase()
-        .includes(search.toLowerCase());
+    return topics.filter((item) => {
+      const matchSearch = item?.Name?.toLowerCase().includes(
+        search.toLowerCase()
+      );
       const matchStatus =
-        statusFilter === "all" ? true : item.status === statusFilter;
+        statusFilter === "all" ? true : item.Status === statusFilter;
       return matchSearch && matchStatus;
     });
-  }, [search, statusFilter, exams]);
+  }, [topics, search, statusFilter]);
 
   const paginatedData = useMemo(() => {
     const start = (page - 1) * pageSize;
     return filteredData.slice(start, start + pageSize);
-  }, [filteredData, page]);
+  }, [filteredData, page, pageSize]);
 
-  const counts = useMemo(() => {
-    const pending = exams.filter((x) => x.status === "Pending Review").length;
-    const approved = exams.filter((x) => x.status === "Approved").length;
-    const needs = exams.filter((x) => x.status === "Needs Revision").length;
-    const closed = exams.filter((x) => x.status === "Closed").length;
+  const totalItems = filteredData.length;
+  const startItem = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalItems);
 
-    return { pending, approved, needs, closed };
-  }, [exams]);
+  const counts = useMemo(
+    () => ({
+      Submited: topics.filter((t) => t.Status === "submited").length,
+      approved: topics.filter((t) => t.Status === "approved").length,
+      Draft: topics.filter((t) => t.Status === "draft").length,
+      Rejected: topics.filter((t) => t.Status === "rejected").length,
+    }),
+    [topics]
+  );
+
+  const handleDeleteTopic = (topic) => {
+    openConfirmModal({
+      title: "Are you sure you want to delete this topic?",
+      message: "After deleting this topic it will no longer appear.",
+      okText: "Delete",
+      okButtonColor: "#FF4D4F",
+      onConfirm: async () => {
+        try {
+          if (topic.Status === "approved" || topic.Status === "submited") {
+            message.error(
+              "Cannot delete topic with status Approved or Submited"
+            );
+            return;
+          } else {
+            await deleteTopicSectionsByTopicId.mutateAsync(topic.ID);
+
+            await deleteTopic.mutateAsync(topic.ID);
+
+            message.success("Topic and its TopicSections deleted successfully");
+          }
+        } catch (error) {
+          console.error(error);
+          message.error("Failed to delete topic or its Sections");
+        }
+      },
+    });
+  };
+
+  const handleEditTopic = (topic) => {
+    if (topic.Status === "approved" || topic.Status === "submited") {
+      message.error("Cannot edit topic with status Approved or Submited");
+      return;
+    }
+    navigate(`edit/${topic.ID}`);
+  };
 
   const columns = [
     {
-      title: "Exam Name",
-      dataIndex: "name",
-      key: "name",
+      title: "Topic Name",
+      dataIndex: "Name",
+      key: "Name",
       render: (text) => (
         <span className="font-medium text-gray-800">{text}</span>
       ),
     },
     {
-      title: "Duration",
-      dataIndex: "duration",
-      key: "duration",
-      render: (text) => <span className="text-gray-500 text-sm">{text}</span>,
-    },
-    {
       title: "Status",
-      dataIndex: "status",
-      key: "status",
+      dataIndex: "Status",
+      key: "Status",
       render: (status) => {
         const cfg = statusTagConfig[status] || {
-          bg: "bg-gray-100",
-          text: "text-gray-700",
-          label: status || "Unknown",
+          bg: "bg-gray-200",
+          text: "text-gray-600",
+          label: status,
         };
         return (
-          <span
-            className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}
+          <Tag
+            className={`inline-flex items-center rounded-full text-base font-normal ${cfg.bg} ${cfg.text}`}
           >
             {cfg.label}
-          </span>
+          </Tag>
         );
       },
     },
     {
-      title: "Created By",
-      dataIndex: "creator",
-      key: "creator",
-      render: (creator) => (
-        <div className="flex items-center gap-2">
-          <Avatar size="small">{creator?.charAt(0) || "?"}</Avatar>
-          <span className="text-gray-700 text-sm">{creator}</span>
-        </div>
+      title: "Creator",
+      dataIndex: "createdBy",
+      key: "createdBy",
+      render: (text) => (
+        <span className="font-medium text-gray-800">{text}</span>
       ),
     },
     {
-      title: "Actions",
-      key: "actions",
-      render: (_, record) => (
-        <Space size="middle">
-          <Tooltip title="View">
-            <EyeOutlined className="cursor-pointer text-gray-400 hover:text-gray-600" />
-          </Tooltip>
-          <Tooltip title="Do Mock Test">
+      title: "Creation day",
+      dataIndex: "createdAt",
+      key: "createdAt",
+      render: (date) => (
+        <span className="text-gray-500 text-sm">
+          {new Date(date).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      title: "Update date",
+      dataIndex: "updatedAt",
+      key: "updatedAt",
+      render: (date) => (
+        <span className="text-gray-500 text-sm">
+          {new Date(date).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      title: "Updator",
+      dataIndex: "updatedBy",
+      key: "updatedBy",
+      render: (text) => (
+        <span className="font-medium text-gray-800">{text}</span>
+      ),
+    },
+    {
+      title: "Action",
+      key: "action",
+      align: "center",
+      render: (_, record) => {
+        const canModify =
+          record.Status === "draft" || record.Status === "rejected";
+        return (
+          <Space size="middle">
+            {canModify && (
+              <>
+                <Button
+                  type="text"
+                  icon={<EditOutlined />}
+                  className="text-[#1890FF]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleEditTopic(record);
+                  }}
+                />
+
+                <Button
+                  type="text"
+                  icon={<DeleteOutlined />}
+                  className="text-[#FF4D4F]"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteTopic(record);
+                  }}
+                />
+              </>
+            )}
             <PlayCircleOutlined
               type="link"
               className="p-0 flex items-center"
               onClick={() => onStartHandler(record)}
-            /> 
-          </Tooltip>
-          <Tooltip title="Edit">
-            <EditOutlined className="cursor-pointer text-gray-400 hover:text-gray-600" />
-          </Tooltip>
-          <Tooltip title="Delete">
-            <DeleteOutlined className="cursor-pointer text-rose-400 hover:text-rose-600" />
-          </Tooltip>
-        </Space>
-      ),
+            />
+          </Space>
+        );
+      },
     },
   ];
 
   return (
     <>
+      <ModalComponent />
       <HeaderInfo
-        title="Exam List"
-        subtitle="Manage and track all your English exams"
+        title="Topic List"
+        subtitle="Manage and track all topics"
+        SubAction={
+          <Button
+            className="w-full p-5 bg-white text-black border border-gray-300 hover:!bg-gray-100 rounded-lg shadow-sm"
+            onClick={() => navigate("create")}
+          >
+            Create New Topic
+          </Button>
+        }
       />
-      <div className='bg-gray-50 p-6'>
-        <div className='mx-auto space-y-6'>
+      <div className="bg-gray-50 p-6">
+        <div className="mx-auto space-y-6">
           {/* Top Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="shadow-sm border-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-gray-500 text-sm">Pending Review</div>
+                  <div className="text-amber-500 text-sm">Submited</div>
                   <div className="text-2xl font-semibold mt-1">
-                    {counts.pending}
+                    {counts.Submited}
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
@@ -225,7 +302,6 @@ const ExamListPage = () => {
                 </div>
               </div>
             </Card>
-
             <Card className="shadow-sm border-none">
               <div className="flex items-center justify-between">
                 <div>
@@ -239,13 +315,12 @@ const ExamListPage = () => {
                 </div>
               </div>
             </Card>
-
             <Card className="shadow-sm border-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-amber-500 text-sm">Needs Revision</div>
+                  <div className="text-gray-500 text-sm">Draft</div>
                   <div className="text-2xl font-semibold mt-1">
-                    {counts.needs}
+                    {counts.Draft}
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center">
@@ -253,13 +328,12 @@ const ExamListPage = () => {
                 </div>
               </div>
             </Card>
-
             <Card className="shadow-sm border-none">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-rose-500 text-sm">Closed</div>
+                  <div className="text-rose-500 text-sm">Rejected</div>
                   <div className="text-2xl font-semibold mt-1">
-                    {counts.closed}
+                    {counts.Rejected}
                   </div>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center">
@@ -269,13 +343,13 @@ const ExamListPage = () => {
             </Card>
           </div>
 
-          {/* Table + Filters */}
+          {/* Table & Filters */}
           <Card className="shadow-sm border-none">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
               <Input
                 allowClear
                 className="sm:max-w-xs"
-                placeholder="Search by exam name..."
+                placeholder="Search topic name..."
                 prefix={<SearchOutlined />}
                 value={search}
                 onChange={(e) => {
@@ -292,38 +366,52 @@ const ExamListPage = () => {
                 }}
               >
                 <Option value="all">All Statuses</Option>
-                <Option value="Pending Review">Pending Review</Option>
-                <Option value="Approved">Approved</Option>
-                <Option value="Needs Revision">Needs Revision</Option>
-                <Option value="Closed">Closed</Option>
+                <Option value="submited">Submited</Option>
+                <Option value="draft">Draft</Option>
+                <Option value="approved">Approved</Option>
+                <Option value="rejected">Rejected</Option>
               </Select>
             </div>
 
             <Table
-              rowKey="id"
+              rowKey="ID"
               columns={columns}
               dataSource={paginatedData}
               pagination={false}
-              loading={isLoading}
+              rowClassName="hover:bg-gray-50 cursor-pointer"
+              onRow={(record) => ({
+                // onClick: () => navigate(`/topics/${record.ID}`),
+              })}
             />
 
-            {/* Footer text + Pagination */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4">
-              <span className="text-sm text-gray-500">
-                {filteredData.length > 0
-                  ? `Showing ${(page - 1) * pageSize + 1}-${Math.min(
-                      page * pageSize,
-                      filteredData.length
-                    )} of ${filteredData.length}`
-                  : "No exams found"}
-              </span>
-              <Pagination
-                current={page}
-                pageSize={pageSize}
-                total={filteredData.length}
-                onChange={(p) => setPage(p)}
-                showSizeChanger={false}
-              />
+            {/* Custom Pagination Footer */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 p-4 border-t border-gray-100">
+              <Text className="text-gray-500">
+                {totalItems === 0
+                  ? "No data"
+                  : `Showing ${startItem}–${endItem} of ${totalItems}`}
+              </Text>
+              <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600"'>
+                <Pagination
+                  current={page}
+                  total={totalItems}
+                  pageSize={pageSize}
+                  showSizeChanger={false}
+                  onChange={(p) => setPage(p)}
+                />
+                <Select
+                  className="w-[120px]"
+                  value={String(pageSize)}
+                  onChange={(val) => {
+                    setPageSize(Number(val));
+                    setPage(1);
+                  }}
+                >
+                  <Option value="5">5 / pages</Option>
+                  <Option value="10">10 / pages</Option>
+                  <Option value="20">20 / pages</Option>
+                </Select>
+              </div>
             </div>
           </Card>
         </div>
@@ -332,4 +420,4 @@ const ExamListPage = () => {
   );
 };
 
-export default ExamListPage;
+export default TopicListPage;

@@ -33,8 +33,10 @@ import WritingTest from '@pages/MockTest/Writing/writing-test.jsx'
 import TestLayout from '@shared/ui/test-layout'
 import WaitingForApproval from '@features/welcome/ui/waiting-for-approval.jsx'
 import SubmissionPage from '@pages/MockTest/submission-page.jsx'
+import SectionDetail from "@pages/Section/detail/index.jsx";
 const QuestionBank = lazy(() => import("@pages/QuestionBank/index.jsx"));
 import LocalPointsPage from "@pages/MockTest/LocalPointsPage.jsx";
+const CreateExamPage = lazy(() => import('@pages/Exam/components/CreateExam.jsx'));
 
 const PrivateRoute = [
   {
@@ -144,12 +146,46 @@ const PrivateRoute = [
         ],
       },
       {
+        path: 'questions',
+        breadcrumb: 'Question Bank',
+        children: [
+          {
+            index: true,
+            element: <QuestionBank />,
+          },
+          {
+            path: ':id',
+            element: <SectionDetail />,
+            breadcrumb: 'Detail',
+            role: ['teacher', 'admin', 'superadmin'],
+          },
+          {
+            path: 'create/:skill',
+            element: <CreateQuestion />,
+            breadcrumb: 'Create New Question ',
+            role: ['teacher', 'admin', 'superadmin'],
+          },
+        ],
+      },
+      {
         path: "exam",
         breadcrumb: "Exam Management",
         children: [
           {
             index: true,
             element: <ExamListPage />,
+          },
+          {
+            path: 'create',
+            element: <CreateExamPage />,
+            breadcrumb: 'Create New Exam ',
+            role: ['teacher', 'admin', 'superadmin'],
+          },
+          {
+            path: 'edit/:id',
+            element: <CreateExamPage />,
+            breadcrumb: 'Edit Exam ',
+            role: ['teacher', 'admin', 'superadmin'],
           },
         ],
       },
@@ -256,7 +292,7 @@ const PrivateRoute = [
         ]
       },
       {
-        path: '/:topicId/waiting-for-approval/',
+        path: '/waiting-for-approval/:topicId',
         element: <WaitingForApproval />
       },
       {
