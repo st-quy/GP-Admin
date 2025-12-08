@@ -34,7 +34,6 @@ import TestLayout from '@shared/ui/test-layout'
 import WaitingForApproval from '@features/welcome/ui/waiting-for-approval.jsx'
 import SubmissionPage from '@pages/MockTest/submission-page.jsx'
 const QuestionBank = lazy(() => import("@pages/QuestionBank/index.jsx"));
-const QuestionDetail = lazy(() => import("@pages/QuestionBank/QuestionDetail"));
 import LocalPointsPage from "@pages/MockTest/LocalPointsPage.jsx";
 
 const PrivateRoute = [
@@ -141,28 +140,6 @@ const PrivateRoute = [
             path: "",
             element: <ProfilePage />,
             breadcrumb: "",
-          },
-        ],
-      },
-      {
-        path: "questions",
-        breadcrumb: "Question Bank",
-        children: [
-          {
-            index: true,
-            element: <QuestionBank />,
-          },
-          {
-            path: ':id',
-            element: <SectionDetail />,
-            breadcrumb: 'Detail',
-            role: ['teacher', 'admin', 'superadmin'],
-          },
-          {
-            path: "create/:skill",
-            element: <CreateQuestion />,
-            breadcrumb: "Create New Question ",
-            role: ["teacher", "admin", "superadmin"],
           },
         ],
       },
