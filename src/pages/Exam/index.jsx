@@ -21,6 +21,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
+  PlayCircleOutlined,
 } from "@ant-design/icons";
 import { useQuery } from "@tanstack/react-query";
 import HeaderInfo from "@app/components/HeaderInfo";
@@ -65,8 +66,8 @@ const ExamListPage = () => {
     localStorage.setItem("listening_test_answers", []);
     localStorage.setItem("listening_formatted_answers", []);
     localStorage.setItem("listening_played_questions", []);
-    localStorage.setItem("listening_test_submitted", false);
-    localStorage.setItem("isSubmitted", false);
+    localStorage.removeItem("listening_test_submitted", false);
+    localStorage.removeItem("isSubmitted", false);
     localStorage.removeItem("grammarAnswers");
     localStorage.removeItem("readingAnswers");
     localStorage.removeItem("writingAnswers");
@@ -184,13 +185,11 @@ const ExamListPage = () => {
             <EyeOutlined className="cursor-pointer text-gray-400 hover:text-gray-600" />
           </Tooltip>
           <Tooltip title="Do Mock Test">
-            <Button
+            <PlayCircleOutlined
               type="link"
               className="p-0 flex items-center"
               onClick={() => onStartHandler(record)}
-            >
-              Mock Test
-            </Button>
+            /> 
           </Tooltip>
           <Tooltip title="Edit">
             <EditOutlined className="cursor-pointer text-gray-400 hover:text-gray-600" />
@@ -209,13 +208,8 @@ const ExamListPage = () => {
         title="Exam List"
         subtitle="Manage and track all your English exams"
       />
-<<<<<<< Updated upstream
       <div className='bg-gray-50 p-6'>
         <div className='mx-auto space-y-6'>
-=======
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="mx-auto space-y-6">
->>>>>>> Stashed changes
           {/* Top Summary Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card className="shadow-sm border-none">

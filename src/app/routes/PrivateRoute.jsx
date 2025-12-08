@@ -35,6 +35,7 @@ import WaitingForApproval from '@features/welcome/ui/waiting-for-approval.jsx'
 import SubmissionPage from '@pages/MockTest/submission-page.jsx'
 const QuestionBank = lazy(() => import("@pages/QuestionBank/index.jsx"));
 const QuestionDetail = lazy(() => import("@pages/QuestionBank/QuestionDetail"));
+import LocalPointsPage from "@pages/MockTest/LocalPointsPage.jsx";
 
 const PrivateRoute = [
   {
@@ -284,6 +285,10 @@ const PrivateRoute = [
       {
         path: 'complete-test',
         element: <SubmissionPage />
+      },
+      {
+        path: 'local-points-page',
+        element: <LocalPointsPage/>
       },
     ],
   },

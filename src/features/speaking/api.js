@@ -12,7 +12,7 @@ const fetchTopicData = async partNumber => {
       params: { skillName: 'SPEAKING' }
     })
 
-    const parts = response.data.Parts || []
+    const parts = response.data?.Sections?.[0]?.Parts || []
     const selectedPart = parts.find(part => part.Sequence === partNumber)
 
     return selectedPart || null

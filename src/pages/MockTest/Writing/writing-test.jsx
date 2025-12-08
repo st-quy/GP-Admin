@@ -78,7 +78,7 @@ const WritingTest = () => {
     }
     localStorage.setItem('writingAnswers', JSON.stringify(result))
     localStorage.setItem('writingSubmitted', 'true')
-    console.log('writing answers:',JSON.parse(localStorage.getItem("writingResult")))
+    console.log('writing answers:',JSON.parse(localStorage.getItem("writingAnswers")))
     localStorage.removeItem('current_skill')
 
     navigate('/complete-test')

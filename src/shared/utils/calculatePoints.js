@@ -7,13 +7,8 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
   items.forEach((item) => {
     if (!item) return;
 
-    const {
-      questionId,
-      type,
-      skillType,
-      correctContent,
-      rawStudentAnswer,
-    } = item;
+    const { questionId, type, skillType, correctContent, rawStudentAnswer } =
+      item;
 
     if (!rawStudentAnswer) return;
 
@@ -96,9 +91,7 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
       const minLength = Math.min(studentAnswers.length, correctAnswers.length);
 
       for (let i = 0; i < minLength; i++) {
-        if (
-          studentAnswers[i].key.trim() === correctAnswers[i].key.trim()
-        ) {
+        if (studentAnswers[i].key.trim() === correctAnswers[i].key.trim()) {
           isCorrect = true;
           totalPoints += pointsPerQuestion;
         }
@@ -109,34 +102,40 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
     // DROPDOWN LIST
     // =====================================
     else if (type === "dropdown-list") {
-      const studentAnswers = JSON.parse(rawStudentAnswer).map((item) => ({
-        key: String(item.key).split(".")[0].trim(),
-        value: String(item.value).trim(),
-      }));
+      const parsedStudent = JSON.parse(rawStudentAnswer);
 
-      const correctAnswersInclude0 = correctContent.correctAnswer.map((item) => ({
-        key: String(item.key).trim(),
-        value: String(item.value).trim(),
-      }));
+      // normalize & remove example (key "0") from student answers
+      const studentAnswers = parsedStudent
+        .map((item) => ({
+          key: String(item.key).split(".")[0].trim(),
+          value: String(item.value).trim(),
+        }))
+        .filter((item) => item.key !== "0");
 
-      const correctAnswers = correctAnswersInclude0.filter(
-        (item) => item.key !== "0"
-      );
+      // normalize & remove example (key "0") from correct answers
+      const correctAnswers = (correctContent.correctAnswer || [])
+        .map((item) => ({
+          key: String(item.key).trim(),
+          value: String(item.value).trim(),
+        }))
+        .filter((item) => item.key !== "0");
 
       logItem.studentAnswer = studentAnswers;
       logItem.correctAnswer = correctAnswers;
 
-      correctAnswers.forEach((correct, index) => {
-        const student = studentAnswers[index];
-        if (
-          student &&
-          student.key === correct.key &&
-          student.value === correct.value
-        ) {
+      let pointAdded = 0;
+
+      correctAnswers.forEach((correct) => {
+        const student = studentAnswers.find((s) => s.key === correct.key);
+
+        if (student && student.value === correct.value) {
           isCorrect = true;
-          totalPoints += pointsPerQuestion;
+          totalPoints += pointsPerQuestion; // each real gap = 50/29
+          pointAdded += pointsPerQuestion;
         }
       });
+
+      logItem.pointAdded = pointAdded;
     }
 
     // =====================================

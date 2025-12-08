@@ -91,7 +91,7 @@ const SubmissionPage = () => {
     try {
       const keysToRemove = ['key', 'globalData']
       keysToRemove.forEach(key => localStorage.removeItem(key))
-      navigate('/')
+      navigate('/local-points-page')
     } catch (err) {
       setError(err.message)
       message.error('Navigation failed. Please try again.')
@@ -118,7 +118,7 @@ const SubmissionPage = () => {
         className="mt-6 flex h-14 items-center gap-3 bg-[#003087] px-6 py-2 text-sm text-white hover:!bg-[#002b6c] md:text-base"
         onClick={handleNavigation}
       >
-        Home <span>&rarr;</span>
+        Show result <span>&rarr;</span>
       </Button>
       {error && (
         <p className="mt-4 text-sm text-red-600">

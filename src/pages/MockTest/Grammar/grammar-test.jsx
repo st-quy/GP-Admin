@@ -6,7 +6,7 @@ import QuestionNavigatorContainer from "@features/grammar/ui/grammar-question-na
 import FlagButton from "@shared/ui/flag-button";
 import NextScreen from "@shared/ui/submission/next-screen";
 import { useQuery } from "@tanstack/react-query";
-import { Card, Divider, Spin, Typography } from "antd";
+import { Button, Card, Divider, Spin, Typography } from "antd";
 import { useEffect, useState, useCallback } from "react";
 import { calculatePoints } from "@shared/utils/calculatePoints";
 
@@ -58,7 +58,6 @@ const buildGrammarItems = (questions, answers) => {
     })
     .filter(Boolean);
 };
-
 
 const getInitialAnswers = () => {
   try {
@@ -128,20 +127,65 @@ const GrammarTest = () => {
     localStorage.setItem("flaggedQuestions", JSON.stringify(updatedFlags));
   };
 
+  const handleAutoFillCorrect = () => {
+    if (!mergedArray.length) return;
+
+    const newAnswers = { ...answers };
+
+    mergedArray.forEach((q) => {
+      const key = String(q.ID);
+
+      let parsed;
+      try {
+        parsed =
+          typeof q.AnswerContent === "string"
+            ? JSON.parse(q.AnswerContent)
+            : q.AnswerContent;
+      } catch {
+        return;
+      }
+
+      if (!parsed) return;
+
+      // Many MC questions use: [{ options, correctAnswer }]
+      if (q.Type === "multiple-choice") {
+        const cfg = Array.isArray(parsed) ? parsed[0] : parsed;
+        if (!cfg || cfg.correctAnswer == null) return;
+        newAnswers[key] = String(cfg.correctAnswer);
+        return;
+      }
+
+      // Generic fallback if AnswerContent has correctAnswer
+      if (parsed.correctAnswer !== undefined) {
+        newAnswers[key] = parsed.correctAnswer;
+      }
+    });
+
+    setAnswers(newAnswers);
+  };
+
+  const handleClearAnswers = () => {
+    setAnswers({});
+
+    setFlaggedQuestions({});
+
+    localStorage.removeItem("grammarAnswers");
+    localStorage.removeItem("flaggedQuestions");
+  };
+
   const handleSubmit = useCallback(async () => {
     if (!data?.Sections?.[0]?.Parts) return;
     const questions = data.Sections[0].Parts.flatMap(
       (part) => part.Questions || []
     );
     const items = buildGrammarItems(questions, answers);
-    const { points, tracking } = calculatePoints({
+    const { points } = calculatePoints({
       items,
       skillName: "GRAMMAR AND VOCABULARY",
       pointsPerQuestion: 1,
     });
-    console.log("Grammar points:", points);
-    console.log("Grammar tracking:", tracking);
     setIsSubmitted(true);
+    localStorage.setItem("grammarPoints", String(points));
     localStorage.setItem("isSubmitted", "true");
     localStorage.setItem("current_skill", "reading");
   }, [data, answers]);
@@ -194,7 +238,14 @@ const GrammarTest = () => {
       <Divider orientation="left">
         <Typography.Title level={1}>Grammar and Vocabulary</Typography.Title>
       </Divider>
-
+      <div className="mb-4 flex justify-end">
+        <Button type="default" onClick={handleAutoFillCorrect}>
+          Auto-Fill
+        </Button>
+        <Button danger onClick={handleClearAnswers}>
+          Clear Answers
+        </Button>
+      </div>
       <Card className="mb-6 flex w-full">
         <div className="mb-5 flex flex-row gap-80">
           <Title level={2} className="text-l mb-5 w-3/4 font-semibold">
