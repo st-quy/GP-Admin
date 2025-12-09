@@ -1,4 +1,3 @@
-import SharedHeader from '@shared/ui/base-header'
 import useAntiCheat from '@shared/utils/antiCheat'
 import { Layout, Button, Typography, Card } from 'antd'
 import { useNavigate } from 'react-router-dom'
@@ -50,7 +49,6 @@ const IntroductionPage = () => {
 
   return (
     <Layout>
-      <SharedHeader />
       <Content className="px-4 py-4 md:px-6">
         <div className="p-3">
           <Card className="mx-auto w-full rounded-2xl px-4 shadow-lg md:w-[95%]">

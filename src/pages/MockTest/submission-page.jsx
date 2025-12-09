@@ -1,6 +1,6 @@
 import { SubmissionImage } from '@assets/images'
 import { createSelector } from '@reduxjs/toolkit'
-import { Button, message, Spin, Typography } from 'antd'
+import { Button, message, Typography } from 'antd'
 import { useEffect, useState } from 'react'
 import { AiOutlineCheckCircle } from 'react-icons/ai'
 import { useSelector } from 'react-redux'

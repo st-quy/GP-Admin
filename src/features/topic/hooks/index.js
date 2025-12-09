@@ -1,9 +1,8 @@
-// @ts-nocheck
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { message } from "antd";
 import { TopicApi } from "../api";
-import { useSelector } from "react-redux";
-import { useParams, useNavigate } from "react-router-dom";
+// import { useSelector } from "react-redux";
+// import { useParams, useNavigate } from "react-router-dom";
 
 // export const useGetTopicDetail = () => {
 //   const { topicData } = useSelector((state) => state.session);

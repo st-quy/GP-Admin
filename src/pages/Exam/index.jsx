@@ -3,7 +3,6 @@ import React, { useMemo, useState } from "react";
 import {
   Card,
   Table,
-  Avatar,
   Input,
   Select,
   Pagination,
@@ -18,17 +17,13 @@ import {
   CheckCircleOutlined,
   ExclamationCircleOutlined,
   CloseCircleOutlined,
-  EyeOutlined,
   EditOutlined,
   DeleteOutlined,
   SearchOutlined,
   PlayCircleOutlined,
 } from "@ant-design/icons";
-import { useQuery } from "@tanstack/react-query";
 import HeaderInfo from "@app/components/HeaderInfo";
-import { TopicApi } from "@features/topic/api";
 import { useNavigate } from "react-router-dom";
-import useGlobalData from "@shared/hook/useGlobalData";
 import {
   useGetTopics,
   useDeleteTopic,
@@ -66,7 +61,6 @@ const TopicListPage = () => {
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
-  const { globalData, setGlobalData } = useGlobalData();
 
   const onStartHandler = (record) => {
     localStorage.setItem("listening_test_answers", []);
@@ -260,6 +254,7 @@ const TopicListPage = () => {
               </>
             )}
             <PlayCircleOutlined
+              title="Do mock test"
               type="link"
               className="p-0 flex items-center"
               onClick={() => onStartHandler(record)}
