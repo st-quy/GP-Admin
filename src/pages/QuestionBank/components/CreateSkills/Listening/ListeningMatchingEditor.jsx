@@ -85,7 +85,7 @@ const ListeningMatchingEditor = ({
                 help={errors?.left?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space align='center' className='w-full'>
+                <div className='w-full flex items-center gap-2'>
                   <Text style={{ width: 24 }}>{idx + 1}</Text>
 
                   <Input
@@ -100,7 +100,7 @@ const ListeningMatchingEditor = ({
                     icon={<DeleteOutlined />}
                     onClick={() => removeLeftItem(idx)}
                   />
-                </Space>
+                </div>
               </Form.Item>
             </div>
           ))}
@@ -125,7 +125,7 @@ const ListeningMatchingEditor = ({
                 help={errors?.right?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space align='center' className='w-full'>
+                <div className='w-full flex items-center gap-2'>
                   <div
                     style={{
                       width: 24,
@@ -152,7 +152,7 @@ const ListeningMatchingEditor = ({
                     icon={<DeleteOutlined />}
                     onClick={() => removeRightItem(idx)}
                   />
-                </Space>
+                </div>
               </Form.Item>
             </div>
           ))}
@@ -179,7 +179,7 @@ const ListeningMatchingEditor = ({
                 help={errors?.mapping?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space align='center' className='w-full'>
+                <div className='w-full flex items-center gap-2'>
                   <Text style={{ width: 40 }}>{idx + 1} →</Text>
 
                   <Select
@@ -195,7 +195,7 @@ const ListeningMatchingEditor = ({
                       </Select.Option>
                     ))}
                   </Select>
-                </Space>
+                </div>
               </Form.Item>
             </Col>
           ))}

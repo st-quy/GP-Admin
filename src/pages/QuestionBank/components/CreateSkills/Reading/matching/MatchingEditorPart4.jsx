@@ -126,7 +126,7 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                 help={errors?.left?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space style={{ width: '100%' }} align='center'>
+                <div className='w-full flex items-center gap-2'>
                   <Text style={{ width: 24, textAlign: 'right' }}>
                     {idx + 1}
                   </Text>
@@ -143,7 +143,7 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                     icon={<DeleteOutlined />}
                     onClick={() => removeLeftItem(idx)}
                   />
-                </Space>
+                </div>
               </Form.Item>
             </div>
           ))}
@@ -171,7 +171,7 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                 help={errors?.right?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space style={{ width: '100%' }} align='center'>
+                <div className='w-full flex items-center gap-2'>
                   <div
                     style={{
                       width: 24,
@@ -198,7 +198,7 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                     icon={<DeleteOutlined />}
                     onClick={() => removeRightItem(item.id)}
                   />
-                </Space>
+                </div>
               </Form.Item>
             </div>
           ))}

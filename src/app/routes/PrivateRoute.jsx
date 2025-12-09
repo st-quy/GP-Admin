@@ -14,6 +14,8 @@ import CreateQuestion from '@pages/QuestionBank/components/CreateQuestion.jsx';
 import ExamListPage from '@pages/Exam/index.jsx';
 import SectionListeningDetail from '@pages/Section/detail/components/SectionListeningDetail.jsx';
 import SectionDetail from '@pages/Section/detail/index.jsx';
+import UpdateSpeaking from '@pages/QuestionBank/components/UpdateSkills/UpdateSpeaking.jsx';
+import SectionUpdate from '@pages/Section/update/index.jsx';
 const QuestionBank = lazy(() => import('@pages/QuestionBank/index.jsx'));
 const QuestionDetail = lazy(() => import('@pages/QuestionBank/QuestionDetail'));
 
@@ -142,6 +144,12 @@ const PrivateRoute = [
             path: 'create/:skill',
             element: <CreateQuestion />,
             breadcrumb: 'Create New Question ',
+            role: ['teacher', 'admin', 'superadmin'],
+          },
+          {
+            path: 'update/:id',
+            element: <SectionUpdate />,
+            breadcrumb: 'Update Section ',
             role: ['teacher', 'admin', 'superadmin'],
           },
         ],

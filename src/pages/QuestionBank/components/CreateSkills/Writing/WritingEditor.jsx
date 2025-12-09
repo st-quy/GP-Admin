@@ -100,7 +100,7 @@ const WritingEditor = ({ partType }) => {
           />
         </Form.Item>
 
-        <Form.Item
+        {/* <Form.Item
           name={['part2', 'wordLimit']}
           label='Word limit'
           rules={[{ required: true, message: 'Word limit is required' }]}
@@ -111,7 +111,7 @@ const WritingEditor = ({ partType }) => {
             type='number'
             min={1}
           />
-        </Form.Item>
+        </Form.Item> */}
       </div>
     );
   }
@@ -183,7 +183,7 @@ const WritingEditor = ({ partType }) => {
                       <TextArea rows={2} placeholder='Enter question...' />
                     </Form.Item>
 
-                    <Form.Item
+                    {/* <Form.Item
                       {...field}
                       name={[field.name, 'wordLimit']}
                       fieldKey={[field.fieldKey, 'wordLimit']}
@@ -198,7 +198,7 @@ const WritingEditor = ({ partType }) => {
                         type='number'
                         min={1}
                       />
-                    </Form.Item>
+                    </Form.Item> */}
                   </Space>
                 </div>
               ))}
@@ -252,7 +252,7 @@ const WritingEditor = ({ partType }) => {
               placeholder='e.g., Write an email to your friend...'
             />
           </Form.Item>
-          <Form.Item
+          {/* <Form.Item
             name={['part4', 'q1_wordLimit']}
             label='Word limit'
             rules={[{ required: true, message: 'Word limit is required' }]}
@@ -263,7 +263,7 @@ const WritingEditor = ({ partType }) => {
               type='number'
               min={1}
             />
-          </Form.Item>
+          </Form.Item> */}
         </div>
 
         <div className='border border-gray-200 rounded-lg p-4 bg-gray-50'>
@@ -277,7 +277,7 @@ const WritingEditor = ({ partType }) => {
               placeholder='e.g., Write an email to the club president...'
             />
           </Form.Item>
-          <Form.Item
+          {/* <Form.Item
             name={['part4', 'q2_wordLimit']}
             label='Word limit'
             rules={[{ required: true, message: 'Word limit is required' }]}
@@ -287,7 +287,7 @@ const WritingEditor = ({ partType }) => {
               addonAfter='words'
               // nếu muốn cho dạng range thì để type text
             />
-          </Form.Item>
+          </Form.Item> */}
         </div>
       </div>
     );
