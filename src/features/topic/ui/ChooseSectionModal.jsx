@@ -12,6 +12,7 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
   const { data: sections = [], isLoading } = useGetSections(skillName, {
     enabled: open,
   });
+      const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
 
   const toggleSelect = (section) => {
     setSelectedSectionsBySkill((prev) => {
@@ -34,6 +35,7 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
   const handleSubmit = () => {
     const sectionsSelected = selectedSectionsBySkill[skillName] || [];
     onSelect(sectionsSelected);
+    console.log(sectionsSelected)
     onClose();
   };
 
@@ -100,18 +102,65 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
                 {isExpanded && (
                   <div style={{ marginTop: 16, paddingLeft: 36 }}>
                     {(section.Parts || []).map((part) => (
-                      <div key={part.ID} style={{ marginBottom: 12, padding: 12, border: "1px solid #E5E7EB", borderRadius: 8, background: "#FAFAFA" }}>
-                        <Text strong>{part.Content}</Text>
-                        <br />
-                        <Text type="secondary">{part.SubContent}</Text>
-                        <ul style={{ marginTop: 8 }}>
-                          {(part.Questions || []).map((q) => (
-                            <li key={q.ID} style={{ marginBottom: 4 }}>
-                              <Text> {q.Content}</Text>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
+                      <div
+                                    key={part.ID}
+                                    style={{
+                                        marginBottom: 12,
+                                        padding: 12,
+                                        border: "1px solid #E5E7EB",
+                                        borderRadius: 8,
+                                        background: "white",
+                                    }}
+                                >
+
+                                    <Text strong>{part.Content}</Text>
+                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                        <>
+                                            <br />
+                                            <Text type="secondary">{part.SubContent}</Text>
+                                        </>
+                                    )}
+
+                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                        <div style={{ marginTop: 8 }}>
+                                            {(part.Questions || []).map((q, index) => (
+                                                <div
+                                                    key={q.ID}
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "flex-start",
+                                                        gap: 12,
+                                                        marginBottom: 10,
+                                                    }}
+                                                >
+                                                    <div
+                                                        style={{
+                                                            width: 28,
+                                                            height: 28,
+                                                            borderRadius: "50%",
+                                                            background: "#0a2a79",
+                                                            color: "white",
+                                                            display: "flex",
+                                                            alignItems: "center",
+                                                            justifyContent: "center",
+                                                            fontWeight: 600,
+                                                            fontSize: 14,
+                                                            flexShrink: 0,
+                                                        }}
+                                                    >
+                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
+                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
+                                                            : (index + 1)}
+                                                    </div>
+
+                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
+                                                        {q.Content}
+                                                    </Text>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
                     ))}
                   </div>
                 )}

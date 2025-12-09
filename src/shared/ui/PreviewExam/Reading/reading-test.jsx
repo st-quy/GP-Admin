@@ -7,6 +7,7 @@ const { Title, Text } = Typography;
 
 const ReadingTest = ({ dataExam }) => {
   const testData = transformReadingData(dataExam);
+  
 
   const [currentPartIndex, setCurrentPartIndex] = useState(0);
 
