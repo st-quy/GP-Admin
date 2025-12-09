@@ -432,8 +432,8 @@ export const transformListeningData = (data) => {
   // MAIN RETURN
   // ------------------------
   return {
-    ID: topicID,
-    Name: data.Name,
+    ID: topicID || null,
+    Name: data.Name || null,
     createdAt,
     updatedAt,
     Parts: listeningSkill.Parts.map((part) => ({
@@ -580,10 +580,10 @@ export const transformGrammarData = (data) => {
       Questions: questions,
     };
   });
-
+console.log("partGrama", fullParts)
   return {
-    ID: topicID,
-    Name: topicName,
+    ID: topicID || null,
+    Name: topicName || null,
     createdAt: grammarSkill.createdAt ?? new Date().toISOString(),
     updatedAt: grammarSkill.updatedAt ?? new Date().toISOString(),
     Parts: fullParts,
@@ -815,14 +815,15 @@ export const transformReadingData = (data) => {
       Questions: questions,
     };
   });
-
+  console.log("partreading", parts)
   return {
-    ID: topicID,
-    Name: topicName,
+    ID: topicID || null,
+    Name: topicName || null,
     createdAt: data.createdAt ?? new Date().toISOString(),
     updatedAt: data.updatedAt ?? new Date().toISOString(),
     Parts: parts,
   };
+  
 };
 
 export const transformWritingData = (data) => {
@@ -868,10 +869,10 @@ export const transformWritingData = (data) => {
       Questions: questions,
     };
   });
-
+  console.log("partwriting", parts)
   return {
-    ID: topicID,
-    Name: topicName,
+    ID: topicID || null,
+    Name: topicName || null,
     createdAt: data.createdAt ?? new Date().toISOString(),
     updatedAt: data.updatedAt ?? new Date().toISOString(),
     Parts: parts,

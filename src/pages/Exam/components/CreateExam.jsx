@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect, useState } from "react";
 import HeaderInfo from '@app/components/HeaderInfo';
 import {
@@ -5,7 +6,7 @@ import {
     ReadOutlined,
     EditOutlined,
     BookOutlined,
-    CustomerServiceOutlined
+    CustomerServiceOutlined,
 } from "@ant-design/icons";
 import {
     Card,
@@ -17,9 +18,13 @@ import {
     Divider,
     message
 } from "antd";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
 import ChooseSectionModal from "@features/topic/ui/ChooseSectionModal";
+import PreviewExam from "@shared/ui/PreviewExam";
+import { useSelector } from "react-redux";
+import useConfirm from "@shared/hook/useConfirm";
+import RejectExamModal from "@features/topic/ui/RejectModal";
 
 const { Text, Title } = Typography;
 
@@ -36,18 +41,27 @@ const CreateExamPage = () => {
     const [form] = Form.useForm();
 
     const { id: topicId } = useParams();
+    const location = useLocation();
+    const isViewMode = location.pathname.includes("/exam/view");
+    const isEditMode = location.pathname.includes("/exam/edit");
 
     const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
     const [openModal, setOpenModal] = useState(false);
     const [selectedParts, setSelectedParts] = useState([]); // chỉ chứa ID section
     const [selectedSectionBySkill, setSelectedSectionBySkill] = useState({}); // chứa ID theo skill
     const [instructions, setInstructions] = useState([]); // chứa full section để hiển thị UI
+    const [previewOpen, setPreviewOpen] = useState(false);
+    const [previewData, setPreviewData] = useState(null);
+    const { openConfirmModal, ModalComponent } = useConfirm();
+    const [rejectOpen, setRejectOpen] = useState(false);
+
 
     const { mutateAsync: createExam } = useCreateTopic();
     const { mutateAsync: createTopicSection } = useCreateTopicSection();
     const { data: topicData, isLoading } = useGetTopicWithRelations(topicId);
     const { mutateAsync: updateTopic } = useUpdateTopic();
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
+    const { role } = useSelector((state) => state.auth);
 
     const handlePartSelect = (sections) => {
         if (!sections || sections.length === 0) return;
@@ -62,7 +76,6 @@ const CreateExamPage = () => {
         setSelectedParts((prevParts) => {
             const filtered = prevParts.filter(id => id !== oldSectionId);
             const updated = [...filtered, sectionId];
-            console.log("Selected Parts after update:", updated);
             return [...filtered, sectionId];
         });
 
@@ -77,9 +90,66 @@ const CreateExamPage = () => {
             const filtered = prev.filter(i => i.skill !== selectedSkill);
             return [...filtered, { skill: selectedSkill, section }];
         });
-
         setOpenModal(false);
     };
+
+    const handlePreviewExam = () => {
+        if (!instructions.length) {
+            message.warning("Please select at least one skill before preview");
+            return;
+        }
+
+        const skillOrder = [
+            "LISTENING",
+            "GRAMMAR AND VOCABULARY",
+            "READING",
+            "WRITING",
+            "SPEAKING",
+        ];
+
+
+
+        const skills = skillOrder.map((skillName) => {
+            const found = instructions.find(i => i.skill === skillName);
+
+            if (!found || !Array.isArray(found.section?.Parts)) {
+                return { Name: skillName, Parts: [] };
+            }
+
+            // ✅ CLONE + FIX DATA TẠI ĐÂY
+            const safeParts = found.section.Parts.map(part => ({
+                ...part,
+                Questions: (part.Questions || []).map(q => ({
+                    ...q,
+                    AnswerContent: {
+                        ...(q.AnswerContent || {}),
+                        correctAnswer:
+                            typeof q?.AnswerContent?.correctAnswer === "string"
+                                ? q.AnswerContent.correctAnswer
+                                : "",
+                    },
+                })),
+            }));
+
+            return {
+                Name: skillName,
+                Parts: safeParts,
+            };
+        });
+
+        const previewExamData = {
+            Skills: skills,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+
+        console.log("✅ PreviewExamData (SAFE):", previewExamData);
+
+        setPreviewData(previewExamData);
+        setPreviewOpen(true);
+    };
+
+
 
     const handleSaveExam = async () => {
         try {
@@ -141,6 +211,43 @@ const CreateExamPage = () => {
         }
     };
 
+    const handleApproveExam = async () => {
+        openConfirmModal({
+            title: 'Are you sure you want to approve this exam?',
+            message: 'Once approved, the exam will be finalized and eligible to be added to a test sessions.',
+            okText: "Approve",
+            okButtonColor: "#00a405 ",
+            onConfirm: async () => {
+                try {
+                    if (!topicId) return message.error("Topic ID is missing");
+                    await updateTopic({ id: topicId, data: { Status: 'approved' } });
+                    message.success("Exam approved successfully!");
+                    navigate("/exam");
+                } catch (error) {
+                    console.error(error);
+                    message.error("Failed to approve exam");
+                }
+            },
+        });
+    }
+
+    const handleRejectExam = async () => {
+        try {
+            if (!topicId) return message.error("Topic ID is missing");
+
+            await updateTopic({
+                id: topicId,
+                data: { Status: 'rejected' }
+            });
+
+            message.success("Exam rejected successfully!");
+            setRejectOpen(false);
+            navigate("/exam");
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to reject exam");
+        }
+    }
 
     const renderSelectedSectionUI = () => {
         const data = instructions.find(ins => ins.skill === selectedSkill);
@@ -273,28 +380,54 @@ const CreateExamPage = () => {
     return (
         <>
             <HeaderInfo
-                title={topicId ? "Edit Exam" : "Create New Exam"}
+                title={
+                    isViewMode
+                        ? "View Exam Details"
+                        : topicId
+                            ? "Edit Exam"
+                            : "Create New Exam"
+                }
                 subtitle={
-                    topicId
-                        ? "Modify exam information, structure, and skill-based questions."
-                        : "Set up exam details, structure, and choose skill-based questions."
+                    isViewMode
+                        ? "Preview the exam information and structure. Editing is disabled."
+                        : topicId
+                            ? "Modify exam information, structure, and skill-based questions."
+                            : "Set up exam details, structure, and choose skill-based questions."
                 }
             />
 
-            <Form form={form} layout="vertical">
+            <Form form={form} layout="vertical" >
                 <div style={{ padding: 24 }}>
 
                     <Card style={{ marginBottom: 24 }}>
-                        <Title level={4}>Exam Information</Title>
+                        <div style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            marginBottom: 16
+                        }}>
+                            <Title level={4} style={{ margin: 0 }}>Exam Information</Title>
 
+                            {isViewMode && role == "admin" && topicData?.Status === "submited" && (
+                                <Space>
+                                    <Button type="primary" style={{ background: "#00a405" }} onClick={() => handleApproveExam()}>
+                                        Approve
+                                    </Button>
+                                    <Button danger type="primary" style={{ background: "#9b1212" }} onClick={() => setRejectOpen(true)}>
+                                        Reject
+                                    </Button>
+                                </Space>
+                            )}
+                        </div>
                         <Form.Item
                             label="Exam Name"
                             name="name"
                             rules={[{ required: true }]}
                         >
-                            <Input placeholder="Enter exam name" />
+                            <Input placeholder="Enter exam name" disabled={isViewMode} />
                         </Form.Item>
                     </Card>
+
 
                     <div
                         style={{
@@ -340,7 +473,7 @@ const CreateExamPage = () => {
                                 borderBottom: "1px solid #E5E7EB",
                                 cursor: "pointer",
                             }}
-                            onClick={() => setOpenModal(true)}
+                            onClick={() => { if (!isViewMode) setOpenModal(true) }}
                         >
                             {renderSelectedSectionUI()}
                         </div>
@@ -348,11 +481,18 @@ const CreateExamPage = () => {
                     <Divider />
 
                     <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
-                        <Button>Start Exam Preview</Button>
+                        <Button type="primary" onClick={handlePreviewExam}>
+                            Start Exam Preview
+                        </Button>
                         <Space>
                             <Button onClick={() => navigate('/exam')}>Cancel</Button>
-                            <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
-                            <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
+                            {!isViewMode && (
+                                <>
+                                    <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
+                                    <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
+                                </>
+                            )}
+
                         </Space>
                     </div>
                     <ChooseSectionModal
@@ -364,6 +504,20 @@ const CreateExamPage = () => {
                     />
 
                 </div>
+                <PreviewExam
+                    isModalOpen={previewOpen}
+                    setIsModalOpen={setPreviewOpen}
+                    dataExam={previewData}
+                    fileData={null}
+                    setDataExam={setPreviewData}
+                />
+                <ModalComponent />
+                <RejectExamModal
+                    open={rejectOpen}
+                    onClose={() => setRejectOpen(false)}
+                    onSubmit={handleRejectExam}
+                />
+
             </Form>
         </>
     );
