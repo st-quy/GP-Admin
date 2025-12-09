@@ -248,10 +248,20 @@ const StudentSessionTable = ({
           dataIndex: ["Session", "sessionName"],
           key: "SessionID",
           width: "260px",
-          render: (text) => (
-            <span className="cursor-pointer hover:opacity-80">
+          render: (text, record) => (
+            <a
+              onClick={() => {
+                // record.ID là ID của SessionParticipant (dùng để gọi API getParticipantDetail)
+                // Điều hướng đến trang kết quả
+                navigate(
+                  `result/${record.ID}`
+                );
+                // LƯU Ý: Đường dẫn trong navigate phải khớp với route bạn đã khai báo trong PrivateRoute.jsx
+              }}
+              className="cursor-pointer underline underline-offset-4 hover:opacity-80 text-[#003087] font-medium"
+            >
               {text || "Unknown"}
-            </span>
+            </a>
           ),
         },
         ...commonColumns,

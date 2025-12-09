@@ -34,3 +34,13 @@ export const getAudioFileName = async (classId, sessionId) => {
     session: sessionRes.data.data,
   };
 };
+
+export const fetchExamReview = async (sessionParticipantId) => {
+  try {
+    const response = await axiosInstance.get(`/grades/review/${sessionParticipantId}`)
+    return response.data
+  } catch (error) {
+    console.error('Error fetching exam review:', error)
+    throw error
+  }
+}
