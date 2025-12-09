@@ -9,4 +9,12 @@ export const QuestionApi = {
   createReading: (payload) => {
     return axiosInstance.post('/questions/reading/create', payload);
   },
+  getDetail: ({ skillName, sectionId }) => {
+    return axiosInstance.get('/questions/detail', {
+      params: { skillName, sectionId },
+    });
+  },
+  update: ({ sectionId, payload }) => {
+    return axiosInstance.put(`/questions/update/${sectionId}`, payload);
+  },
 };
