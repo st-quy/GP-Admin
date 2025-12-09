@@ -91,10 +91,10 @@ const MatchingEditor = ({ errors = {} }) => {
                 rules={[{ required: true, message: 'Required' }]}
                 validateStatus={errors?.left?.[idx] ? 'error' : ''}
                 help={errors?.left?.[idx]}
-                style={{ marginBottom: 0 }}
+                style={{ marginBottom: 0, width: '100%' }}
               >
-                <Space align='center' className='w-full'>
-                  <Text style={{ width: 24 }}>{idx + 1}</Text>
+                <div className='w-full flex items-center gap-2'>
+                  <Text className='min-w-10'>{idx + 1}</Text>
 
                   <Input
                     placeholder={`Content ${idx + 1}`}
@@ -108,7 +108,7 @@ const MatchingEditor = ({ errors = {} }) => {
                     icon={<DeleteOutlined />}
                     onClick={() => removeLeftItem(idx)}
                   />
-                </Space>
+                </div>
               </Form.Item>
             </div>
           ))}
@@ -135,7 +135,7 @@ const MatchingEditor = ({ errors = {} }) => {
                 help={errors?.right?.[idx]}
                 style={{ marginBottom: 0 }}
               >
-                <Space align='center' className='w-full'>
+                <div className='w-full flex items-center gap-2'>
                   <div
                     style={{
                       width: 24,
@@ -161,7 +161,7 @@ const MatchingEditor = ({ errors = {} }) => {
                     icon={<DeleteOutlined />}
                     onClick={() => removeRightItem(idx)}
                   />
-                </Space>
+                </div>
               </Form.Item>
             </div>
           ))}

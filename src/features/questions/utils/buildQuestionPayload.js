@@ -421,8 +421,8 @@ export const buildFullReadingPayload = (values) => {
   };
 
   /* ======================================================
-   PART 1 — AUTO PARSE BLANKS FROM CONTENT
-   ====================================================== */
+        PART 1 — DROPDOWN
+  ====================================================== */
   const p1 = values.part1;
 
   const finalContent = buildDropdownContent(p1.content, p1.blanks);
@@ -438,100 +438,102 @@ export const buildFullReadingPayload = (values) => {
   }));
 
   result.parts.push({
+    PartID: p1.id || null,
     PartName: p1.name,
     Type: 'dropdown-list',
     Sequence: 1,
     Content: finalContent,
-
     AnswerContent: {
+      type: 'dropdown-list',
       content: finalContent,
       options: p1Options,
       correctAnswer: p1Correct,
-      partID: null,
-      type: 'dropdown-list',
     },
   });
 
   /* ======================================================
-     PART 2A — ORDERING
-     ====================================================== */
+        PART 2A — ORDERING
+  ====================================================== */
   const p2a = values.part2A;
 
   const p2aOptions = p2a.items.map((i) => i.text.trim());
 
-  const p2aCorrect = p2a.items.map((i, idx) => ({
+  const p2aCorrect = p2a.items.map((i, index) => ({
     key: i.text.trim(),
-    value: idx + 1,
+    value: index + 1,
   }));
 
   result.parts.push({
+    PartID: p2a.id || null,
     PartName: p2a.name,
     Type: 'ordering',
     Sequence: 2,
     Content: p2a.intro.trim(),
     AnswerContent: {
+      type: 'ordering',
       content: p2a.intro.trim(),
       options: p2aOptions,
       correctAnswer: p2aCorrect,
-      type: 'ordering',
     },
   });
 
   /* ======================================================
-     PART 2B — ORDERING
-     ====================================================== */
+        PART 2B — ORDERING
+  ====================================================== */
   const p2b = values.part2B;
 
   const p2bOptions = p2b.items.map((i) => i.text.trim());
 
-  const p2bCorrect = p2b.items.map((i, idx) => ({
+  const p2bCorrect = p2b.items.map((i, index) => ({
     key: i.text.trim(),
-    value: idx + 1,
+    value: index + 1,
   }));
 
   result.parts.push({
+    PartID: p2b.id || null,
     PartName: p2b.name,
     Type: 'ordering',
     Sequence: 3,
     Content: p2b.intro.trim(),
     AnswerContent: {
+      type: 'ordering',
       content: p2b.intro.trim(),
       options: p2bOptions,
       correctAnswer: p2bCorrect,
-      type: 'ordering',
     },
   });
 
   /* ======================================================
-     PART 3 — DROPDOWN MATCHING (Tên → Person)
-     ====================================================== */
+        PART 3 — MATCHING (dropdown matching)
+  ====================================================== */
   const p3 = values.part3;
 
-  const p3Left = p3.leftItems.map((i, idx) => `${idx + 1}. ${i.text.trim()}`);
+  const p3Left = p3.leftItems.map((i) => i.text.trim()); // giữ nguyên
   const p3Right = p3.rightItems.map((i) => i.text.trim());
 
   const p3Correct = p3.mapping.map((m) => ({
-    key: (m.leftIndex + 1).toString(),
+    key: String(m.leftIndex + 1),
     value: p3.rightItems.find((r) => r.id === m.rightId)?.text.trim() || '',
   }));
 
   result.parts.push({
+    PartID: p3.id || null,
     PartName: p3.name,
     Type: 'dropdown-list',
     Sequence: 4,
     Content: p3.content.trim(),
     AnswerContent: {
+      type: 'dropdown-list',
       content: p3.content.trim(),
       leftItems: p3Left,
       rightItems: p3Right,
       correctAnswer: p3Correct,
-      type: 'dropdown-list',
     },
   });
 
   /* ======================================================
-     PART 4 — FULL MATCHING
-     ====================================================== */
+        PART 4 — FULL MATCHING
+  ====================================================== */
   const p4 = values.part4;
 
   const p4Left = p4.leftItems.map((i) => i.text.trim());
@@ -543,16 +545,17 @@ export const buildFullReadingPayload = (values) => {
   }));
 
   result.parts.push({
+    PartID: p4.id || null,
     PartName: p4.name,
     Type: 'matching',
     Sequence: 5,
     Content: p4.content.trim(),
     AnswerContent: {
+      type: 'matching',
       content: p4.content.trim(),
       leftItems: p4Left,
       rightItems: p4Right,
       correctAnswer: p4Correct,
-      type: 'matching',
     },
   });
 
@@ -566,8 +569,8 @@ export function buildWritingFullPayload(values) {
     SkillName: 'WRITING',
     SectionName: values.sectionName?.trim() || 'Untitled Writing Section',
     parts: {
-      // ======================= PART 1 =======================
       part1: {
+        PartID: values.part1?.PartID || null,
         name: values.part1?.title?.trim() || '',
         questions:
           values.part1?.questions?.map((q) => ({
@@ -575,16 +578,16 @@ export function buildWritingFullPayload(values) {
           })) || [],
       },
 
-      // ======================= PART 2 =======================
       part2: {
+        PartID: values.part2?.PartID || null,
         name: values.part2?.title?.trim() || '',
         question: values.part2?.question?.trim() || '',
         wordLimit: values.part2?.wordLimit || null,
         fields: values.part2?.fields || [],
       },
 
-      // ======================= PART 3 =======================
       part3: {
+        PartID: values.part3?.PartID || null,
         name: values.part3?.title?.trim() || '',
         chats:
           values.part3?.chats?.map((c) => ({
@@ -594,8 +597,8 @@ export function buildWritingFullPayload(values) {
           })) || [],
       },
 
-      // ======================= PART 4 =======================
       part4: {
+        PartID: values.part4?.PartID || null,
         name: values.part4?.partName?.trim() || '',
         subContent: values.part4?.emailText?.trim() || '',
         q1: values.part4?.q1?.trim() || '',

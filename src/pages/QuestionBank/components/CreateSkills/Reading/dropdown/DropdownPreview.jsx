@@ -3,7 +3,7 @@ import React from 'react';
 import { Select } from 'antd';
 
 const DropdownPreview = ({ content, blanks }) => {
-  if (!content) return 'No content';
+  if (!content) return null;
 
   const parts = content.split(/(\[\d+\])/g);
 
@@ -12,22 +12,17 @@ const DropdownPreview = ({ content, blanks }) => {
       const key = part.match(/\[(\d+)\]/)[1];
       const blank = blanks.find((b) => b.key === key);
 
+      const value = blank?.correctAnswer || undefined;
+
       return (
         <Select
           key={idx}
-          placeholder={`Blank ${key}`}
-          style={{ minWidth: 140, margin: '0 4px' }}
-          options={
-            blank?.options?.map((o) => ({
-              label: o.value,
-              value: o.value,
-            })) ?? []
-          }
-          value={
-            blank?.correctAnswer
-              ? blank.options.find((o) => o.id === blank.correctAnswer)?.value
-              : undefined
-          }
+          style={{ minWidth: 150, margin: '0 4px' }}
+          value={value}
+          options={blank?.options?.map((o, index) => ({
+            label: o.value,
+            value: `${blank.key}-${index}`, // dùng ID chuẩn
+          }))}
         />
       );
     }

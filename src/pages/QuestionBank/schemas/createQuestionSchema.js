@@ -339,15 +339,22 @@ export const buildListeningPayload = (values) => {
     part3,
     part4Name,
     part4,
+    part1Id,
+    part2Id,
+    part3Id,
+    part4Id,
   } = values;
 
   /** =========================
    * PART 1 — MULTIPLE CHOICE
    ========================= */
   const part1Payload = {
+    partId: part1Id,
     name: part1Name,
     sequence: 1,
     questions: part1.map((q) => ({
+      questionId: q.questionId,
+      partId: part1Id,
       Type: 'multiple-choice',
       Content: q.instruction,
       AudioKeys: q.audioUrl,
@@ -365,10 +372,13 @@ export const buildListeningPayload = (values) => {
    * PART 2 — MATCHING
    ========================= */
   const part2Payload = {
+    partId: part2Id,
     name: part2Name,
     sequence: 2,
     questions: [
       {
+        questionId: part2.questionId,
+        partId: part2Id,
         Type: 'dropdown-list',
         Content: part2.instruction,
         AudioKeys: part2.audioUrl,
@@ -391,10 +401,13 @@ export const buildListeningPayload = (values) => {
    * PART 3 — MATCHING
    ========================= */
   const part3Payload = {
+    partId: part3Id,
     name: part3Name,
     sequence: 3,
     questions: [
       {
+        questionId: part3.questionId,
+        partId: part3Id,
         Type: 'dropdown-list',
         Content: part3.instruction,
         AudioKeys: part3.audioUrl,
@@ -417,9 +430,12 @@ export const buildListeningPayload = (values) => {
    * PART 4 — GROUP QUESTIONS
    ========================= */
   const part4Payload = {
+    partId: part4Id,
     name: part4Name,
     sequence: 4,
     questions: part4.map((g) => ({
+      questionId: g.questionId,
+      partId: part4Id,
       Type: 'listening-questions-group',
       Content: g.instruction,
       AudioKeys: g.audioUrl,

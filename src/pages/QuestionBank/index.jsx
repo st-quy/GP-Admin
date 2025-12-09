@@ -129,7 +129,7 @@ const QuestionBank = () => {
             icon={<EditOutlined />}
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`${record.ID}`);
+              navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
             }}
           />
           <Button

@@ -6,7 +6,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 
-import { Card, Button, Input, Space, Typography, Form } from 'antd';
+import { Card, Button, Input, Space, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 
 import SortableOrderingItem from './SortableOrderingItem';
@@ -30,7 +30,6 @@ const OrderingEditor = ({ fields, helpers }) => {
 
   return (
     <div className='pt-4'>
-      {/* Header */}
       <Space
         align='center'
         style={{
@@ -48,90 +47,72 @@ const OrderingEditor = ({ fields, helpers }) => {
         </Button>
       </Space>
 
-      {/* Sortable list */}
       <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items} strategy={verticalListSortingStrategy}>
           <Space direction='vertical' style={{ width: '100%' }}>
             {fields.map((field, index) => (
               <SortableOrderingItem key={field.key} id={field.key}>
                 {(listeners, attributes) => (
-                  <Form.Item
-                    key={field.key}
-                    name={[field.name, 'text']}
-                    rules={[
-                      { required: true, message: 'Sentence is required' },
-                    ]}
-                    style={{ flex: 1, margin: 0 }}
+                  <Card
+                    size='small'
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      background: '#fff',
+                      border: '1px solid #e5e7eb',
+                      borderRadius: 10,
+                    }}
+                    className='[&_.ant-card-body]:!w-full [&_.ant-card-body]:!flex'
                   >
-                    <Card
-                      size='small'
-                      style={{
-                        width: '100%',
-                        alignItems: 'center',
-                        padding: '12px 16px',
-                        background: '#fff',
-                        border: '1px solid #e5e7eb',
-                        borderRadius: 10,
-                      }}
-                      className='[&_.ant-card-body]:!w-full [&_.ant-card-body]:!flex'
-                    >
-                      <Space
-                        align='center'
+                    <div className='w-full flex items-center gap-2'>
+                      <MenuOutlined
+                        {...listeners}
+                        {...attributes}
                         style={{
-                          width: '100%',
+                          cursor: 'grab',
+                          color: '#888',
+                          fontSize: 18,
+                          paddingRight: 4,
+                        }}
+                      />
+
+                      <div
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: '50%',
+                          background: '#1c2f6d',
+                          color: 'white',
                           display: 'flex',
-                          gap: 12,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          fontWeight: 600,
                         }}
                       >
-                        {/* Drag handle */}
-                        <MenuOutlined
-                          {...listeners}
-                          {...attributes}
-                          style={{
-                            cursor: 'grab',
-                            color: '#888',
-                            fontSize: 18,
-                            paddingRight: 4,
-                          }}
-                        />
+                        {index + 1}
+                      </div>
 
-                        {/* Number circle */}
-                        <div
-                          style={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: '50%',
-                            background: '#1c2f6d',
-                            color: 'white',
-                            display: 'flex',
-                            justifyContent: 'center',
-                            alignItems: 'center',
-                            fontWeight: 600,
-                          }}
-                        >
-                          {index + 1}
-                        </div>
+                      {/* FIX: Form.Item must wrap Input directly */}
+                      <Form.Item
+                        name={[field.name, 'text']}
+                        rules={[
+                          { required: true, message: 'Sentence is required' },
+                        ]}
+                        style={{ flex: 1, margin: 0 }}
+                      >
+                        <Input placeholder={`Enter sentence ${index + 1}`} />
+                      </Form.Item>
 
-                        {/* INPUT EXPANDS FULL WIDTH */}
-                        <div style={{ flex: 1 }}>
-                          <Input
-                            placeholder={`Enter sentence ${index + 1}`}
-                            style={{ width: '100%' }}
-                          />
-                        </div>
-
-                        {/* Delete button */}
-                        <DeleteOutlined
-                          onClick={() => helpers.remove(field.name)}
-                          style={{
-                            color: 'red',
-                            fontSize: 18,
-                            cursor: 'pointer',
-                          }}
-                        />
-                      </Space>
-                    </Card>
-                  </Form.Item>
+                      <DeleteOutlined
+                        onClick={() => helpers.remove(field.name)}
+                        style={{
+                          color: 'red',
+                          fontSize: 18,
+                          cursor: 'pointer',
+                        }}
+                      />
+                    </div>
+                  </Card>
                 )}
               </SortableOrderingItem>
             ))}

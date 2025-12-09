@@ -14,11 +14,16 @@ import CreateQuestion from '@pages/QuestionBank/components/CreateQuestion.jsx';
 import ExamListPage from '@pages/Exam/index.jsx';
 import SectionListeningDetail from '@pages/Section/detail/components/SectionListeningDetail.jsx';
 import SectionDetail from '@pages/Section/detail/index.jsx';
-import { element } from 'prop-types';
+import UpdateSpeaking from '@pages/QuestionBank/components/UpdateSkills/UpdateSpeaking.jsx';
+import SectionUpdate from '@pages/Section/update/index.jsx';
 const QuestionBank = lazy(() => import('@pages/QuestionBank/index.jsx'));
 const QuestionDetail = lazy(() => import('@pages/QuestionBank/QuestionDetail'));
-const CreateExamPage = lazy(() => import('@pages/Exam/components/CreateExam.jsx'));
-const TeacherResultPage = lazy(() => import('@pages/TeacherManagement/TeacherResultPage.jsx'));
+const CreateExamPage = lazy(
+  () => import('@pages/Exam/components/CreateExam.jsx')
+);
+const TeacherResultPage = lazy(
+  () => import('@pages/TeacherManagement/TeacherResultPage.jsx')
+);
 
 const PrivateRoute = [
   {
@@ -151,6 +156,12 @@ const PrivateRoute = [
             path: 'create/:skill',
             element: <CreateQuestion />,
             breadcrumb: 'Create New Question ',
+            role: ['teacher', 'admin', 'superadmin'],
+          },
+          {
+            path: 'update/:id',
+            element: <SectionUpdate />,
+            breadcrumb: 'Update Section ',
             role: ['teacher', 'admin', 'superadmin'],
           },
         ],

@@ -62,3 +62,32 @@ export const useCreateQuestionReading = () => {
     },
   });
 };
+
+export const useGetQuestionGroupDetail = (skillName, sectionId) => {
+  return useQuery({
+    queryKey: ['question-group-detail', skillName, sectionId],
+    queryFn: async () => {
+      const res = await QuestionApi.getDetail({ skillName, sectionId });
+      return res.data.data;
+    },
+    enabled: !!skillName && !!sectionId,
+    retry: 1,
+  });
+};
+
+export const useUpdateQuestionGroup = () => {
+  return useMutation({
+    mutationFn: async ({ sectionId, payload }) => {
+      const { data } = await QuestionApi.update({
+        sectionId,
+        payload,
+      });
+      return data?.data;
+    },
+
+    onError(error) {
+      const msg = error?.response?.data?.message || 'Update failed';
+      message.error(msg);
+    },
+  });
+};

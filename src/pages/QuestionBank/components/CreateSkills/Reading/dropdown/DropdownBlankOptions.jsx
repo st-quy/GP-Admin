@@ -7,21 +7,12 @@ const { Text } = Typography;
 
 const DropdownBlankOptions = () => {
   const form = Form.useFormInstance();
-
-  // 🔥 WATCH TẤT CẢ BLANKS 1 LẦN DUY NHẤT
   const blanks = Form.useWatch(['part1', 'blanks'], form) || [];
 
   return (
     <Form.List name={['part1', 'blanks']}>
       {(blankFields) => (
         <Space direction='vertical' style={{ width: '100%' }}>
-          {blankFields.length === 0 && (
-            <Text type='secondary'>
-              Insert blank using the <b>Insert Blank</b> button above before
-              adding options.
-            </Text>
-          )}
-
           {blankFields.map((blank) => {
             const blankData = blanks[blank.name] || {};
             const options = blankData.options || [];
@@ -31,94 +22,92 @@ const DropdownBlankOptions = () => {
               <Card
                 key={blank.key}
                 size='small'
-                style={{ marginBottom: 12 }}
-                title={`Blank [${blank.name}]`}
+                title={`Blank [${blankData.key}]`}
               >
-                <Space direction='vertical' style={{ width: '100%' }}>
-                  <Form.List name={[blank.name, 'options']}>
-                    {(optionFields, optionHelpers) => (
-                      <>
-                        {optionFields.map((opt, idx) => {
-                          const optData = options[opt.name] || {};
-                          const optionId = optData.id;
+                <Form.List name={[blank.name, 'options']}>
+                  {(optionFields, optionHelpers) => (
+                    <div className='flex flex-col gap-2'>
+                      {optionFields.map((opt, idx) => {
+                        const optionId = `${blankData.key}-${idx}`;
 
-                          return (
-                            <Space
-                              key={opt.key}
-                              style={{
-                                width: '100%',
-                                display: 'flex',
-                                alignItems: 'center',
-                                marginBottom: '10px',
-                              }}
+                        return (
+                          <Space
+                            key={opt.key}
+                            style={{ display: 'flex', width: '100%', gap: 8 }}
+                          >
+                            <Radio
+                              checked={correctAnswer === optionId}
+                              onChange={() =>
+                                form.setFieldValue(
+                                  [
+                                    'part1',
+                                    'blanks',
+                                    blank.name,
+                                    'correctAnswer',
+                                  ],
+                                  optionId
+                                )
+                              }
+                            />
+
+                            <Text style={{ width: 22 }}>
+                              {String.fromCharCode(65 + idx)}.
+                            </Text>
+
+                            <Form.Item
+                              name={[opt.name, 'value']}
+                              style={{ flex: 1 }}
+                              className='!mb-0'
+                              rules={[
+                                {
+                                  required: true,
+                                  message: 'Option text is required',
+                                },
+                              ]}
                             >
-                              {/* Radio */}
-                              <Radio
-                                checked={correctAnswer === optionId}
-                                onChange={() =>
+                              <Input
+                                onChange={(e) => {
+                                  const value = e.target.value;
+
+                                  // cập nhật id ổn định
                                   form.setFieldValue(
                                     [
                                       'part1',
                                       'blanks',
                                       blank.name,
-                                      'correctAnswer',
+                                      'options',
+                                      opt.name,
+                                      'id',
                                     ],
                                     optionId
-                                  )
-                                }
-                              />
-
-                              {/* Label A/B/C */}
-                              <Text style={{ width: 22 }}>
-                                {String.fromCharCode(65 + idx)}.
-                              </Text>
-
-                              {/* INPUT */}
-                              <Form.Item
-                                {...opt}
-                                name={[opt.name, 'value']}
-                                style={{ flexGrow: 1 }}
-                                rules={[
-                                  {
-                                    required: true,
-                                    message: 'Option text is required',
-                                  },
-                                ]}
-                                className='!mb-0'
-                              >
-                                <Input placeholder='Option text' />
-                              </Form.Item>
-
-                              {/* Remove */}
-                              <CloseOutlined
-                                onClick={() => optionHelpers.remove(opt.name)}
-                                style={{
-                                  cursor: 'pointer',
-                                  marginTop: 8,
-                                  color: '#777',
+                                  );
                                 }}
                               />
-                            </Space>
-                          );
-                        })}
+                            </Form.Item>
 
-                        {/* Add option */}
-                        <Button
-                          type='dashed'
-                          icon={<PlusOutlined />}
-                          onClick={() =>
-                            optionHelpers.add({
-                              id: Date.now() + Math.random(), // 🔥 identity ổn định
-                              value: '',
-                            })
-                          }
-                        >
-                          Add Option
-                        </Button>
-                      </>
-                    )}
-                  </Form.List>
-                </Space>
+                            <CloseOutlined
+                              onClick={() => optionHelpers.remove(opt.name)}
+                              style={{ cursor: 'pointer' }}
+                            />
+                          </Space>
+                        );
+                      })}
+
+                      <Button
+                        type='dashed'
+                        icon={<PlusOutlined />}
+                        onClick={() =>
+                          optionHelpers.add({
+                            id: `${blankData.key}-${options.length}`,
+                            value: '',
+                          })
+                        }
+                      >
+                        Add Option
+                      </Button>
+                    </div>
+                  )}
+                </Form.List>
               </Card>
             );
           })}
