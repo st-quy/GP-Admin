@@ -152,6 +152,7 @@ const CreateExamPage = () => {
 
 
     const handleSaveExam = async () => {
+        
         try {
             const values = form.getFieldsValue();
             if (!values.name) return message.error("Name is required");
@@ -182,6 +183,10 @@ const CreateExamPage = () => {
     };
 
     const handleSubmitExam = async () => {
+        if (instructions.length <= 5) {
+            message.warning("Please select skill before save");
+            return;
+        }
         try {
             const values = form.getFieldsValue();
             if (!values.name) return message.error("Name is required");
