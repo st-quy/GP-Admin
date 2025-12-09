@@ -5,8 +5,8 @@ export const TopicApi = {
     return axiosInstance.post("/topics", payload);
   },
 
-  getAll: () => {
-    return axiosInstance.get("/topics");
+  getAll: (params) => {
+    return axiosInstance.get("/topics", { params });
   },
 
   getTopicByName: (name) => {

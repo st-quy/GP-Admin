@@ -36,20 +36,21 @@ import { TopicApi } from "../api";
 //       });
 //     };
 
-export const useGetTopics = () => {
+export const useGetTopics = (params) => {
   return useQuery({
-    queryKey: ["topics"],
+    queryKey: ["topics", params],
     queryFn: async () => {
       try {
-        const { data } = await TopicApi.getAll();
-        return data.data;
-      } catch (error) { 
+        const { data } = await TopicApi.getAll(params);
+        return data;  
+      } catch (error) {
         message.error(error.response?.data?.message);
         return null;
-      } 
+      }
     },
   });
 };
+
 
 export const useCreateTopic = () => {  
   return useMutation({
