@@ -104,8 +104,8 @@ const TopicListPage = () => {
     localStorage.setItem('listening_test_answers', []);
     localStorage.setItem('listening_formatted_answers', []);
     localStorage.setItem('listening_played_questions', []);
-    localStorage.removeItem('listening_test_submitted', false);
-    localStorage.removeItem('isSubmitted', false);
+    localStorage.removeItem('listening_test_submitted');
+    localStorage.removeItem('isSubmitted');
     localStorage.removeItem('grammarAnswers');
     localStorage.removeItem('readingAnswers');
     localStorage.removeItem('writingAnswers');

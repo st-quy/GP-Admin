@@ -76,7 +76,7 @@ const SpeakingParts = () => {
     )
   }
 
-  return partData ? <Part data={partData} onNextPart={handleNextPart} /> : null
+  return partData ? <Part data={partData} showRecording={false} onNextPart={handleNextPart} /> : null
 }
 
 export default SpeakingParts
