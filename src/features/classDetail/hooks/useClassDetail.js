@@ -87,12 +87,12 @@ export const useUpdateSession = () => {
   });
 };
 
-export const useGetTopics = () => {
+export const useGetTopics = (params) => {
   return useQuery({
-    queryKey: ["topics"],
+    queryKey: ["topics", params],
     queryFn: async () => {
-      const response = await ClassDetailApi.getTopics();
-      return response.data.data;
+      const response = await ClassDetailApi.getTopics(params);
+      return response.data;
     },
   });
 };
