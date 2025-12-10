@@ -1,4 +1,4 @@
-// @ts-nocheck
+
 import {
   Modal,
   Button,
@@ -9,7 +9,7 @@ import {
   Form,
   Spin,
 } from "antd";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { yupSync } from "@shared/lib/utils";
 import { sessionSchema } from "@features/classDetail/validate";
 import {
@@ -24,8 +24,10 @@ import {
   LoadingOutlined,
   ReloadOutlined,
 } from "@ant-design/icons";
+import { PageSizes } from "pdf-lib";
 
 const { RangePicker } = DatePicker;
+
 
 const ActionModal = ({
   initialData = null,
@@ -34,9 +36,35 @@ const ActionModal = ({
   onClose,
 }) => {
   const [form] = Form.useForm();
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5);
+  const [search, setSearch] = useState("");
+  const [topicList, setTopicList] = useState([]);
 
   const isEdit = !!initialData;
-  const { data: topics, isLoading: isLoadingTopics } = useGetTopics();
+  const { data, isLoading: isLoadingTopics } = useGetTopics({
+    page,
+    pageSize,
+    searchName: search,
+    status: "approved",
+  });
+
+  const topics = data?.data || [];
+  const totalItems = data?.totalItems || 0;
+  console.log("topics", topics)
+  console.log("totalItems", totalItems)
+
+  const handleSearch = (value) => {
+    setSearch(value);
+    setPage(1);
+  };
+
+  const loadMore = () => {
+    if (topicList.length < totalItems) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
   const { mutateAsync: generateKey, isPending: isGenerating } =
     useGenerateSessionKeyMutation();
   const { mutate: sessionAction, isPending: isLoading } = isEdit
@@ -50,6 +78,19 @@ const ActionModal = ({
     onClose();
     form.resetFields();
   };
+
+  const handlePopupScroll = (e) => {
+    const target = e.target;
+
+    if (
+      target.scrollTop + target.offsetHeight >= target.scrollHeight - 10 &&
+      !isLoadingTopics &&
+      topicList.length < totalItems
+    ) {
+      loadMore();
+    }
+  };
+
 
   // Add disabledDate function to disable past dates
   const disabledDate = (current) => {
@@ -92,6 +133,18 @@ const ActionModal = ({
       );
     }
   };
+
+  useEffect(() => {
+    if (!data?.data) return;
+
+    if (page === 1) {
+      setTopicList(data.data);
+    } else {
+      setTopicList((prev) => [...prev, ...data.data]);
+    }
+  }, [data, page]);
+
+
 
   return (
     <>
@@ -161,16 +214,25 @@ const ActionModal = ({
               rules={[yupSync(sessionSchema)]}
             >
               <Select
+                showSearch
                 placeholder="Select Exam Set"
+                filterOption={false}
+                onSearch={handleSearch}
                 loading={isLoadingTopics}
-                className="!h-[46px]"
-                options={
-                  topics?.map((topic) => ({
-                    label: topic.Name,
-                    value: topic.ID,
-                  })) || []
-                }
-              />
+                onPopupScroll={handlePopupScroll}
+              >
+                {topicList.map((t) => (
+                  <Select.Option key={t.ID} value={t.ID}>
+                    {t.Name}
+                  </Select.Option>
+                ))}
+
+                {isLoadingTopics && (
+                  <Select.Option disabled key="loading">
+                    <Spin size="small" />
+                  </Select.Option>
+                )}
+              </Select>
             </Form.Item>
 
             <Form.Item

@@ -11,6 +11,7 @@ import {
   Typography,
   message,
   Tag,
+  Tooltip,
 } from "antd";
 import {
   ClockCircleOutlined,
@@ -119,13 +120,30 @@ const TopicListPage = () => {
       title: "Status",
       dataIndex: "Status",
       key: "Status",
-      render: (status) => {
-        const cfg = statusTagConfig[status] || {};
-        return (
+      render: (_, record) => {
+        const cfg = statusTagConfig[record.Status] || {};
+
+        const tagElement = (
           <Tag className={`${cfg.bg} ${cfg.text} font-medium px-3 py-1 rounded-md`}>
             {cfg.label}
           </Tag>
         );
+
+        if (record.Status === "rejected") {
+          return (
+            <Tooltip
+              title={
+                record.ReasonReject
+                  ? record.ReasonReject
+                  : "No reject reason provided"
+              }
+            >
+              {tagElement}
+            </Tooltip>
+          );
+        }
+
+        return tagElement;
       },
     },
     {

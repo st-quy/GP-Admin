@@ -183,7 +183,7 @@ const CreateExamPage = () => {
     };
 
     const handleSubmitExam = async () => {
-        if (instructions.length <= 5) {
+        if (instructions.length < 5) {
             message.warning("Please select skill before save");
             return;
         }
@@ -236,13 +236,13 @@ const CreateExamPage = () => {
         });
     }
 
-    const handleRejectExam = async () => {
+    const handleRejectExam = async (reason) => {
         try {
             if (!topicId) return message.error("Topic ID is missing");
 
             await updateTopic({
                 id: topicId,
-                data: { Status: 'rejected' }
+                data: { Status: 'rejected', ReasonReject: reason }
             });
 
             message.success("Exam rejected successfully!");

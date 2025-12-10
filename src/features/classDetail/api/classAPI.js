@@ -19,7 +19,7 @@ export const ClassDetailApi = {
   getSessionById: (sessionId) => {
     return axiosInstance.get(`/sessions/${sessionId}`);
   },
-  getTopics: () => {
-    return axiosInstance.get(`/topics`);
+  getTopics: (params) => {
+    return axiosInstance.get(`/topics`, {params});
   },
 };
