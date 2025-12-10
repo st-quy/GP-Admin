@@ -16,7 +16,14 @@ import ResetSuccessImg from "./RS-password.png";
 import ForgotPasswordImg from "./Forgotpw.png";
 import LogoGreen from "./logoGreenprep.png"
 import SubmitSuccess from "./submitSuccess.png";
-
+import navigateLogo from "./navigate-logo.png";
+import ListeningSubmission from "./listening-submit.jpg";
+import sessionKey from './session-key.gif'
+import WaitingGif from './waiting.gif'
+import SubmissionImage from './submission/submission.png'
+import GrammarSubmission from './submission/grammar-submission.png'
+import ReadingSubmission from './submission/reading-submission.png'
+import SpeakingSubmission from './submission/speaking-submission.png'
 
 export {
   SubmitSuccess,
@@ -36,5 +43,13 @@ export {
   RecordIcon,
   Warning,
   ResetSuccessImg,
-  ForgotPasswordImg
+  ForgotPasswordImg,
+  navigateLogo,
+  ListeningSubmission,
+  sessionKey,
+  WaitingGif,
+  SubmissionImage,
+  GrammarSubmission,
+  ReadingSubmission,
+  SpeakingSubmission,
 };
