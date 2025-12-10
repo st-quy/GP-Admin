@@ -74,22 +74,34 @@ const CreateWriting = () => {
 
       {/* ===== PART 1 ===== */}
       <Card title='Part 1 — Short Answers'>
-        <WritingEditor partType={WRITING_PART_TYPES.PART1_SHORT_ANSWERS} />
+        <WritingEditor
+          partType={WRITING_PART_TYPES.PART1_SHORT_ANSWERS}
+          requireImage={false} // Part 1: NO NEED IMAGE
+        />
       </Card>
 
       {/* ===== PART 2 ===== */}
       <Card title='Part 2 — Form Filling'>
-        <WritingEditor partType={WRITING_PART_TYPES.PART2_FORM_FILLING} />
+        <WritingEditor
+          partType={WRITING_PART_TYPES.PART2_FORM_FILLING}
+          requireImage={true} // MUST HAVE IMAGE
+        />
       </Card>
 
       {/* ===== PART 3 ===== */}
       <Card title='Part 3 — Chat Room'>
-        <WritingEditor partType={WRITING_PART_TYPES.PART3_CHAT_ROOM} />
+        <WritingEditor
+          partType={WRITING_PART_TYPES.PART3_CHAT_ROOM}
+          requireImage={true} // MUST HAVE IMAGE
+        />
       </Card>
 
       {/* ===== PART 4 ===== */}
       <Card title='Part 4 — Email Writing'>
-        <WritingEditor partType={WRITING_PART_TYPES.PART4_EMAIL_WRITING} />
+        <WritingEditor
+          partType={WRITING_PART_TYPES.PART4_EMAIL_WRITING}
+          requireImage={true} // MUST HAVE IMAGE
+        />
       </Card>
 
       {/* ACTION BUTTONS */}

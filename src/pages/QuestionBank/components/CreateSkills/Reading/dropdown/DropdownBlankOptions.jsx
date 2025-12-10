@@ -1,4 +1,3 @@
-// dropdown/DropdownBlankOptions.jsx
 import React from 'react';
 import { Card, Space, Button, Input, Form, Typography, Radio } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
@@ -23,7 +22,9 @@ const DropdownBlankOptions = () => {
                 key={blank.key}
                 size='small'
                 title={`Blank [${blankData.key}]`}
+                style={{ borderRadius: 8 }}
               >
+                {/* LIST OPTION */}
                 <Form.List name={[blank.name, 'options']}>
                   {(optionFields, optionHelpers) => (
                     <div className='flex flex-col gap-2'>
@@ -33,8 +34,14 @@ const DropdownBlankOptions = () => {
                         return (
                           <Space
                             key={opt.key}
-                            style={{ display: 'flex', width: '100%', gap: 8 }}
+                            style={{
+                              display: 'flex',
+                              width: '100%',
+                              gap: 8,
+                              alignItems: 'center',
+                            }}
                           >
+                            {/* Mark Correct Answer */}
                             <Radio
                               checked={correctAnswer === optionId}
                               onChange={() =>
@@ -50,10 +57,12 @@ const DropdownBlankOptions = () => {
                               }
                             />
 
+                            {/* Label A B C D */}
                             <Text style={{ width: 22 }}>
                               {String.fromCharCode(65 + idx)}.
                             </Text>
 
+                            {/* Option text */}
                             <Form.Item
                               name={[opt.name, 'value']}
                               style={{ flex: 1 }}
@@ -66,10 +75,8 @@ const DropdownBlankOptions = () => {
                               ]}
                             >
                               <Input
-                                onChange={(e) => {
-                                  const value = e.target.value;
-
-                                  // cập nhật id ổn định
+                                placeholder='Enter option text'
+                                onChange={() => {
                                   form.setFieldValue(
                                     [
                                       'part1',
@@ -85,14 +92,16 @@ const DropdownBlankOptions = () => {
                               />
                             </Form.Item>
 
+                            {/* Remove Option */}
                             <CloseOutlined
                               onClick={() => optionHelpers.remove(opt.name)}
-                              style={{ cursor: 'pointer' }}
+                              style={{ cursor: 'pointer', color: '#888' }}
                             />
                           </Space>
                         );
                       })}
 
+                      {/* ADD OPTION */}
                       <Button
                         type='dashed'
                         icon={<PlusOutlined />}
@@ -108,6 +117,35 @@ const DropdownBlankOptions = () => {
                     </div>
                   )}
                 </Form.List>
+                {/* INLINE VALIDATION FOR THIS BLANK */}
+                <Form.Item
+                  name={[blank.name, '_optionsValidator']}
+                  validateTrigger='onSubmit'
+                  rules={[
+                    {
+                      validator: () => {
+                        const opts =
+                          form.getFieldValue([
+                            'part1',
+                            'blanks',
+                            blank.name,
+                            'options',
+                          ]) || [];
+
+                        if (!opts.length) {
+                          return Promise.reject(
+                            new Error('This blank must have at least 1 option')
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                  className='!mb-0'
+                >
+                  {/* Dummy element để AntD render error UI */}
+                  <div style={{ height: 0, marginBottom: 0 }} />
+                </Form.Item>
               </Card>
             );
           })}

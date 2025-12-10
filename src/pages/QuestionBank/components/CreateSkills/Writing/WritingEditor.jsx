@@ -6,7 +6,7 @@ import { WRITING_PART_TYPES } from '@features/questions/constant/writingType';
 
 const { TextArea } = Input;
 
-const WritingEditor = ({ partType }) => {
+const WritingEditor = ({ partType, requireImage }) => {
   /* ---------- PART 1 — Short Answers ---------- */
   if (partType === WRITING_PART_TYPES.PART1_SHORT_ANSWERS) {
     return (

@@ -4,6 +4,7 @@ import { Card, Collapse, Form, Input, Select, Button, message } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useCreateQuestion } from '@features/questions/hooks';
 import GrammarMatchingEditorForm from './GrammarAndVocabulary/multiple-choice/GrammarMatchingEditorForm';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Panel } = Collapse;
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -47,13 +48,22 @@ const CreateGrammarVocab = () => {
 
   /* VALIDATE GROUP */
   const validateGroup = (g) => {
-    if (!g.content.trim()) return false;
-    if (!g.leftItems.length || g.leftItems.some((i) => !i.text.trim()))
+    if (!g.content?.trim()) return false;
+
+    if (!g.leftItems.length || g.leftItems.some((i) => !i.text?.trim()))
       return false;
-    if (!g.rightItems.length || g.rightItems.some((i) => !i.text.trim()))
+    if (!g.rightItems.length || g.rightItems.some((i) => !i.text?.trim()))
       return false;
+
     if (!g.mapping.length) return false;
-    return g.mapping.every((m) => m.rightId !== null);
+
+    return g.mapping.every(
+      (m) =>
+        m.leftId !== null &&
+        m.rightId !== null &&
+        g.leftItems.find((x) => x.id === m.leftId) &&
+        g.rightItems.find((x) => x.id === m.rightId)
+    );
   };
 
   const renderStatus = (valid) => (
@@ -69,7 +79,7 @@ const CreateGrammarVocab = () => {
   /* SAVE */
   const handleSaveAll = async () => {
     try {
-      // await form.validateFields();
+      await form.validateFields();
 
       const values = form.getFieldsValue(true);
       const { sectionName, part1Name, part2Name, part1 } = values;
@@ -196,30 +206,84 @@ const CreateGrammarVocab = () => {
                 <Input.TextArea rows={2} />
               </Form.Item>
 
-              {Array.from({ length: 3 }).map((_, optIdx) => (
-                <div key={optIdx} style={{ display: 'flex', gap: 10 }}>
-                  <b>{LETTERS[optIdx]}</b>
-                  <Form.Item
-                    name={['part1', idx, 'options', optIdx, 'value']}
-                    style={{ flex: 1 }}
-                    rules={[{ required: true }]}
-                  >
-                    <Input />
-                  </Form.Item>
-                </div>
-              ))}
+              {/* OPTIONS — 3 fixed + dynamic additional */}
+              <Form.List name={['part1', idx, 'options']}>
+                {(fields, { add, remove }) => {
+                  const optionValues =
+                    form.getFieldValue(['part1', idx, 'options']) || [];
 
+                  return (
+                    <>
+                      {fields.map((field, optIdx) => (
+                        <div
+                          key={field.key}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            marginBottom: 10,
+                          }}
+                        >
+                          {/* LABEL A B C D E... */}
+                          <div style={{ width: 22, fontWeight: 600 }}>
+                            {LETTERS[optIdx]}
+                          </div>
+
+                          {/* INPUT */}
+                          <Form.Item
+                            {...field}
+                            name={[field.name, 'value']}
+                            style={{ flex: 1, marginBottom: 0 }}
+                            rules={[
+                              { required: true, message: 'Option is required' },
+                            ]}
+                          >
+                            <Input placeholder={`Option ${LETTERS[optIdx]}`} />
+                          </Form.Item>
+
+                          {/* DELETE BUTTON (only delete from option #4 → index ≥ 3) */}
+                          {optIdx >= 3 && (
+                            <DeleteOutlined
+                              style={{
+                                color: 'red',
+                                fontSize: 18,
+                                cursor: 'pointer',
+                              }}
+                              onClick={() => remove(field.name)}
+                            />
+                          )}
+                        </div>
+                      ))}
+
+                      {/* ADD OPTION BUTTON */}
+                      <Button
+                        type='dashed'
+                        icon={<PlusOutlined />}
+                        onClick={() => add()}
+                        style={{ marginTop: 8 }}
+                      >
+                        Add option
+                      </Button>
+                    </>
+                  );
+                }}
+              </Form.List>
+
+              {/* CORRECT ANSWER */}
               <Form.Item
-                name={['part1', idx, 'correctOptionId']}
                 label='Correct Answer'
+                name={['part1', idx, 'correctOptionId']}
                 rules={[{ required: true }]}
+                style={{ marginTop: 15 }}
               >
                 <Select
-                  options={[
-                    { value: 0, label: 'A' },
-                    { value: 1, label: 'B' },
-                    { value: 2, label: 'C' },
-                  ]}
+                  placeholder='Select correct answer'
+                  options={(
+                    form.getFieldValue(['part1', idx, 'options']) || []
+                  ).map((_, i) => ({
+                    value: i,
+                    label: LETTERS[i],
+                  }))}
                 />
               </Form.Item>
             </Panel>
@@ -252,6 +316,7 @@ const CreateGrammarVocab = () => {
             >
               <Form.Item
                 label='Instruction Text'
+                required
                 rules={[{ required: true, message: 'Required' }]}
               >
                 <Input.TextArea
@@ -269,6 +334,52 @@ const CreateGrammarVocab = () => {
                 group={g}
                 updateGroup={(data) => updateGroup(idx, data)}
               />
+              <Form.Item noStyle shouldUpdate>
+                {() => {
+                  const g = part2Groups[idx] || {};
+                  const left = Array.isArray(g.leftItems) ? g.leftItems : [];
+                  const right = Array.isArray(g.rightItems) ? g.rightItems : [];
+                  const mapping = Array.isArray(g.mapping) ? g.mapping : [];
+
+                  return (
+                    <Form.Item
+                      name={['part2', idx, '_validation']}
+                      rules={[
+                        {
+                          validator: () => {
+                            if (!g.content?.trim()) {
+                              return Promise.reject(
+                                new Error('Instruction is required')
+                              );
+                            }
+                            if (left.length < 1) {
+                              return Promise.reject(
+                                new Error('Must have at least 1 content')
+                              );
+                            }
+                            if (right.length < 1) {
+                              return Promise.reject(
+                                new Error('Must have at least 1 option')
+                              );
+                            }
+                            if (mapping.length < 1) {
+                              return Promise.reject(
+                                new Error(
+                                  'Must have at least 1 correct matching pair'
+                                )
+                              );
+                            }
+                            return Promise.resolve();
+                          },
+                        },
+                      ]}
+                    >
+                      {/* hidden trigger */}
+                      <div style={{ height: 0 }} />
+                    </Form.Item>
+                  );
+                }}
+              </Form.Item>
             </Panel>
           ))}
         </Collapse>

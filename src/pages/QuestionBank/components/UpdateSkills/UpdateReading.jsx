@@ -102,7 +102,7 @@ const UpdateReading = () => {
         .replace(/[ ]+\n/g, '\n') // bỏ space trước newline
         .replace(/\n{2,}/g, '\n') // bỏ newline dư
         .trim();
-        
+
       const transformedBlanks = apiBlanks.map((opt) => {
         const correctObj = apiCorrect.find((a) => a.key === opt.key);
         const correctValue = correctObj?.value;
@@ -280,6 +280,33 @@ const UpdateReading = () => {
           </Form.Item>
 
           <DropdownBlankOptions />
+          <Form.Item shouldUpdate noStyle>
+            {({ getFieldValue }) => {
+              const part1 = getFieldValue(['part1']) || {};
+              const blanks = Array.isArray(part1.blanks) ? part1.blanks : [];
+
+              return (
+                <Form.Item
+                  name={['part1', '_minBlanks']}
+                  validateTrigger='onSubmit'
+                  rules={[
+                    {
+                      validator: () => {
+                        if (blanks.length < 1) {
+                          return Promise.reject(
+                            new Error('Must have at least 1 blank')
+                          );
+                        }
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <div style={{ height: 0 }} />
+                </Form.Item>
+              );
+            }}
+          </Form.Item>
 
           <Typography.Text strong>Preview:</Typography.Text>
           <div
@@ -321,7 +348,11 @@ const UpdateReading = () => {
 
           <Form.List name={['part2A', 'items']}>
             {(fields, helpers) => (
-              <OrderingEditor fields={fields} helpers={helpers} />
+              <OrderingEditor
+                fields={fields}
+                helpers={helpers}
+                listPath={['part2A', 'items']}
+              />
             )}
           </Form.List>
         </Card>
@@ -350,12 +381,16 @@ const UpdateReading = () => {
 
           <Form.List name={['part2B', 'items']}>
             {(fields, helpers) => (
-              <OrderingEditor fields={fields} helpers={helpers} />
+              <OrderingEditor
+                fields={fields}
+                helpers={helpers}
+                listPath={['part2B', 'items']}
+              />
             )}
           </Form.List>
         </Card>
 
-        {/* PART 5 */}
+        {/* PART 4 */}
         <Card title='Part 4 (Matching)'>
           <Form.Item name={['part3', 'id']} hidden>
             <Input />
@@ -380,9 +415,43 @@ const UpdateReading = () => {
           <Form.Item name={['part3']}>
             <MatchingEditor />
           </Form.Item>
+          <Form.Item noStyle shouldUpdate>
+            {({ getFieldValue }) => {
+              const part3 = getFieldValue(['part3']) || {};
+              const left = Array.isArray(part3.leftItems)
+                ? part3.leftItems
+                : [];
+              const right = Array.isArray(part3.rightItems)
+                ? part3.rightItems
+                : [];
+
+              return (
+                <Form.Item
+                  name={['part3', '_minItems']}
+                  rules={[
+                    {
+                      validator: () => {
+                        if (left.length < 1)
+                          return Promise.reject(
+                            new Error('Must have at least 1 content')
+                          );
+                        if (right.length < 1)
+                          return Promise.reject(
+                            new Error('Must have at least 1 option')
+                          );
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <div style={{ height: 0 }} />
+                </Form.Item>
+              );
+            }}
+          </Form.Item>
         </Card>
 
-        {/* PART 4 */}
+        {/* PART 5 */}
         <Card title='Part 5 (Matching)'>
           <Form.Item name={['part4', 'id']} hidden>
             <Input />
@@ -406,6 +475,40 @@ const UpdateReading = () => {
 
           <Form.Item name={['part4']}>
             <MatchingEditorPart4 />
+          </Form.Item>
+          <Form.Item noStyle shouldUpdate>
+            {({ getFieldValue }) => {
+              const part4 = getFieldValue(['part4']) || {};
+              const left = Array.isArray(part4.leftItems)
+                ? part4.leftItems
+                : [];
+              const right = Array.isArray(part4.rightItems)
+                ? part4.rightItems
+                : [];
+
+              return (
+                <Form.Item
+                  name={['part4', '_minItems']}
+                  rules={[
+                    {
+                      validator: () => {
+                        if (left.length < 1)
+                          return Promise.reject(
+                            new Error('Must have at least 1 content')
+                          );
+                        if (right.length < 1)
+                          return Promise.reject(
+                            new Error('Must have at least 1 option')
+                          );
+                        return Promise.resolve();
+                      },
+                    },
+                  ]}
+                >
+                  <div style={{ height: 0 }} />
+                </Form.Item>
+              );
+            }}
           </Form.Item>
         </Card>
 

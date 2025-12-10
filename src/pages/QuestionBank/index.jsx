@@ -1,15 +1,16 @@
+// QuestionBank.jsx
 import React, { useState, useMemo, useEffect } from 'react';
 import {
   Table,
   Button,
   Input,
-  Select,
   Typography,
   Space,
   Pagination,
   Card,
   Dropdown,
   Tooltip,
+  Tabs,
 } from 'antd';
 import {
   SearchOutlined,
@@ -25,26 +26,25 @@ import useConfirm from '@shared/hook/useConfirm';
 import { useDeleteSection, useGetSections } from '@features/sections/hooks';
 
 const { Text } = Typography;
-const { Option } = Select;
 
 const QuestionBank = () => {
   const navigate = useNavigate();
   const { openConfirmModal, ModalComponent } = useConfirm();
 
   // --- Filter & pagination state ---
-  const [selectedSkill, setSelectedSkill] = useState();
+  const [selectedSkill, setSelectedSkill] = useState('SPEAKING');
   const [searchText, setSearchText] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Khi skill hoặc searchText đổi -> reset page về 1
+  // Khi skill hoặc searchText đổi → reset page về 1
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSkill, searchText]);
 
   /* =========================================================
-      LOAD PART LIST TỪ API (CÓ PHÂN TRANG)
+      LOAD SECTION LIST TỪ API (CÓ PHÂN TRANG)
      ========================================================= */
   const sectionParams = useMemo(
     () => ({
@@ -55,12 +55,12 @@ const QuestionBank = () => {
     }),
     [selectedSkill, searchText, currentPage, pageSize]
   );
+
   const { data: listSectionData, isLoading: loadingSections } =
     useGetSections(sectionParams);
 
   const { mutate: deleteSection } = useDeleteSection();
 
-  // BE trả về: { status, message, page, pageSize, total, totalPages, data: [] }
   const listPart = listSectionData?.data ?? [];
   const pagination = {
     page: listSectionData?.page ?? currentPage,
@@ -123,30 +123,34 @@ const QuestionBank = () => {
               navigate(`${record.ID}?skillName=${record.Skill.Name}`);
             }}
           />
-          <Button
-            type='text'
-            className='text-blue-600 hover:bg-blue-50 px-2'
-            icon={<EditOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
-            }}
-          />
-          <Button
-            type='text'
-            className='text-red-500 hover:bg-red-50 px-2'
-            icon={<DeleteOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              openConfirmModal({
-                title: 'Confirm delete',
-                message: 'Do you really want to delete this part?',
-                okText: 'Delete',
-                okButtonColor: '#FF4D4F',
-                onConfirm: () => deleteSection(record.ID),
-              });
-            }}
-          />
+          {record.Topics.length === 0 && (
+            <Button
+              type='text'
+              className='text-blue-600 hover:bg-blue-50 px-2'
+              icon={<EditOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+              }}
+            />
+          )}
+          {record.Topics.length === 0 && (
+            <Button
+              type='text'
+              className='text-red-500 hover:bg-red-50 px-2'
+              icon={<DeleteOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                openConfirmModal({
+                  title: 'Confirm delete',
+                  message: 'Do you really want to delete this section?',
+                  okText: 'Delete',
+                  okButtonColor: '#FF4D4F',
+                  onConfirm: () => deleteSection(record.ID),
+                });
+              }}
+            />
+          )}
         </Space>
       ),
     },
@@ -158,7 +162,7 @@ const QuestionBank = () => {
 
       <HeaderInfo
         title='Question List'
-        subtitle='Manage and filter all list question'
+        subtitle='Manage and filter all list section'
         SubAction={
           <Dropdown
             menu={{
@@ -185,9 +189,23 @@ const QuestionBank = () => {
 
       <div className='p-4'>
         <Card className='shadow-sm rounded-xl h-[calc(100vh-200px)]'>
-          {/* ==================== FILTER BAR ==================== */}
+          {/* ==================== TABS FILTER ==================== */}
+          <Tabs
+            type='card'
+            tabBarGutter={32}
+            activeKey={selectedSkill ?? ''}
+            onChange={(key) => setSelectedSkill(key)}
+            items={[
+              { key: 'SPEAKING', label: 'Speaking' },
+              { key: 'LISTENING', label: 'Listening' },
+              { key: 'READING', label: 'Reading' },
+              { key: 'WRITING', label: 'Writing' },
+              { key: 'GRAMMAR AND VOCABULARY', label: 'Grammar & Vocabulary' },
+            ]}
+          />
+
+          {/* ==================== SEARCH BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
-            {/* Left: Search */}
             <Input
               size='large'
               placeholder='Search section name...'
@@ -196,24 +214,6 @@ const QuestionBank = () => {
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
             />
-
-            {/* Right: Skill Filter */}
-            <Select
-              size='large'
-              className='w-full sm:w-[220px] lg:w-[240px]'
-              value={selectedSkill}
-              allowClear
-              onChange={setSelectedSkill}
-              placeholder='All Skills'
-            >
-              <Option value='LISTENING'>Listening</Option>
-              <Option value='READING'>Reading</Option>
-              <Option value='WRITING'>Writing</Option>
-              <Option value='SPEAKING'>Speaking</Option>
-              <Option value='GRAMMAR AND VOCABULARY'>
-                Grammar And Vocabulary
-              </Option>
-            </Select>
           </div>
 
           {/* ==================== TABLE ==================== */}
@@ -253,19 +253,19 @@ const QuestionBank = () => {
                   return (
                     <button
                       className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-            ${
-              isActive
-                ? 'bg-[#003087] text-white border-[#003087]'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
-            }
-          `}
+                        ${
+                          isActive
+                            ? 'bg-[#003087] text-white border-[#003087]'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
+                        }
+                      `}
                     >
                       {page}
                     </button>
                   );
                 }
 
-                return original; // giữ Prev / Next của AntD
+                return original;
               }}
             />
           </div>
