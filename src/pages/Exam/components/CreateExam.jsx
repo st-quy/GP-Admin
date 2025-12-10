@@ -64,35 +64,48 @@ const CreateExamPage = () => {
     const { role } = useSelector((state) => state.auth);
 
     const handlePartSelect = (sections) => {
-        if (!sections || sections.length === 0) return;
+        const oldSectionId = selectedSectionBySkill[selectedSkill];
+
+        // ✅ BỎ CHỌN
+        if (!sections || sections.length === 0) {
+            setSelectedParts((prev) =>
+                prev.filter((id) => id !== oldSectionId)
+            );
+
+            setSelectedSectionBySkill((prev) => {
+                const copy = { ...prev };
+                delete copy[selectedSkill];
+                return copy;
+            });
+
+            setInstructions((prev) =>
+                prev.filter((i) => i.skill !== selectedSkill)
+            );
+
+            setOpenModal(false);
+            return;
+        }
 
         const section = sections[0];
         const sectionId = section.ID;
 
-        // Lấy section cũ của skill này từ state hiện tại
-        const oldSectionId = selectedSectionBySkill[selectedSkill];
-
-        // --- Cập nhật selectedParts
-        setSelectedParts((prevParts) => {
-            const filtered = prevParts.filter(id => id !== oldSectionId);
-            const updated = [...filtered, sectionId];
+        setSelectedParts((prev) => {
+            const filtered = prev.filter((id) => id !== oldSectionId);
             return [...filtered, sectionId];
         });
 
-        // --- Cập nhật selectedSectionBySkill
         setSelectedSectionBySkill((prev) => ({
             ...prev,
             [selectedSkill]: sectionId,
         }));
 
-        // --- Cập nhật instructions UI
         setInstructions((prev) => {
-            const filtered = prev.filter(i => i.skill !== selectedSkill);
+            const filtered = prev.filter((i) => i.skill !== selectedSkill);
             return [...filtered, { skill: selectedSkill, section }];
         });
+
         setOpenModal(false);
     };
-
     const handlePreviewExam = () => {
         if (!instructions.length) {
             message.warning("Please select at least one skill before preview");
@@ -149,22 +162,20 @@ const CreateExamPage = () => {
         setPreviewOpen(true);
     };
 
-
-
     const handleSaveExam = async () => {
-        
+
         try {
             const values = form.getFieldsValue();
             if (!values.name) return message.error("Name is required");
 
             let topicResponse;
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name } });
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'draft' } });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
                 await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
 
             } else {
-                topicResponse = await createExam({ Name: values.name });
+                topicResponse = await createExam({ Name: values.name, Status: 'draft' });
                 const savedTopicId = topicResponse.ID || topicResponse._ID;
 
                 if (!savedTopicId) return message.error("Cannot get topic ID");
