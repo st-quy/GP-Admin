@@ -461,6 +461,59 @@ const UpdateListening = () => {
     );
   };
 
+  // Add option to PART 1 question
+  const addPart1Option = (qId) => {
+    setPart1((prev) =>
+      prev.map((q) => {
+        if (q.id !== qId) return q;
+
+        const nextIndex = q.options.length + 1;
+
+        return {
+          ...q,
+          options: [
+            ...q.options,
+            {
+              id: nextIndex,
+              label: generateLabel(nextIndex),
+              value: '',
+            },
+          ],
+        };
+      })
+    );
+  };
+
+  // Delete option (must keep >= 3)
+  const deletePart1Option = (qId, optId) => {
+    setPart1((prev) =>
+      prev.map((q) => {
+        if (q.id !== qId) return q;
+
+        if (q.options.length <= 3) {
+          message.warning('Must have at least 3 options!');
+          return q;
+        }
+
+        const filtered = q.options.filter((o) => o.id !== optId);
+
+        const reindexed = filtered.map((o, index) => ({
+          ...o,
+          id: index + 1,
+          label: generateLabel(index + 1),
+        }));
+
+        return {
+          ...q,
+          options: reindexed,
+          correctId: reindexed.find((o) => o.id === q.correctId)
+            ? q.correctId
+            : null,
+        };
+      })
+    );
+  };
+
   if (isFetching) return <p>Loading...</p>;
 
   return (
@@ -539,9 +592,11 @@ const UpdateListening = () => {
                   {q.audioUrl && <audio src={q.audioUrl} controls />}
 
                   {q.options.map((o) => (
-                    <div key={o.id} className='flex gap-3 items-center'>
-                      <b>{o.label}</b>
+                    <div key={o.id} className='flex items-center gap-3 mb-2'>
+                      <b className='w-6'>{o.label}</b>
+
                       <Input
+                        className='flex-1'
                         value={o.value}
                         onChange={(e) =>
                           setPart1((prev) =>
@@ -560,8 +615,27 @@ const UpdateListening = () => {
                           )
                         }
                       />
+
+                      {/* DELETE OPTION */}
+                      <DeleteOutlined
+                        className={`text-red-500 cursor-pointer ${
+                          q.options.length <= 3
+                            ? 'opacity-30 pointer-events-none'
+                            : ''
+                        }`}
+                        onClick={() => deletePart1Option(q.id, o.id)}
+                      />
                     </div>
                   ))}
+
+                  <Button
+                    size='small'
+                    icon={<PlusOutlined />}
+                    onClick={() => addPart1Option(q.id)}
+                    className='mt-1'
+                  >
+                    + Add option
+                  </Button>
 
                   <Select
                     className='w-full'

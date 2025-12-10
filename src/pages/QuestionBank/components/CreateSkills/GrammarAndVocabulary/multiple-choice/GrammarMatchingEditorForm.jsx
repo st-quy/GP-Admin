@@ -12,6 +12,10 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
   const [rightItems, setRightItems] = useState(group.rightItems || []);
   const [mapping, setMapping] = useState(group.mapping || []);
 
+  // ----- Error States -----
+  const [leftErrors, setLeftErrors] = useState([]);
+  const [rightErrors, setRightErrors] = useState([]);
+
   /* -----------------------------
       SYNC WITH PARENT
   ------------------------------ */
@@ -37,6 +41,10 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
     const id = Date.now();
     const newLeft = [...leftItems, { id, text: '' }];
     setLeftItems(newLeft);
+
+    // Add error slot
+    setLeftErrors([...leftErrors, 'Content is required']);
+
     rebuildMapping(newLeft);
   };
 
@@ -45,9 +53,14 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
   ------------------------------ */
   const removeLeft = (idx) => {
     const removedId = leftItems[idx].id;
+
     const newLeft = leftItems.filter((_, i) => i !== idx);
+    const newErrs = leftErrors.filter((_, i) => i !== idx);
+
     const newMap = mapping.filter((m) => m.leftId !== removedId);
+
     setLeftItems(newLeft);
+    setLeftErrors(newErrs);
     setMapping(newMap);
   };
 
@@ -56,6 +69,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
   ------------------------------ */
   const addRight = () => {
     setRightItems([...rightItems, { id: Date.now(), text: '' }]);
+    setRightErrors([...rightErrors, 'Option is required']);
   };
 
   /* -----------------------------
@@ -65,6 +79,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
     const removedId = rightItems[idx].id;
 
     setRightItems(rightItems.filter((_, i) => i !== idx));
+    setRightErrors(rightErrors.filter((_, i) => i !== idx));
 
     // Set rightId = null if mapped to removed
     setMapping(
@@ -75,21 +90,29 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
   };
 
   /* -----------------------------
-      UPDATE LEFT TEXT
+      UPDATE LEFT TEXT + ERROR
   ------------------------------ */
   const updateLeft = (idx, value) => {
     const copy = [...leftItems];
     copy[idx].text = value;
     setLeftItems(copy);
+
+    const err = [...leftErrors];
+    err[idx] = value.trim() === '' ? 'Content is required' : null;
+    setLeftErrors(err);
   };
 
   /* -----------------------------
-      UPDATE RIGHT TEXT
+      UPDATE RIGHT TEXT + ERROR
   ------------------------------ */
   const updateRight = (idx, value) => {
     const copy = [...rightItems];
     copy[idx].text = value;
     setRightItems(copy);
+
+    const err = [...rightErrors];
+    err[idx] = value.trim() === '' ? 'Option is required' : null;
+    setRightErrors(err);
   };
 
   /* -----------------------------
@@ -144,6 +167,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                   placeholder={`Content ${index + 1}`}
                   value={item.text}
                   onChange={(e) => updateLeft(index, e.target.value)}
+                  status={leftErrors[index] ? 'error' : ''}
                 />
 
                 <Button
@@ -153,6 +177,12 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                   onClick={() => removeLeft(index)}
                 />
               </div>
+
+              {leftErrors[index] && (
+                <div style={{ color: 'red', marginLeft: 40, fontSize: 12 }}>
+                  {leftErrors[index]}
+                </div>
+              )}
             </div>
           ))}
 
@@ -200,6 +230,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                   placeholder={`Option ${LETTERS[index]}`}
                   value={item.text}
                   onChange={(e) => updateRight(index, e.target.value)}
+                  status={rightErrors[index] ? 'error' : ''}
                 />
 
                 <Button
@@ -209,6 +240,12 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                   onClick={() => removeRight(index)}
                 />
               </div>
+
+              {rightErrors[index] && (
+                <div style={{ color: 'red', marginLeft: 40, fontSize: 12 }}>
+                  {rightErrors[index]}
+                </div>
+              )}
             </div>
           ))}
 
@@ -243,6 +280,9 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 placeholder='Select'
                 value={m.rightId}
                 onChange={(v) => updateMappingRight(m.leftId, v)}
+                status={
+                  leftErrors[index] || rightErrors.some((e) => e) ? 'error' : ''
+                }
               >
                 {rightItems.map((opt, optIdx) => (
                   <Select.Option key={opt.id} value={opt.id}>

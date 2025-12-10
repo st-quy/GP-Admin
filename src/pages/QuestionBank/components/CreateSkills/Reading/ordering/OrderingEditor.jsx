@@ -1,4 +1,3 @@
-// Reading/ordering/OrderingEditor.jsx
 import React from 'react';
 import { DndContext, closestCenter } from '@dnd-kit/core';
 import {
@@ -11,7 +10,7 @@ import { PlusOutlined, DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 
 import SortableOrderingItem from './SortableOrderingItem';
 
-const OrderingEditor = ({ fields, helpers }) => {
+const OrderingEditor = ({ fields, helpers, listPath = [] }) => {
   const form = Form.useFormInstance();
 
   const items = fields.map((f) => f.key);
@@ -23,7 +22,6 @@ const OrderingEditor = ({ fields, helpers }) => {
     if (active.id !== over.id) {
       const oldIndex = items.indexOf(active.id);
       const newIndex = items.indexOf(over.id);
-
       helpers.move(oldIndex, newIndex);
     }
   };
@@ -92,7 +90,6 @@ const OrderingEditor = ({ fields, helpers }) => {
                         {index + 1}
                       </div>
 
-                      {/* FIX: Form.Item must wrap Input directly */}
                       <Form.Item
                         name={[field.name, 'text']}
                         rules={[
@@ -119,6 +116,34 @@ const OrderingEditor = ({ fields, helpers }) => {
           </Space>
         </SortableContext>
       </DndContext>
+
+      {/* 🔥 VALIDATION INLINE — TỐI THIỂU 5 SENTENCES */}
+      <Form.Item shouldUpdate noStyle>
+        {() => {
+          const list = form.getFieldValue(listPath) || [];
+
+          return (
+            <Form.Item
+              name={[...listPath, '_minLength']}
+              validateTrigger='onSubmit'
+              rules={[
+                {
+                  validator: () => {
+                    if (list.length < 5) {
+                      return Promise.reject(
+                        new Error('You must add at least 5 sentences')
+                      );
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <div style={{ height: 0, marginTop: 8 }} />
+            </Form.Item>
+          );
+        }}
+      </Form.Item>
     </div>
   );
 };

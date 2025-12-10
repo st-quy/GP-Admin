@@ -125,13 +125,23 @@ const UpdateGrammarVocab = () => {
   };
 
   const validateGroup = (g) => {
-    if (!g.content.trim()) return false;
-    if (!g.leftItems.length || g.leftItems.some((i) => !i.text.trim()))
+    if (!g.content?.trim()) return false;
+
+    if (!g.leftItems.length || g.leftItems.some((i) => !i.text?.trim()))
       return false;
-    if (!g.rightItems.length || g.rightItems.some((i) => !i.text.trim()))
+
+    if (!g.rightItems.length || g.rightItems.some((i) => !i.text?.trim()))
       return false;
+
     if (!g.mapping.length) return false;
-    return g.mapping.every((m) => m.rightId);
+
+    return g.mapping.every(
+      (m) =>
+        m.leftId !== null &&
+        m.rightId !== null &&
+        g.leftItems.find((x) => x.id === m.leftId) &&
+        g.rightItems.find((x) => x.id === m.rightId)
+    );
   };
 
   const validatePart2 = () =>
@@ -460,6 +470,52 @@ const UpdateGrammarVocab = () => {
                 group={g}
                 updateGroup={(data) => updateGroupState(idx, data)}
               />
+              <Form.Item noStyle shouldUpdate>
+                {() => {
+                  const g = part2Groups[idx] || {};
+                  const left = Array.isArray(g.leftItems) ? g.leftItems : [];
+                  const right = Array.isArray(g.rightItems) ? g.rightItems : [];
+                  const mapping = Array.isArray(g.mapping) ? g.mapping : [];
+
+                  return (
+                    <Form.Item
+                      name={['part2', idx, '_validation']}
+                      rules={[
+                        {
+                          validator: () => {
+                            if (!g.content?.trim()) {
+                              return Promise.reject(
+                                new Error('Instruction is required')
+                              );
+                            }
+                            if (left.length < 1) {
+                              return Promise.reject(
+                                new Error('Must have at least 1 content')
+                              );
+                            }
+                            if (right.length < 1) {
+                              return Promise.reject(
+                                new Error('Must have at least 1 option')
+                              );
+                            }
+                            if (mapping.length < 1) {
+                              return Promise.reject(
+                                new Error(
+                                  'Must have at least 1 correct matching pair'
+                                )
+                              );
+                            }
+                            return Promise.resolve();
+                          },
+                        },
+                      ]}
+                    >
+                      {/* hidden trigger */}
+                      <div style={{ height: 0 }}></div>
+                    </Form.Item>
+                  );
+                }}
+              </Form.Item>
             </Panel>
           ))}
         </Collapse>

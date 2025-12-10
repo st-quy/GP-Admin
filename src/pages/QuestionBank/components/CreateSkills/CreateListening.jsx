@@ -367,6 +367,136 @@ const CreateListening = () => {
       onError: () => message.error('Failed to create listening'),
     });
   };
+  // Generate Excel-like labels: A, B, ..., Z, AA, AB, ...
+  const generateLabel = (num) => {
+    let label = '';
+    while (num > 0) {
+      let rem = (num - 1) % 26;
+      label = String.fromCharCode(65 + rem) + label;
+      num = Math.floor((num - 1) / 26);
+    }
+    return label;
+  };
+
+  // Add option to a question (no max)
+  const addPart1Option = (qId) => {
+    setPart1((prev) =>
+      prev.map((q) => {
+        if (q.id !== qId) return q;
+
+        const nextIndex = q.options.length + 1;
+
+        return {
+          ...q,
+          options: [
+            ...q.options,
+            {
+              id: nextIndex,
+              label: generateLabel(nextIndex),
+              value: '',
+            },
+          ],
+        };
+      })
+    );
+  };
+
+  // Delete option (must keep >= 3)
+  const deletePart1Option = (qId, optId) => {
+    setPart1((prev) =>
+      prev.map((q) => {
+        if (q.id !== qId) return q;
+
+        if (q.options.length <= 3) {
+          message.warning('Must have at least 3 options!');
+          return q;
+        }
+
+        // remove option
+        const filtered = q.options.filter((o) => o.id !== optId);
+
+        // reassign ids + labels
+        const reindexed = filtered.map((o, index) => ({
+          ...o,
+          id: index + 1,
+          label: generateLabel(index + 1),
+        }));
+
+        return {
+          ...q,
+          options: reindexed,
+          correctId: reindexed.find((o) => o.id === q.correctId)
+            ? q.correctId
+            : null,
+        };
+      })
+    );
+  };
+
+  // Add option to a sub-question (no max)
+  const addPart4Option = (groupId, subId) => {
+    setPart4((prev) =>
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+
+        const updatedSub = g.subQuestions.map((s) => {
+          if (s.id !== subId) return s;
+
+          const nextIndex = s.options.length + 1;
+
+          return {
+            ...s,
+            options: [
+              ...s.options,
+              {
+                id: nextIndex,
+                label: generateLabel(nextIndex),
+                value: '',
+              },
+            ],
+          };
+        });
+
+        return { ...g, subQuestions: updatedSub };
+      })
+    );
+  };
+
+  // Delete option from sub-question (min = 3)
+  const deletePart4Option = (groupId, subId, optId) => {
+    setPart4((prev) =>
+      prev.map((g) => {
+        if (g.id !== groupId) return g;
+
+        const updatedSub = g.subQuestions.map((s) => {
+          if (s.id !== subId) return s;
+
+          if (s.options.length <= 3) {
+            message.warning('Must have at least 3 options!');
+            return s;
+          }
+
+          const filtered = s.options.filter((o) => o.id !== optId);
+
+          const reindexed = filtered.map((o, index) => ({
+            ...o,
+            id: index + 1,
+            label: generateLabel(index + 1),
+          }));
+
+          return {
+            ...s,
+            options: reindexed,
+            correctId: reindexed.find((o) => o.id === s.correctId)
+              ? s.correctId
+              : null,
+          };
+        });
+
+        return { ...g, subQuestions: updatedSub };
+      })
+    );
+  };
 
   // =====================================
   // RENDER
@@ -432,7 +562,9 @@ const CreateListening = () => {
                     updatePart1Field(q.id, 'audioUrl', url)
                   )}
                 >
-                  <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
+                  <Button icon={<AudioOutlined />} className='mb-6'>
+                    Upload audio (MP3)
+                  </Button>
                 </Upload>
 
                 {q.audioUrl && (
@@ -440,18 +572,39 @@ const CreateListening = () => {
                 )}
 
                 {q.options.map((o) => (
-                  <div key={o.id} className='flex gap-2 mb-1'>
-                    <div>{o.label}</div>
+                  <div key={o.id} className='flex items-center gap-2 mb-2'>
+                    <div className='w-6 font-bold'>{o.label}</div>
+
                     <Input
+                      className='flex-1'
                       value={o.value}
                       onChange={(e) =>
                         updatePart1Option(q.id, o.id, e.target.value)
                       }
                     />
+
+                    {/* DELETE BUTTON */}
+                    <DeleteOutlined
+                      className={`cursor-pointer text-red-500 ${
+                        q.options.length <= 3
+                          ? 'opacity-30 pointer-events-none'
+                          : ''
+                      }`}
+                      onClick={() => deletePart1Option(q.id, o.id)}
+                    />
                   </div>
                 ))}
 
-                <Form.Item label='Correct Answer' required>
+                <Button
+                  size='small'
+                  icon={<PlusOutlined />}
+                  onClick={() => addPart1Option(q.id)}
+                  style={{ marginTop: 8 }}
+                >
+                  Add option
+                </Button>
+
+                <Form.Item label='Correct Answer' required className='mt-4'>
                   <Select
                     value={q.correctId || undefined}
                     onChange={(v) => updatePart1Field(q.id, 'correctId', v)}
@@ -610,9 +763,14 @@ const CreateListening = () => {
                       </Form.Item>
 
                       {s.options.map((o) => (
-                        <div key={o.id} className='flex gap-2 mb-1'>
-                          <div>{o.label}</div>
+                        <div
+                          key={o.id}
+                          className='flex items-center gap-2 mb-2'
+                        >
+                          <div className='w-6 font-bold'>{o.label}</div>
+
                           <Input
+                            className='flex-1'
                             value={o.value}
                             onChange={(e) =>
                               updateGroupOption(
@@ -623,8 +781,25 @@ const CreateListening = () => {
                               )
                             }
                           />
+
+                          <DeleteOutlined
+                            className={`cursor-pointer text-red-500 ${
+                              s.options.length <= 3
+                                ? 'opacity-30 pointer-events-none'
+                                : ''
+                            }`}
+                            onClick={() => deletePart4Option(g.id, s.id, o.id)}
+                          />
                         </div>
                       ))}
+                      <Button
+                        size='small'
+                        icon={<PlusOutlined />}
+                        onClick={() => addPart4Option(g.id, s.id)}
+                        style={{ marginBottom: 12 }}
+                      >
+                        Add option
+                      </Button>
 
                       <Select
                         className='w-full'
