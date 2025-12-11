@@ -1,4 +1,3 @@
-// @ts-nocheck
 import React, { useState } from 'react';
 import { Input, Button, Upload, Form, Card } from 'antd';
 import {
@@ -20,6 +19,12 @@ const CreateSpeaking = () => {
 
   const { mutate: createSpeaking, isPending } = useCreateQuestion();
   const [images, setImages] = useState({});
+  const [fileLists, setFileLists] = useState({
+    part1: [],
+    part2: [],
+    part3: [],
+    part4: [],
+  });
 
   /** Validate file type + size */
   const beforeUpload = (file) => {
@@ -36,7 +41,24 @@ const CreateSpeaking = () => {
     listType: 'picture-card',
     beforeUpload,
 
-    customRequest: async ({ file, onSuccess, onError }) => {
+    onChange(info) {
+      // Khi user vừa chọn file → thêm vào fileList để hiển thị loading
+      if (info.file.status === 'uploading') {
+        setFileLists((prev) => ({
+          ...prev,
+          [partKey]: [
+            {
+              uid: info.file.uid,
+              name: info.file.name,
+              status: 'uploading',
+              percent: 0,
+            },
+          ],
+        }));
+      }
+    },
+
+    customRequest: async ({ file, onSuccess, onError, onProgress }) => {
       try {
         const { data } = await axiosInstance.post('/presigned-url/upload-url', {
           fileName: file.name,
@@ -45,36 +67,87 @@ const CreateSpeaking = () => {
 
         const { uploadUrl, fileUrl } = data;
 
-        await fetch(uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: { 'Content-Type': file.type },
-        });
+        const xhr = new XMLHttpRequest();
 
-        // Save to state
-        setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
+        xhr.upload.onprogress = (event) => {
+          const total = event.total || file.size; // fallback
+          const percent = Math.round((event.loaded / total) * 100);
 
-        // Sync to form (trigger validation)
-        form.setFieldsValue({
-          parts: {
-            ...form.getFieldValue('parts'),
-            [partKey]: {
-              ...form.getFieldValue(['parts', partKey]),
-              image: fileUrl,
-            },
-          },
-        });
+          setFileLists((prev) => ({
+            ...prev,
+            [partKey]: prev[partKey].map((f) =>
+              f.uid === file.uid ? { ...f, status: 'uploading', percent } : f
+            ),
+          }));
 
-        onSuccess({ fileUrl });
-      } catch (e) {
-        onError(e);
+          onProgress({ percent });
+        };
+
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            setFileLists((prev) => ({
+              ...prev,
+              [partKey]: [
+                {
+                  uid: file.uid,
+                  name: file.name,
+                  status: 'done',
+                  url: fileUrl,
+                },
+              ],
+            }));
+
+            setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
+
+            form.setFieldsValue({
+              parts: {
+                ...form.getFieldValue('parts'),
+                [partKey]: {
+                  ...form.getFieldValue(['parts', partKey]),
+                  image: fileUrl,
+                },
+              },
+            });
+
+            onSuccess({ fileUrl });
+          } else {
+            onError(new Error('Upload failed'));
+          }
+        };
+
+        xhr.onerror = function () {
+          onError(new Error('Upload error'));
+        };
+
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      } catch (err) {
+        onError(err);
       }
     },
 
-    onPreview: (file) => {
-      const src = file?.url || file?.response?.fileUrl;
-      if (src) window.open(src, '_blank');
+    onRemove: () => {
+      setImages((prev) => ({ ...prev, [partKey]: null }));
+      setFileLists((prev) => ({ ...prev, [partKey]: [] }));
+      form.setFieldsValue({
+        parts: {
+          ...form.getFieldValue('parts'),
+          [partKey]: {
+            ...form.getFieldValue(['parts', partKey]),
+            image: null,
+          },
+        },
+      });
+      return true;
     },
+
+    onPreview: (file) => {
+      const src = file.url || file.response?.fileUrl;
+      if (src) window.open(src);
+    },
+
+    fileList: fileLists[partKey],
   });
 
   /** FE → BE Payload */
@@ -135,25 +208,9 @@ const CreateSpeaking = () => {
             }),
           ]}
         >
-          <Upload
-            {...uploadProps(key)}
-            fileList={
-              form.getFieldValue(['parts', key, 'image'])
-                ? [
-                    {
-                      uid: '-1',
-                      name: 'Image',
-                      status: 'done',
-                      url: form.getFieldValue(['parts', key, 'image']),
-                    },
-                  ]
-                : []
-            }
-            onChange={() => {
-              form.validateFields([['parts', key, 'image']]);
-            }}
-          >
-            {!form.getFieldValue(['parts', key, 'image']) ? (
+          <Upload {...uploadProps(key)}>
+            {fileLists[key].length === 0 ||
+            fileLists[key][0].status === 'done' ? (
               <div style={{ textAlign: 'center' }}>
                 <CloudUploadOutlined style={{ fontSize: 40 }} />
                 <div>Upload</div>

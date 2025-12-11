@@ -54,7 +54,7 @@ const MatchingBlock = ({ title, part }) => {
             return (
               <div key={idx} style={{ marginBottom: 4 }}>
                 <Text strong>
-                  {m.leftIndex + 1} → {letterLabels[m.rightIndex]}
+                  {idx + 1} → {letterLabels[m.rightIndex]}
                   {' — '}
                 </Text>
                 <Text>{rightText}</Text>
