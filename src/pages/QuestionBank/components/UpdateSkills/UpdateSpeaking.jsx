@@ -25,6 +25,60 @@ const UpdateSpeaking = () => {
   const [images, setImages] = useState({});
   const { data, isFetching } = useGetQuestionGroupDetail('SPEAKING', sectionId);
   const { mutate: updateSpeaking, isPending } = useUpdateQuestionGroup();
+  const [fileLists, setFileLists] = useState({
+    part1: [],
+    part2: [],
+    part3: [],
+    part4: [],
+  });
+
+  /** Khi load data → fill cả fileList */
+  useEffect(() => {
+    if (!data) return;
+
+    setFileLists({
+      part1: data.part1?.image
+        ? [
+            {
+              uid: Date.now() + '_1',
+              name: 'Image',
+              status: 'done',
+              url: data.part1.image,
+            },
+          ]
+        : [],
+      part2: data.part2?.image
+        ? [
+            {
+              uid: Date.now() + '_2',
+              name: 'Image',
+              status: 'done',
+              url: data.part2.image,
+            },
+          ]
+        : [],
+      part3: data.part3?.image
+        ? [
+            {
+              uid: Date.now() + '_3',
+              name: 'Image',
+              status: 'done',
+              url: data.part3.image,
+            },
+          ]
+        : [],
+      part4: data.part4?.image
+        ? [
+            {
+              uid: Date.now() + '_4',
+              name: 'Image',
+              status: 'done',
+              url: data.part4.image,
+            },
+          ]
+        : [],
+    });
+  }, [data]);
 
   /** ================================================================
    * 1. Fill form khi fetch xong
@@ -89,63 +143,123 @@ const UpdateSpeaking = () => {
   /** ================================================================
    * 3. Upload Presigned URL
    * ================================================================ */
+  /** Upload logic giống Create */
   const uploadProps = (partKey) => ({
     maxCount: 1,
     listType: 'picture-card',
     beforeUpload,
 
-    customRequest: async ({ file, onSuccess, onError }) => {
+    onChange(info) {
+      if (info.file.status === 'uploading') {
+        setFileLists((prev) => ({
+          ...prev,
+          [partKey]: [
+            {
+              uid: info.file.uid,
+              name: info.file.name,
+              status: 'uploading',
+              percent: 0,
+            },
+          ],
+        }));
+      }
+    },
+
+    customRequest: async ({ file, onSuccess, onError, onProgress }) => {
       try {
         const { data } = await axiosInstance.post('/presigned-url/upload-url', {
           fileName: file.name,
           type: 'images',
         });
 
-        await fetch(data.uploadUrl, {
-          method: 'PUT',
-          body: file,
-          headers: { 'Content-Type': file.type },
-        });
+        const { uploadUrl, fileUrl } = data;
 
-        const url = data.fileUrl;
+        const xhr = new XMLHttpRequest();
 
-        setImages((prev) => ({ ...prev, [partKey]: url }));
+        xhr.upload.onprogress = (event) => {
+          const total = event.total || file.size;
+          const percent = Math.round((event.loaded / total) * 100);
 
-        // Sync vào form và trigger validation
-        form.setFieldsValue({
-          parts: {
-            ...form.getFieldValue('parts'),
-            [partKey]: {
-              ...form.getFieldValue(['parts', partKey]),
-              image: url,
-            },
-          },
-        });
+          setFileLists((prev) => ({
+            ...prev,
+            [partKey]: prev[partKey].map((f) =>
+              f.uid === file.uid ? { ...f, status: 'uploading', percent } : f
+            ),
+          }));
 
-        form.validateFields([['parts', partKey, 'image']]);
+          onProgress({ percent });
+        };
 
-        onSuccess();
-      } catch (e) {
-        onError(e);
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            setFileLists((prev) => ({
+              ...prev,
+              [partKey]: [
+                {
+                  uid: file.uid,
+                  name: file.name,
+                  status: 'done',
+                  url: fileUrl,
+                },
+              ],
+            }));
+
+            setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
+
+            form.setFieldsValue({
+              parts: {
+                ...form.getFieldValue('parts'),
+                [partKey]: {
+                  ...form.getFieldValue(['parts', partKey]),
+                  image: fileUrl,
+                },
+              },
+            });
+
+            form.validateFields([['parts', partKey, 'image']]);
+
+            onSuccess({ fileUrl });
+          } else {
+            onError(new Error('Upload failed'));
+          }
+        };
+
+        xhr.onerror = function () {
+          onError(new Error('Upload error'));
+        };
+
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      } catch (err) {
+        onError(err);
       }
     },
 
-    onPreview: () => {
-      const src = images[partKey];
-      if (src) window.open(src, '_blank');
+    /** Remove */
+    onRemove: () => {
+      setImages((prev) => ({ ...prev, [partKey]: null }));
+      setFileLists((prev) => ({ ...prev, [partKey]: [] }));
+
+      form.setFieldsValue({
+        parts: {
+          ...form.getFieldValue('parts'),
+          [partKey]: {
+            ...form.getFieldValue(['parts', partKey]),
+            image: null,
+          },
+        },
+      });
+
+      return true;
     },
 
-    // Hiển thị fileList khi đã có image
-    fileList: images[partKey]
-      ? [
-          {
-            uid: '-1',
-            name: 'Image',
-            status: 'done',
-            url: images[partKey],
-          },
-        ]
-      : [],
+    onPreview: (file) => {
+      const src = file.url || file.response?.fileUrl;
+      if (src) window.open(src);
+    },
+
+    fileList: fileLists[partKey],
   });
 
   /** ================================================================
@@ -235,7 +349,7 @@ const UpdateSpeaking = () => {
           ]}
         >
           <Upload {...uploadProps(key)}>
-            {!images[key] ? (
+            {fileLists[key].length === 0 ? (
               <div style={{ textAlign: 'center' }}>
                 <CloudUploadOutlined style={{ fontSize: 40 }} />
                 <div>Upload</div>

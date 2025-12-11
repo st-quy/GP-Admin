@@ -6,7 +6,7 @@ const { Title, Text } = Typography;
 
 const WritingDetailBlock = ({ part1, part2, part3, part4 }) => {
   return (
-    <Space direction='vertical'>
+    <Space direction='vertical' className='w-full'>
       {/* ============== PART 1 — Short Answers ============== */}
       {part1 && (
         <Card title='PART 1 — Short Answers'>
