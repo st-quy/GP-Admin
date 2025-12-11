@@ -87,6 +87,7 @@ export const transformExcelDataToStructuredJSON = (data) => {
 };
 
 export const transformListeningData = (data) => {
+  if (!data || !data.Skills) return null;
   const listeningSkill = data.Skills.find(
     (skill) => skill.Name === "LISTENING"
   );
@@ -463,6 +464,7 @@ function transformDropdownList(q, part) {
 };
 
 export const transformGrammarData = (data) => {
+  if (!data || !data.Skills) return null;
   const grammarSkill = data.Skills?.find((skill) =>
     skill.Name.toLowerCase().includes("grammar")
   );
@@ -533,7 +535,6 @@ export const transformGrammarData = (data) => {
       Questions: questions,
     };
   });
-  console.log("partGrama", fullParts)
   return {
     ID: topicID || null,
     Name: topicName || null,
@@ -546,6 +547,7 @@ export const transformGrammarData = (data) => {
 
 
 export const transformReadingData = (data) => {
+  if (!data || !data.Skills) return null;
   const readingSkill = data.Skills.find((skill) =>
     skill.Name.toLowerCase().includes("reading")
   );
@@ -748,7 +750,6 @@ export const transformReadingData = (data) => {
       Questions: questions,
     };
   });
-  console.log("partreading", parts)
   return {
     ID: topicID || null,
     Name: topicName || null,

@@ -146,8 +146,6 @@ const CreateExamPage = () => {
     updatedAt: topicData?.updatedAt || new Date().toISOString(),
   };
 
-  console.log("✅ PreviewExamData (FULL STRUCTURE):", previewExamData);
-
   setPreviewData(previewExamData);
   setPreviewOpen(true);
 };

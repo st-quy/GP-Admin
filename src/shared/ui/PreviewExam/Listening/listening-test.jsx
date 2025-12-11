@@ -9,7 +9,6 @@ import { transformListeningData } from "@shared/lib/utils/transformExcelDataToSt
 const { Title } = Typography;
 
 const ListeningTest = ({ dataExam }) => {
-  console.log("data", dataExam)
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
 
   const formatQuestionData = (question) => {
