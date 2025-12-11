@@ -68,7 +68,7 @@ const PreviewExam = ({
               onClick={() => {
                 setDataExam(null);
                 setIsModalOpen(false);
-                handleFileChange(fileData);
+                // handleFileChange(fileData);
               }}
             >
               Import

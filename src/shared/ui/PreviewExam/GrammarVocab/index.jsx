@@ -27,6 +27,7 @@ const GrammarVocabPreview = ({ dataExam }) => {
                 }
                 questionNumber={question.Sequence}
               />
+              
             </div>
           ))}
         </div>

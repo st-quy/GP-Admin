@@ -5,6 +5,9 @@ import { Button } from "antd";
 import { ArrowLeftOutlined, ArrowRightOutlined } from "@ant-design/icons";
 
 const SpeakingPreview = ({ dataExam }) => {
+   if (!dataExam || !dataExam.Skills || !dataExam.Skills[4]) {
+    return <div>Loading...</div>; 
+  }
   const parts = dataExam.Skills[4].Parts;
 
   const [currentIndex, setCurrentIndex] = useState(0);

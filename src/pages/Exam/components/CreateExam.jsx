@@ -107,60 +107,51 @@ const CreateExamPage = () => {
         setOpenModal(false);
     };
     const handlePreviewExam = () => {
-        if (!instructions.length) {
-            message.warning("Please select at least one skill before preview");
-            return;
-        }
+  if (!instructions.length) {
+    message.warning("Please select at least one skill before preview");
+    return;
+  }
 
-        const skillOrder = [
-            "LISTENING",
-            "GRAMMAR AND VOCABULARY",
-            "READING",
-            "WRITING",
-            "SPEAKING",
-        ];
+  const skillOrder = [
+    "LISTENING",
+    "GRAMMAR AND VOCABULARY",
+    "READING",
+    "WRITING",
+    "SPEAKING",
+  ];
 
+  const skills = skillOrder.map(skillName => {
+    const found = instructions.find(i => i.skill === skillName);
 
+    if (!found || !found.section) {
+      return {
+        ID: null,
+        Name: skillName,
+        Parts: [],
+      };
+    }
 
-        const skills = skillOrder.map((skillName) => {
-            const found = instructions.find(i => i.skill === skillName);
-
-            if (!found || !Array.isArray(found.section?.Parts)) {
-                return { Name: skillName, Parts: [] };
-            }
-
-            // ✅ CLONE + FIX DATA TẠI ĐÂY
-            const safeParts = found.section.Parts.map(part => ({
-                ...part,
-                Questions: (part.Questions || []).map(q => ({
-                    ...q,
-                    AnswerContent: {
-                        ...(q.AnswerContent || {}),
-                        correctAnswer:
-                            typeof q?.AnswerContent?.correctAnswer === "string"
-                                ? q.AnswerContent.correctAnswer
-                                : "",
-                    },
-                })),
-            }));
-
-            return {
-                Name: skillName,
-                Parts: safeParts,
-            };
-        });
-
-        const previewExamData = {
-            Skills: skills,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-        };
-
-        console.log("✅ PreviewExamData (SAFE):", previewExamData);
-
-        setPreviewData(previewExamData);
-        setPreviewOpen(true);
+    return {
+      ID: found.section.SkillID || found.section.Skill?.ID,
+      Name: skillName,
+      Parts: found.section.Parts || [],
     };
+  });
+
+  const previewExamData = {
+    ID: topicData?.ID,
+    Name: form.getFieldValue("name"),
+    Skills: skills,
+    createdAt: topicData?.createdAt || new Date().toISOString(),
+    updatedAt: topicData?.updatedAt || new Date().toISOString(),
+  };
+
+  console.log("✅ PreviewExamData (FULL STRUCTURE):", previewExamData);
+
+  setPreviewData(previewExamData);
+  setPreviewOpen(true);
+};
+
 
     const handleSaveExam = async () => {
 

@@ -270,6 +270,7 @@ const QuestionForm = ({
                   correctAnswer: currentPart.AnswerContent.correctAnswer,
                 },
               ],
+              
             }}
             userAnswer={answers}
             setUserAnswer={setUserAnswer}
