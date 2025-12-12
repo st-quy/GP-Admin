@@ -301,130 +301,145 @@ const DropdownListResult = ({ question }) => {
 
   if (rowsToRender.length === 0) return formatAnswerText(question.userResponse?.text)
 
-  return (
-    <div className="mt-6 flex flex-col gap-6">
-      {rowsToRender.map((rowKey, idx) => {
-        const normalize = str =>
-          String(str || '')
-            .trim()
-            .toLowerCase()
-        const rawKeyText = typeof rowKey === 'string' ? rowKey : rowKey?.key || `Question ${idx + 1}`
+ return (
+  <div className="mt-6 flex flex-col gap-6">
+    {rowsToRender.map((rowKey, idx) => {
+      const normalize = (str) => String(str || '').trim().toLowerCase()
+      
+      // 1. Xác định Key
+      const rawKeyText = typeof rowKey === 'string' ? rowKey : rowKey?.key || `Question ${idx + 1}`
+      const isParagraphStyle = String(rawKeyText).trim().startsWith('Paragraph')
 
-        const isParagraphStyle = String(rawKeyText).trim().startsWith('Paragraph')
-
-        let textToDisplay = rawKeyText
-        if (isParagraphStyle && fullTextContent) {
-          const foundLine = contentLines.find(line => line.toLowerCase().startsWith(String(rawKeyText).toLowerCase()))
-          if (foundLine) textToDisplay = foundLine
-        }
-
-        // --- LOGIC 3: Tìm đáp án Đúng & User chọn ---
-        // Nhờ bước chuẩn hóa ở trên, giờ ta chỉ cần tìm theo 'key' là đủ
-        let correctItem = correctAnswers.find(c => c.key && normalize(c.key) === normalize(rawKeyText))
-
-        // Các Fallback tìm kiếm (để xử lý trường hợp key là "1" nhưng text là "Paragraph 1")
-        if (!correctItem) correctItem = correctAnswers.find(c => String(c.key) === String(idx))
-        if (!correctItem && correctAnswers[idx]) correctItem = correctAnswers[idx]
-        if (!correctItem) correctItem = correctAnswers.find(c => String(c.key) === String(idx + 1))
-        if (!correctItem) correctItem = correctAnswers.find(c => normalize(c.key) === normalize(`Paragraph ${idx + 1}`))
-
-        // User answer lookup
-        let userSelectedValue = userAnswersMap[normalize(rawKeyText)] || userAnswersMap[String(idx)]
-        if (userSelectedValue === undefined) userSelectedValue = userAnswersMap[String(idx + 1)]
-        if (userSelectedValue === undefined) userSelectedValue = userAnswersMap[normalize(`Paragraph ${idx + 1}`)]
-
-        const hasAnswer = userSelectedValue !== undefined && userSelectedValue !== null && userSelectedValue !== ''
-        const isCorrect = hasAnswer && correctItem && normalize(userSelectedValue) === normalize(correctItem.value)
-        const displayValue = hasAnswer ? userSelectedValue : null
-
-        // --- LOGIC 4: Build Options List ---
-        let currentOptions = []
-        if (isCommonOptions) {
-          currentOptions = [...commonOptions]
-        } else if (isParagraphStyle) {
-          currentOptions = Array.from(allPossibleValues)
-        } else {
-          const specificOpts = optionsMap[rawKeyText] || optionsMap[String(idx)]
-          currentOptions = Array.isArray(specificOpts) ? specificOpts : specificOpts ? [specificOpts] : []
-          if (currentOptions.length === 0) currentOptions = Array.from(allPossibleValues)
-        }
-
-        // --- LOGIC 5: Force push correct/selected values ---
-        if (correctItem?.value && !currentOptions.includes(correctItem.value)) {
-          currentOptions.push(correctItem.value)
-        }
-        if (hasAnswer && !currentOptions.includes(userSelectedValue)) {
-          currentOptions.push(userSelectedValue)
-        }
-        currentOptions = [...new Set(currentOptions)]
-
-        // Render Dropdown
-        const renderDropdown = () => (
-          <Select
-            value={displayValue}
-            placeholder={<span className="italic text-gray-400">No answer provided</span>}
-            className={`custom-result-select w-full`}
-            style={{
-              border: isCorrect ? '1px solid #52c41a' : hasAnswer ? '1px solid #ff4d4f' : '1px solid #d9d9d9',
-              borderRadius: '8px',
-              backgroundColor: isCorrect ? '#f6ffed' : hasAnswer ? '#fff1f0' : '#ffffff',
-              height: '42px'
-            }}
-            bordered={false}
-            dropdownStyle={{ minWidth: '300px' }}
-          >
-            {currentOptions.map((opt, optIdx) => {
-              const isOptCorrect = normalize(opt) === normalize(correctItem?.value)
-              const isOptSelected = normalize(opt) === normalize(userSelectedValue)
-              return (
-                <Select.Option key={optIdx} value={opt}>
-                  <div className="flex w-full items-center justify-between">
-                    <span
-                      className={`flex-1 ${
-                        isOptCorrect ? 'font-semibold text-green-600' : isOptSelected ? 'text-red-500' : 'text-gray-700'
-                      }`}
-                    >
-                      {opt}
-                    </span>
-                    {isOptCorrect && <CheckCircleFilled className="ml-2 text-lg text-green-500" />}
-                    {isOptSelected && !isOptCorrect && <CloseCircleFilled className="ml-2 text-lg text-red-500" />}
-                  </div>
-                </Select.Option>
-              )
-            })}
-          </Select>
+      // 2. Xác định Text hiển thị
+      let textToDisplay = rawKeyText
+      if (isParagraphStyle && fullTextContent) {
+        const foundLine = contentLines.find((line) =>
+          line.toLowerCase().startsWith(String(rawKeyText).toLowerCase())
         )
+        if (foundLine) textToDisplay = foundLine
+      }
 
-        if (isParagraphStyle) {
-          return (
-            <div key={idx} className="flex flex-col gap-3">
-              <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="min-w-[24px] text-lg font-bold text-gray-700">{idx + 1}.</div>
-                <div className="flex-1">{renderDropdown()}</div>
-              </div>
-              <div className="whitespace-pre-wrap pl-1 text-justify text-base leading-relaxed text-gray-800">
-                <span className="mr-1 font-bold">{textToDisplay.split('-')[0] + ' -'}</span>
-                {textToDisplay.includes('-') ? textToDisplay.split('-').slice(1).join('-') : textToDisplay}
-              </div>
-              {idx < rowsToRender.length - 1 && <div className="my-4 border-b border-gray-100"></div>}
-            </div>
-          )
-        }
+      // 3. [FIXED] Tìm đáp án đúng (Sửa lỗi gán mảng)
+      // Ưu tiên tìm theo Key/Index chuẩn xác nhất
+      let correctItem = correctAnswers.find((c) => String(c.key) === String(idx + 1))
+      // Fallback nếu cần (nhưng nên hạn chế logic đoán mò)
+      if (!correctItem) correctItem = correctAnswers[idx]
+
+      // 4. Tìm câu trả lời của user
+      // Nên thống nhất key lưu trong userAnswersMap để tránh check nhiều lần
+      let userSelectedValue = userAnswersMap[normalize(rawKeyText)] 
+      if (userSelectedValue === undefined) userSelectedValue = userAnswersMap[String(idx)]
+      // if (userSelectedValue === undefined) userSelectedValue = userAnswersMap[String(idx + 1)]
+
+      const hasAnswer = userSelectedValue !== undefined && userSelectedValue !== null && userSelectedValue !== ''
+      // So sánh đáp án (Normalized để tránh lỗi hoa/thường)
+      const isCorrect = hasAnswer && correctItem && normalize(userSelectedValue) === normalize(correctItem.value)
+      const displayValue = hasAnswer ? userSelectedValue : null
+
+      // 5. Xử lý danh sách Options
+      let currentOptions = []
+      if (isCommonOptions) {
+        currentOptions = [...commonOptions]
+      } else if (isParagraphStyle) {
+        currentOptions = Array.from(allPossibleValues)
+      } else {
+        const specificOpts = optionsMap[rawKeyText] || optionsMap[String(idx)]
+        currentOptions = Array.isArray(specificOpts) ? specificOpts : specificOpts ? [specificOpts] : []
+        if (currentOptions.length === 0) currentOptions = Array.from(allPossibleValues)
+      }
+
+      // Đảm bảo options chứa cả đáp án đúng và đáp án user chọn
+      if (correctItem?.value && !currentOptions.includes(correctItem.value)) {
+        currentOptions.push(correctItem.value)
+      }
+      if (hasAnswer && !currentOptions.includes(userSelectedValue)) {
+        currentOptions.push(userSelectedValue)
+      }
+      // Unique options
+      currentOptions = [...new Set(currentOptions)]
+
+      // Hàm render Dropdown tách ra cho gọn
+      const renderDropdown = () => (
+        <Select
+          value={displayValue}
+          placeholder={<span className="italic text-gray-400">No answer provided</span>}
+          className={`custom-result-select w-full`}
+          style={{
+            border: isCorrect ? '1px solid #52c41a' : hasAnswer ? '1px solid #ff4d4f' : '1px solid #d9d9d9',
+            borderRadius: '8px',
+            backgroundColor: isCorrect ? '#f6ffed' : hasAnswer ? '#fff1f0' : '#ffffff',
+            height: '42px',
+          }}
+          bordered={false}
+          dropdownStyle={{ minWidth: '300px' }}
+        >
+          {currentOptions.map((opt, optIdx) => {
+            const isOptTrueAnswer = normalize(opt) === normalize(correctItem?.value)
+            const isOptSelected = normalize(opt) === normalize(userSelectedValue)
+
+            // Logic hiển thị màu: Giữ nguyên logic của bạn (chỉ hiện đúng khi user chọn đúng)
+            const showAsCorrect = isOptTrueAnswer && isOptSelected
+            const showAsWrong = isOptSelected && !isOptTrueAnswer
+
+            return (
+              <Select.Option key={optIdx} value={opt}>
+                <div className="flex w-full items-center justify-between">
+                  <span
+                    className={`flex-1 ${
+                      showAsCorrect
+                        ? 'font-semibold text-green-600'
+                        : showAsWrong
+                        ? 'text-red-500'
+                        : 'text-gray-700'
+                    }`}
+                  >
+                    {opt}
+                  </span>
+                  {showAsCorrect && <CheckCircleFilled className="ml-2 text-lg text-green-500" />}
+                  {showAsWrong && <CloseCircleFilled className="ml-2 text-lg text-red-500" />}
+                </div>
+              </Select.Option>
+            )
+          })}
+        </Select>
+      )
+
+      if (isParagraphStyle) {
+        // Tách phần prefix (VD: Question 1 - ...) an toàn hơn
+        const separatorIndex = textToDisplay.indexOf('-')
+        const hasSeparator = separatorIndex !== -1
+        const prefix = hasSeparator ? textToDisplay.substring(0, separatorIndex + 1) : ''
+        const content = hasSeparator ? textToDisplay.substring(separatorIndex + 1) : textToDisplay
 
         return (
-          <div
-            key={idx}
-            className="flex w-full flex-col items-center gap-6 border-b border-gray-100 pb-4 last:border-0 sm:flex-row"
-          >
-            <div className="min-w-[250px] flex-1">
-              <p className="m-0 text-base font-medium leading-relaxed text-gray-800">{rawKeyText}</p>
+          <div key={idx} className="flex flex-col gap-3">
+            <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
+              <div className="min-w-[24px] text-lg font-bold text-gray-700">{idx + 1}.</div>
+              <div className="flex-1">{renderDropdown()}</div>
             </div>
-            <div className="relative w-full flex-shrink-0 sm:w-[300px]">{renderDropdown()}</div>
+            <div className="whitespace-pre-wrap pl-1 text-justify text-base leading-relaxed text-gray-800">
+              {hasSeparator && <span className="mr-1 font-bold">{prefix}</span>}
+              {content}
+            </div>
+            {idx < rowsToRender.length - 1 && <div className="my-4 border-b border-gray-100"></div>}
           </div>
         )
-      })}
-    </div>
-  )
+      }
+
+      return (
+        <div
+          key={idx}
+          className="flex w-full flex-col items-center gap-6 border-b border-gray-100 pb-4 last:border-0 sm:flex-row"
+        >
+          <div className="min-w-[250px] flex-1">
+            <p className="m-0 text-base font-medium leading-relaxed text-gray-800">{rawKeyText}</p>
+          </div>
+          <div className="relative w-full flex-shrink-0 sm:w-[300px]">{renderDropdown()}</div>
+        </div>
+      )
+    })}
+  </div>
+)
 }
 
 // --- NEW COMPONENT: MULTIPLE CHOICE RESULT ---
@@ -1196,139 +1211,204 @@ const SubjectiveAnswerView = ({ question }) => {
   )
 }
 
-const checkIsFullyCorrect = q => {
-  // 1. Nếu hệ thống đã đánh dấu sai -> Chắc chắn sai
+const checkIsFullyCorrect = (q) => {
+  const rawUser = q.userResponse?.text
+  if (!rawUser || rawUser === '[]' || rawUser === '' || rawUser === '{}') return false
 
-  if (!q.isCorrect) return false
-
-  // 2. Kiểm tra kỹ hơn với các dạng bài phức tạp (Group, Dropdown)
-
-  try {
-    const rawUser = q.userResponse?.text
-
-    const rawContent = q.resources?.answerContent || q.AnswerContent
-
-    if (!rawUser || !rawContent) return q.isCorrect
-
-    let userAnswers = []
-
-    try {
-      userAnswers = JSON.parse(rawUser)
-    } catch {
-      return q.isCorrect
-    }
-
-    const contentObj = typeof rawContent === 'string' ? JSON.parse(rawContent) : rawContent
-
-    const normalize = s =>
-      String(s || '')
-        .trim()
-        .toLowerCase()
-
-    // A. Dạng Listening Group (Nhiều câu hỏi con)
-
-    if (contentObj?.groupContent?.listContent) {
-      const subQuestions = contentObj.groupContent.listContent
-
-      // Map câu trả lời của user để dễ tra cứu
-
-      const userMap = {}
-
-      if (Array.isArray(userAnswers)) {
-        userAnswers.forEach(u => {
-          // Support nhiều định dạng key
-
-          const key = String(u.questionId || u.id || u.key)
-
-          userMap[key] = u.answer || u.value || u.text
-        })
-      } else {
-        // Dạng object { "1": "A", "2": "B" }
-
-        Object.entries(userAnswers).forEach(([k, v]) => (userMap[String(k)] = v))
-      }
-
-      // Duyệt qua tất cả câu hỏi con, nếu sai 1 câu -> Cả nhóm coi như sai (Red)
-
-      for (const sub of subQuestions) {
-        const subID = String(sub.ID || sub.id)
-
-        // Một số trường hợp ID câu hỏi con trong userAnswers có thể là index (1, 2...) hoặc ID thật
-
-        // Thử tìm theo ID thật trước, nếu không có thì tìm theo index
-
-        let userVal = userMap[subID]
-
-        // Nếu không tìm thấy theo ID, thử tìm trong mảng userAnswers theo thứ tự (nếu có)
-
-        if (!userVal && Array.isArray(userAnswers)) {
-          // Logic fallback nếu cần
-        }
-
-        const correctVal = String(sub.correctAnswer || '').trim()
-
-        // Nếu user không trả lời hoặc trả lời khác đáp án đúng
-
-        if (normalize(userVal) !== normalize(correctVal)) {
-          return false
-        }
-      }
-
-      return true
-    }
-
-    // B. Dạng Dropdown / Matching (Nhiều ý nhỏ)
-
-    if (contentObj.correctAnswer) {
-      let correctList = Array.isArray(contentObj.correctAnswer)
-        ? contentObj.correctAnswer
-        : Object.entries(contentObj.correctAnswer).map(([k, v]) => ({ key: k, value: v }))
-
-      // Lấy danh sách câu hỏi gốc (Left Items) để đối chiếu Key
-
-      let leftItems = contentObj.leftItems || (contentObj.options && contentObj.options.map(o => o.key)) || []
-
-      // Convert userAnswers sang dạng mảng chuẩn
-
-      let userList = Array.isArray(userAnswers)
-        ? userAnswers
-        : Object.entries(userAnswers).map(([k, v]) => ({ key: k, value: v }))
-
-      for (const correctItem of correctList) {
-        const correctKey = normalize(correctItem.key)
-
-        const correctVal = normalize(correctItem.value)
-
-        // Tìm câu trả lời của user
-
-        let userItem = userList.find(u => normalize(u.key) === correctKey || normalize(u.left) === correctKey)
-
-        // Nếu không tìm thấy theo Text, thử tìm theo Index (trường hợp key lưu là "0", "1"...)
-
-        if (!userItem && leftItems.length > 0 && !Number.isNaN(Number(correctKey))) {
-          const index = parseInt(correctKey, 10)
-
-          if (leftItems[index]) {
-            const textKey = normalize(leftItems[index])
-
-            userItem = userList.find(u => normalize(u.key) === textKey || normalize(u.left) === textKey)
-          }
-        }
-
-        // Nếu không trả lời hoặc trả lời sai
-
-        if (!userItem || normalize(userItem.value || userItem.right) !== correctVal) {
-          return false
-        }
-      }
-
-      return true
-    }
-  } catch (e) {
-    console.error('Check correctness error:', e)
+  // 1. Chuẩn hóa - GIỮ NGUYÊN KEY để xử lý sau
+  const normalize = (str) => {
+    const s = String(str || '').trim()
+    return s.toLowerCase()
   }
 
-  return q.isCorrect
+  try {
+    // --- STEP A: PARSE USER MAP ---
+    let userMap = {}
+    const userParsed = typeof rawUser === 'string' ? JSON.parse(rawUser) : rawUser
+
+    if (Array.isArray(userParsed)) {
+      userParsed.forEach((item) => {
+        // Giữ nguyên key, không normalize ngay
+        const key = item.key || item.left || item.id || item.ID || item.questionId
+        const val = item.value || item.right || item.answer || item.text || item.answerText
+        if (key !== undefined) {
+          userMap[String(key)] = normalize(val)
+        }
+      })
+    } else if (typeof userParsed === 'object' && userParsed !== null) {
+      Object.entries(userParsed).forEach(([k, v]) => {
+        userMap[String(k)] = normalize(v)
+      })
+    } else {
+      userMap['default'] = normalize(userParsed)
+    }
+
+    // --- STEP B: PARSE CORRECT MAP ---
+    let correctMap = {}
+    const rawContent = q.resources?.answerContent || q.AnswerContent
+    if (!rawContent) return !!q.isCorrect
+
+    const contentObj = typeof rawContent === 'string' ? JSON.parse(rawContent) : rawContent
+    
+    // Đặc biệt xử lý dropdown-list với leftItems
+    const isDropdownList = (q.type || q.Type || '').toLowerCase() === 'dropdown-list'
+    const hasLeftItems = contentObj?.leftItems && Array.isArray(contentObj.leftItems)
+    
+    if (isDropdownList && hasLeftItems) {
+      // Xây dựng mapping giữa leftItems và numeric keys
+      const leftItemToKeyMap = {}
+      contentObj.leftItems.forEach((leftItem, index) => {
+        const numericKey = String(index + 1)
+        const fullLeftItem = String(leftItem).trim()
+        
+        // Map 1: số → leftItem (cho correctMap)
+        if (contentObj.correctAnswer) {
+          const correctAnswer = Array.isArray(contentObj.correctAnswer) 
+            ? contentObj.correctAnswer 
+            : [contentObj.correctAnswer]
+          
+          correctAnswer.forEach(correct => {
+            const correctKey = String(correct.key || correct.left).trim()
+            const correctValue = normalize(correct.value || correct.right)
+            
+            if (correctKey === numericKey) {
+              correctMap[numericKey] = correctValue
+              correctMap[fullLeftItem] = correctValue
+            }
+          })
+        }
+        
+        // Map 2: leftItem → số (cho userMap lookup)
+        leftItemToKeyMap[fullLeftItem] = numericKey
+        leftItemToKeyMap[numericKey] = numericKey
+      })
+      
+      // REMAP userMap: nếu user có key là "1. Speaker A…" → convert sang "1"
+      const remappedUserMap = {}
+      Object.entries(userMap).forEach(([userKey, userValue]) => {
+        const keyStr = String(userKey).trim()
+        
+        // Tìm matching key
+        let matchedKey = null
+        
+        // Thử tìm exact match
+        if (leftItemToKeyMap[keyStr]) {
+          matchedKey = leftItemToKeyMap[keyStr]
+        } else {
+          // Tìm partial match (ví dụ: "1. Speaker A" → "1")
+          for (const [leftItem, numericKey] of Object.entries(leftItemToKeyMap)) {
+            if (keyStr.startsWith(numericKey + '.') || keyStr.startsWith(numericKey + ' ')) {
+              matchedKey = numericKey
+              break
+            }
+          }
+        }
+        
+        if (matchedKey) {
+          remappedUserMap[matchedKey] = userValue
+        } else {
+          // Fallback: giữ nguyên key
+          remappedUserMap[keyStr] = userValue
+        }
+      })
+      
+      // So sánh với correctMap (dùng numeric keys)
+      for (const [correctKey, correctValue] of Object.entries(correctMap)) {
+        // Skip nếu không phải numeric key
+        if (!/^\d+$/.test(correctKey)) continue
+        
+        const userValue = remappedUserMap[correctKey]
+        if (!userValue || userValue !== correctValue) {
+          return false
+        }
+      }
+      
+      return Object.keys(remappedUserMap).length > 0
+    }
+    
+    // --- PHẦN CÒN LẠI GIỮ NGUYÊN ---
+    // Group Questions logic
+    let listSubQuestions = []
+    if (contentObj.groupContent?.listContent) listSubQuestions = contentObj.groupContent.listContent
+    else if (Array.isArray(contentObj) && (q.type?.includes('group') || contentObj[0]?.correctAnswer)) {
+      listSubQuestions = contentObj
+    }
+
+    if (listSubQuestions.length > 0) {
+      // Logic riêng cho Group
+      for (let subQ of listSubQuestions) {
+        const subID = String(subQ.ID || subQ.id).trim()
+        const correctVal = normalize(subQ.correctAnswer)
+        
+        let userVal = userMap[subID]
+        
+        // Nếu không tìm thấy bằng ID, thử tìm bằng index
+        if (userVal === undefined) {
+          const index = listSubQuestions.indexOf(subQ) + 1
+          userVal = userMap[String(index)]
+        }
+        
+        if (!userVal || userVal !== correctVal) return false
+      }
+      return true
+    }
+
+    // Map/Matching Logic (non-dropdown-list)
+    if (contentObj.correctAnswer) {
+      const rawCorrect = contentObj.correctAnswer
+      if (Array.isArray(rawCorrect)) {
+        rawCorrect.forEach(item => {
+          const k = item.key !== undefined ? String(item.key).trim() : String(item.left).trim()
+          const v = normalize(item.value || item.right)
+          if (k) correctMap[k] = v
+        })
+      } else if (typeof rawCorrect === 'object') {
+        Object.entries(rawCorrect).forEach(([k, v]) => {
+          correctMap[String(k).trim()] = normalize(v)
+        })
+      } else {
+        correctMap['default'] = normalize(rawCorrect)
+      }
+    } else if (Object.keys(correctMap).length === 0 && q.correctAnswer) {
+      correctMap['default'] = normalize(q.correctAnswer)
+    }
+    
+    // --- COMPARE ---
+    for (const [key, correctValue] of Object.entries(correctMap)) {
+      if (key === '0' || key === 'example') continue
+      
+      // Tìm user value
+      let userValue = userMap[key]
+      
+      // Nếu không tìm thấy, thử với numeric extraction
+      if (userValue === undefined && /^\d+$/.test(key)) {
+        // Tìm key bắt đầu bằng số
+        const matchingUserKey = Object.keys(userMap).find(userKey => 
+          userKey.trim() === key || 
+          userKey.trim().startsWith(key + '.') || 
+          userKey.trim().startsWith(key + ' ')
+        )
+        if (matchingUserKey) {
+          userValue = userMap[matchingUserKey]
+        }
+      }
+      
+      if (key === 'default') {
+        const userDefault = userMap['default']
+        if (!userDefault || userDefault !== correctValue) return false
+        continue
+      }
+      
+      if (!userValue || userValue !== correctValue) {
+        return false
+      }
+    }
+
+    return true
+  } catch (e) {
+    console.error('Check correct error:', e, 'Question:', q.id)
+    return !!q.isCorrect
+  }
 }
 
 // --- MAIN PAGE ---
