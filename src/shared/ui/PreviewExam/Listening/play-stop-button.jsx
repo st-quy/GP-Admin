@@ -63,7 +63,7 @@ const AudioPlayer = ({ src, id, questionId, playAttempt, onPlayingChange, isOthe
             playedQuestions[questionId] = {}
           }
           playedQuestions[questionId][playAttempt] = true
-          savePlayedQuestions(playedQuestions)
+          // savePlayedQuestions(playedQuestions)
         })
         .catch(error => console.error('Audio playback failed:', error))
     }
