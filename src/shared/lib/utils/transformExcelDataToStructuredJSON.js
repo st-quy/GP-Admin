@@ -87,6 +87,7 @@ export const transformExcelDataToStructuredJSON = (data) => {
 };
 
 export const transformListeningData = (data) => {
+  if (!data || !data.Skills) return null;
   const listeningSkill = data.Skills.find(
     (skill) => skill.Name === "LISTENING"
   );
@@ -103,7 +104,7 @@ export const transformListeningData = (data) => {
     // Chuẩn hóa linebreak: thay tất cả \r\n, \r, \n → \n
     const normalized = answerText?.replace(/\r\n|\r|\n/g, "\n") || "";
 
-    const lines = normalized.split("\n");
+    const lines = normalized?.split("\n");
     const map = {};
     lines.forEach((line) => {
       const match = line.match(/^([A-Z])\.\s*(.+)$/);
@@ -117,156 +118,169 @@ export const transformListeningData = (data) => {
   }
 
   function transformMultipleChoice(q, part) {
-    const optionMap = extractOptionMap(q.AnswerContent?.content || "");
-    const correctKey = q.AnswerContent?.correctAnswer;
-    const correctAnswer = optionMap[correctKey] || correctKey;
+ const options = q.AnswerContent?.options || [];
+  const correctAnswer = q.AnswerContent?.correctAnswer || "";
+  const audio = q.AnswerContent?.audioKeys || q.AudioKeys || "";
 
-    return {
-      ID: q.ID,
-      Type: q.Type,
-      AudioKeys: q.AnswerContent?.audio || "",
-      ImageKeys: q.AnswerContent?.image || null,
-      SkillID: listeningSkill.ID,
-      PartID: part.ID,
-      Sequence: q.Sequence,
-      Content: q.Content,
-      SubContent: q.SubContent || null,
-      GroupContent: {
+  return {
+    ID: q.ID,
+    Type: q.Type,
+    AudioKeys: audio, 
+    ImageKeys: q.AnswerContent?.image || q.ImageKeys || null,
+    SkillID: listeningSkill.ID,
+    PartID: part.ID,
+    Sequence: q.Sequence,
+    Content: q.Content,
+    SubContent: q.SubContent || null,
+    GroupContent: {
+      title: q.Content,
+      audioKey: audio, 
+    },
+    AnswerContent: {
+      content: q.Content,
+      groupContent: {
         title: q.Content,
-        audioKey: "",
+        audioKey: audio, 
       },
-      AnswerContent: {
-        content: q.Content,
-        groupContent: {
-          title: q.Content,
-          audioKey: "",
-        },
-        options: Object.values(optionMap),
-        correctAnswer,
-        partID: part.ID,
-        type: q.Type,
-        audioKeys: q.AnswerContent?.audio || "",
-      },
-      createdAt,
-      updatedAt,
-      Skill: {
-        ID: listeningSkill.ID,
-        Name: listeningSkill.Name,
-        createdAt: listeningSkill.createdAt,
-        updatedAt: listeningSkill.updatedAt,
-      },
-      Part: {
-        ID: part.ID,
-        Content: part.Content,
-        SubContent: null,
-        Sequence: part.Sequence,
-        TopicID: topicID,
-        createdAt: part.createdAt || createdAt,
-        updatedAt: part.updatedAt || updatedAt,
-      },
-    };
-  }
+      options,
+      correctAnswer,
+      partID: part.ID,
+      type: q.Type,
+      audioKeys: audio, 
+    },
+    createdAt: q.createdAt,
+    updatedAt: q.updatedAt,
+    Skill: {
+      ID: listeningSkill.ID,
+      Name: listeningSkill.Name,
+      createdAt: listeningSkill.createdAt,
+      updatedAt: listeningSkill.updatedAt,
+    },
+    Part: {
+      ID: part.ID,
+      Content: part.Content,
+      SubContent: null,
+      Sequence: part.Sequence,
+      TopicID: topicID,
+      createdAt: part.createdAt || createdAt,
+      updatedAt: part.updatedAt || updatedAt,
+    },
+  };
+}
+
 
   // ------------------------
   // 2. DROPDOWN LIST
   // ------------------------
   function transformDropdownCombined(q) {
-    const lines = q.AnswerContent.content?.split("\n") || [];
-    const leftItems = [];
-    const rightItemSet = new Set();
+  const lines = q.AnswerContent?.content
+    ? q.AnswerContent.content.replace(/\r\n|\r/g, "\n").split("\n")
+    : [];
 
-    lines.forEach((line) => {
-      const [left, right] = line.split("|").map((s) => s.trim());
-      if (left) leftItems.push(left);
+  const leftItems = [];
+  const rightItemSet = new Set();
 
-      const matches = right?.match(/[A-Z]\.\s*([^/]+)/g);
+  lines.forEach((line) => {
+    const [left, right] = line?.split("|").map((s) => s.trim());
+    if (left) leftItems.push(left);
+
+    if (right) {
+      const matches = right.match(/[A-Z]\.\s*([^/]+)/g);
       if (matches) {
         matches.forEach((m) => {
           const val = m.replace(/^[A-Z]\.\s*/, "").trim();
           rightItemSet.add(val);
         });
       }
-    });
+    }
+  });
 
-    const rightItems = Array.from(rightItemSet);
-    const correctRaw = q.AnswerContent.correctAnswer || "";
+  const rightItems = Array.from(rightItemSet);
 
-    const correctAnswerArray = correctRaw.split("\n").map((line) => {
-      const [key, letter] = line.split("|").map((s) => s.trim());
-      const index = letter?.charCodeAt(0) - 65;
+  // Xử lý correctAnswer an toàn
+  let correctRaw = q.AnswerContent?.correctAnswer;
+  let correctAnswer = [];
+
+  if (Array.isArray(correctRaw)) {
+    correctAnswer = correctRaw; // giữ nguyên nếu là array
+  } else if (typeof correctRaw === "string") {
+    correctAnswer = correctRaw.split("\n").map((line) => {
+      const [key, val] = line?.split("|").map((s) => s.trim());
+      const index = val?.charCodeAt(0) - 65;
       return {
         key,
-        value: rightItems[index] || letter,
+        value: rightItems[index] || val,
       };
     });
-
-    return { leftItems, rightItems, correctAnswer: correctAnswerArray };
   }
 
-  function transformDropdownList(q, part) {
-    const content = q.Content;
-    const audio =
-      typeof q.AnswerContent?.audio === "string"
-        ? q.AnswerContent.audio
-        : q.AnswerContent?.audio?.text || "";
+  return { leftItems, rightItems, correctAnswer };
+}
 
-    let leftItems = q.AnswerContent.leftItems || [];
-    let rightItems = q.AnswerContent.rightItems || [];
-    let correctAnswer = [];
+function transformDropdownList(q, part) {
+  const content = q.Content;
+  const audio = q.AnswerContent?.audioKeys || q.AudioKeys || "";
 
-    if (leftItems.length === 0 || rightItems.length === 0) {
-      const result = transformDropdownCombined(q);
-      leftItems = result.leftItems;
-      rightItems = result.rightItems;
-      correctAnswer = result.correctAnswer;
-    } else {
-      const correctRaw = q.AnswerContent.correctAnswer || "";
+  let leftItems = q.AnswerContent?.leftItems || [];
+  let rightItems = q.AnswerContent?.rightItems || [];
+  let correctAnswer = [];
+
+  if (!leftItems.length || !rightItems.length) {
+    const result = transformDropdownCombined(q);
+    leftItems = result.leftItems;
+    rightItems = result.rightItems;
+    correctAnswer = result.correctAnswer;
+  } else {
+    let correctRaw = q.AnswerContent?.correctAnswer;
+
+    if (Array.isArray(correctRaw)) {
+      correctAnswer = correctRaw;
+    } else if (typeof correctRaw === "string") {
       correctAnswer = correctRaw.split("\n").map((line) => {
-        const [key, val] = line.split("|").map((s) => s.trim());
-        const index = val.charCodeAt(0) - 65;
+        const [key, val] = line?.split("|").map((s) => s.trim());
+        const index = val?.charCodeAt(0) - 65;
         return {
           key,
           value: rightItems[index] || val,
         };
       });
     }
+  }
 
-    return {
-      ID: q.ID,
-      Type: "dropdown-list",
-      AudioKeys: audio,
-      ImageKeys: null,
-      SkillID: q.SkillID,
-      PartID: part.ID,
-      Sequence: q.Sequence,
-      Content: content,
-      SubContent: q.SubContent,
-      GroupContent: {
+  return {
+    ID: q.ID,
+    Type: "dropdown-list",
+    AudioKeys: audio,
+    ImageKeys: null,
+    SkillID: q.SkillID,
+    PartID: part.ID,
+    Sequence: q.Sequence,
+    Content: content,
+    SubContent: q.SubContent,
+    GroupContent: {
+      title: content,
+      audioKey: "",
+    },
+    AnswerContent: {
+      content,
+      groupContent: {
         title: content,
         audioKey: "",
       },
-      AnswerContent: {
-        content,
-        groupContent: {
-          title: content,
-          audioKey: "",
-        },
-        leftItems,
-        rightItems,
-        correctAnswer,
-        partID: part.ID,
-        type: "dropdown-list",
-        audioKeys: {
-          text: audio,
-          hyperlink: q.AnswerContent?.audioKeys?.hyperlink || "",
-        },
-      },
-      createdAt: q.createdAt,
-      updatedAt: q.updatedAt,
-      Skill: q.Skill,
-      Part: part,
-    };
-  }
+      leftItems,
+      rightItems,
+      correctAnswer,
+      partID: part.ID,
+      type: "dropdown-list",
+      audioKeys: audio,
+    },
+    createdAt: q.createdAt,
+    updatedAt: q.updatedAt,
+    Skill: q.Skill,
+    Part: part,
+  };
+}
+
 
   // ------------------------
   // 3. LISTENING GROUP
@@ -335,12 +349,12 @@ export const transformListeningData = (data) => {
     const rawAnswer = q.AnswerContent?.correctAnswer || "";
 
     const subGroups = rawContent
-      .split(/Option\s*\d+:/i)
+      ?.split(/Option\s*\d+:/i)
       .map((s) => s.trim())
       .filter(Boolean);
 
     const rawAnswersMap = {};
-    rawAnswer.split("\n").forEach((line) => {
+    rawAnswer?.split("\n").forEach((line) => {
       const match = line.match(/(\d+)\s*\|\s*([A-Z])/i);
       if (match) {
         const questionNum = parseInt(match[1], 10);
@@ -354,7 +368,7 @@ export const transformListeningData = (data) => {
       const content = questionMatch ? questionMatch[1].trim() : "";
 
       const optionLines = block
-        .split("\n")
+        ?.split("\n")
         .map((line) => line.trim())
         .filter((line) => /^[A-Z]\.\s*/.test(line));
 
@@ -450,7 +464,8 @@ export const transformListeningData = (data) => {
 };
 
 export const transformGrammarData = (data) => {
-  const grammarSkill = data.Skills.find((skill) =>
+  if (!data || !data.Skills) return null;
+  const grammarSkill = data.Skills?.find((skill) =>
     skill.Name.toLowerCase().includes("grammar")
   );
   if (!grammarSkill) return null;
@@ -476,88 +491,28 @@ export const transformGrammarData = (data) => {
       };
 
       if (q.Type === "multiple-choice") {
-        const options = q.AnswerContent.content
-          .split("\n")
-          .filter(Boolean)
-          .map((line) => {
-            const [key, ...rest] = line.split(".");
-            return {
-              key: key.trim(),
-              value: rest.join(".").trim(),
-            };
-          });
-
-        const correctValue =
-          options.find(
-            (opt) => opt.key === q.AnswerContent.correctAnswer.trim()
-          )?.value || "";
+        const { options, correctAnswer } = q.AnswerContent;
 
         question.AnswerContent = {
           title: q.Content,
-          options,
-          correctAnswer: correctValue,
+          options: options || [],
+          correctAnswer: correctAnswer || "",
         };
       }
 
+
+
       if (q.Type === "matching") {
-        const rawContent = q.AnswerContent.content || "";
-
-        // Tách raw theo các phần Contents: và Options:
-        const leftMatch = rawContent.match(/Contents:\s*([\s\S]*?)Options:/);
-        const rightMatch = rawContent.match(/Options:\s*([\s\S]*)/);
-
-        const leftLines = leftMatch
-          ? leftMatch[1]
-              .trim()
-              .split("\n")
-              .map((line) => line.trim())
-          : [];
-
-        const rightLines = rightMatch
-          ? rightMatch[1]
-              .trim()
-              .split("\n")
-              .map((line) => line.trim())
-          : [];
-
-        // Parse: "1. choose" => "choose", "A. train" => "train"
-        const leftItems = leftLines.map((item) =>
+        const leftItems = q.AnswerContent.leftItems?.map((item) =>
           item.replace(/^\d+\.\s*/, "").trim()
-        );
-        const rightItems = rightLines.map((item) =>
-          item.replace(/^[A-Z]\.\s*/, "").trim()
-        );
+        ) ?? [];
 
-        // Tạo bản đồ lookup từ chỉ số sang giá trị thực
-        const leftMap = Object.fromEntries(
-          leftLines
-            .map((line) => {
-              const match = line.match(/^(\d+)\.\s*(.*)$/);
-              return match ? [match[1], match[2].trim()] : [null, null];
-            })
-            .filter(([k, v]) => k && v)
-        );
+        const rightItems = q.AnswerContent.rightItems ?? [];
 
-        const rightMap = Object.fromEntries(
-          rightLines
-            .map((line) => {
-              const match = line.match(/^([A-Z])\.\s*(.*)$/);
-              return match ? [match[1], match[2].trim()] : [null, null];
-            })
-            .filter(([k, v]) => k && v)
-        );
-
-        // Convert correctAnswer like "1 | A" => { left: "choose", right: "train" }
-        const correctAnswer = q.AnswerContent.correctAnswer
-          .split("\n")
-          .filter(Boolean)
-          .map((line) => {
-            const [leftCode, rightCode] = line.split("|").map((s) => s.trim());
-            return {
-              left: leftMap[leftCode] || "",
-              right: rightMap[rightCode] || "",
-            };
-          });
+        const correctAnswer = q.AnswerContent.correctAnswer?.map((pair) => ({
+          left: pair.left.replace(/^\d+\.\s*/, "").trim(),
+          right: pair.right.trim()
+        })) ?? [];
 
         question.AnswerContent = {
           leftItems,
@@ -580,7 +535,6 @@ export const transformGrammarData = (data) => {
       Questions: questions,
     };
   });
-console.log("partGrama", fullParts)
   return {
     ID: topicID || null,
     Name: topicName || null,
@@ -590,7 +544,10 @@ console.log("partGrama", fullParts)
   };
 };
 
+
+
 export const transformReadingData = (data) => {
+  if (!data || !data.Skills) return null;
   const readingSkill = data.Skills.find((skill) =>
     skill.Name.toLowerCase().includes("reading")
   );
@@ -624,43 +581,25 @@ export const transformReadingData = (data) => {
 
       // ✅ CASE ĐẶC BIỆT: PART 3
       if (isSpecialPart3 && type === "dropdown-list") {
-        const content = q.Content;
-        const lines = raw.content?.split("\n").filter(Boolean) ?? [];
+        const content = raw.content ?? q.Content;
 
-        const leftItems = [];
-        const rightSet = new Set();
+        // LEFT: lấy đúng theo raw.leftItems
+        const leftItems =
+          raw.leftItems ??
+          q.AnswerContent?.leftItems ??
+          [];
 
-        lines.forEach((line) => {
-          const [left, right] = line.split("|").map((s) => s.trim());
-          if (left) leftItems.push(left);
-          if (right) {
-            const options = right
-              .split("/")
-              .map((opt) => opt.replace(/^[A-D]\.\s*/, "").trim());
-            options.forEach((opt) => rightSet.add(opt));
-          }
-        });
+        // RIGHT: lấy đúng theo raw.rightItems
+        const rightItems =
+          raw.rightItems ??
+          q.AnswerContent?.rightItems ??
+          [];
 
-        const rightItems = Array.from(rightSet);
-
-        const correctAnswer = [];
-        const rawCorrect = raw.correctAnswer;
-
-        if (typeof rawCorrect === "string") {
-          rawCorrect
-            .split("\n")
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .forEach((entry) => {
-              const [key, letter] = entry.split("|").map((s) => s.trim());
-              const index = letter?.toUpperCase().charCodeAt(0) - 65;
-              const valueRaw = rightItems[index];
-              const value = valueRaw?.replace(/^[A-D]\.\s*/, "").trim(); // ⬅️ XÓA "B. " hoặc "C. " khỏi đáp án
-              if (key && value) {
-                correctAnswer.push({ key, value });
-              }
-            });
-        }
+        // CORRECT ANSWER: lấy y nguyên từ raw.correctAnswer
+        const correctAnswer =
+          raw.correctAnswer ??
+          q.AnswerContent?.correctAnswer ??
+          [];
 
         question.AnswerContent = {
           content,
@@ -671,6 +610,7 @@ export const transformReadingData = (data) => {
           type,
         };
       }
+
 
       // ✅ CASE DROPDOWN-LIST THƯỜNG
       else if (type === "dropdown-list") {
@@ -720,25 +660,30 @@ export const transformReadingData = (data) => {
 
       // ✅ CASE ORDERING
       else if (type === "ordering") {
-        const lines = raw.content?.split("\n") ?? [];
-        const options = lines
-          .map((line) => line.replace(/^[A-Z]\.\s*/, "").trim())
-          .filter(Boolean);
+        const options = raw.options ?? [];
 
-        const correctAnswer = [];
-        if (typeof raw.correctAnswer === "string") {
+        let correctAnswer = [];
+
+        // Trường hợp backend trả array
+        if (Array.isArray(raw.correctAnswer)) {
+          correctAnswer = raw.correctAnswer.map((item) => ({
+            key: item.key,
+            value: item.value,
+          }));
+        }
+
+        // Fallback nếu backend trả string
+        else if (typeof raw.correctAnswer === "string") {
           raw.correctAnswer
             .split("\n")
             .map((line) => line.trim())
             .filter(Boolean)
             .forEach((line) => {
-              const [num, label] = line.split("|").map((s) => s.trim());
-              const index = label.charCodeAt(0) - 65;
-              const key = options[index];
-              if (key && num) {
+              const [value, key] = line.split("|").map((s) => s.trim());
+              if (key && value) {
                 correctAnswer.push({
                   key,
-                  value: parseInt(num),
+                  value: Number(value),
                 });
               }
             });
@@ -753,43 +698,33 @@ export const transformReadingData = (data) => {
         };
       }
 
+
       // ✅ CASE MATCHING
       else if (type === "matching") {
         const content = raw.content ?? q.Content;
-        const leftMatch = content.match(/Contents:\s*([\s\S]*?)Options:/);
-        const rightMatch = content.match(/Options:\s*([\s\S]*)/);
 
-        const leftItems = leftMatch
-          ? leftMatch[1]
-              .trim()
-              .split("\n")
-              .map((item) => item.replace(/^\d+\.\s*/, "").trim())
-          : [];
+        const leftItems = content
+          .split("\n")
+          .map((line) => line.trim())
+          .filter((line) => /^Paragraph\s+\d+/.test(line))
+          .map((line) => {
+            const match = line.match(/^(Paragraph\s+\d+)/);
+            return match ? match[1] : "";
+          });
 
-        const rightItems = rightMatch
-          ? rightMatch[1]
-              .trim()
-              .split("\n")
-              .map((item) => item.replace(/^[A-Z]\.\s*/, "").trim())
-          : [];
+        const rightItems =
+          raw.AnswerContent?.rightItems ??
+          raw.rightItems ??
+          q.AnswerContent?.rightItems ??
+          [];
 
-        const correctAnswer = [];
-        if (typeof raw.correctAnswer === "string") {
-          raw.correctAnswer
-            .split("\n")
-            .map((line) => line.trim())
-            .filter(Boolean)
-            .forEach((line) => {
-              const [leftCode, rightCode] = line
-                .split("|")
-                .map((s) => s.trim());
-              const left = leftItems[parseInt(leftCode) - 1];
-              const right = rightItems[rightCode.charCodeAt(0) - 65];
-              if (left && right) {
-                correctAnswer.push({ left, right });
-              }
-            });
-        }
+        const correctAnswer =
+          (raw.correctAnswer ?? raw.AnswerContent?.correctAnswer ?? []).map(
+            (item) => ({
+              left: item.left,
+              right: item.right,
+            })
+          );
 
         question.AnswerContent = {
           content,
@@ -815,7 +750,6 @@ export const transformReadingData = (data) => {
       Questions: questions,
     };
   });
-  console.log("partreading", parts)
   return {
     ID: topicID || null,
     Name: topicName || null,
@@ -823,10 +757,11 @@ export const transformReadingData = (data) => {
     updatedAt: data.updatedAt ?? new Date().toISOString(),
     Parts: parts,
   };
-  
+
 };
 
 export const transformWritingData = (data) => {
+  if (!data || !data.Skills) return null;
   const writingSkill = data.Skills.find((skill) =>
     skill.Name.toLowerCase().includes("writing")
   );
@@ -869,7 +804,6 @@ export const transformWritingData = (data) => {
       Questions: questions,
     };
   });
-  console.log("partwriting", parts)
   return {
     ID: topicID || null,
     Name: topicName || null,

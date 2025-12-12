@@ -100,7 +100,7 @@ const ReadingTest = ({ dataExam }) => {
                     <span className="font-bold">{index + 1}.</span>
                     <Select
                       key={index}
-                      value={processedData.correctAnswers?.[index].right || ""}
+                      value={processedData.correctAnswers?.[index]?.right || ""}
                       className="w-full"
                       placeholder="Select a heading"
                       size="large"
@@ -158,7 +158,7 @@ const ReadingTest = ({ dataExam }) => {
                       value={
                         number === "0"
                           ? processedData.answers[0]?.[0]
-                          : processedData.correctAnswers?.[number].value
+                          : processedData.correctAnswers?.[number]?.value || ""
                       }
                       className="mx-2 my-2 inline-block"
                       size="large"
@@ -211,7 +211,7 @@ const ReadingTest = ({ dataExam }) => {
                   </div>
                   <div className="pl-8">
                     <Select
-                      value={processedData.correctAnswers?.[index].value || ""}
+                      value={processedData.correctAnswers?.[index]?.value || ""}
                       className="w-full"
                       size="large"
                       style={{ fontSize: "16px" }}
@@ -260,7 +260,7 @@ const ReadingTest = ({ dataExam }) => {
                   <React.Fragment key={index}>
                     {hasSlashFormat ? "" : part}
                     <Select
-                      value={processedData.correctAnswers?.[number].right || ""}
+                      value={processedData.correctAnswers?.[number]?.right || ""}
                       className="mx-2 inline-block w-32"
                       style={{ marginBottom: 10, fontSize: "16px" }}
                       size="large"

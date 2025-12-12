@@ -59,7 +59,7 @@ const QuestionForm = ({
             .trim()}
         </Title>
       </div>
-      {currentPart?.SubContent.length > 1 && (
+      {currentPart?.SubContent?.length > 1 && (
         <div className="mb-4 w-full">
           <Typography>
             {greeting}

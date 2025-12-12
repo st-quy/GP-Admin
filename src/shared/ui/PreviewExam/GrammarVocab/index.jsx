@@ -4,6 +4,10 @@ import { transformGrammarData } from "@shared/lib/utils/transformExcelDataToStru
 const GrammarVocabPreview = ({ dataExam }) => {
   const dataGrammar = transformGrammarData(dataExam);
 
+   if (!dataGrammar || !dataGrammar.Parts) {
+    return <div>Loading Grammar & Vocabulary...</div>;
+  }
+
   return (
     <>
       {dataGrammar.Parts.map((part, index) => (
@@ -27,6 +31,7 @@ const GrammarVocabPreview = ({ dataExam }) => {
                 }
                 questionNumber={question.Sequence}
               />
+              
             </div>
           ))}
         </div>
