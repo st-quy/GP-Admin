@@ -12,7 +12,7 @@ const getUserRole = () => {
     const decodedToken = jwtDecode(token);
 
     // @ts-ignore - JWT payload may contain custom fields
-    return decodedToken.roles || null;
+    return decodedToken.role || null;
   } catch (error) {
     console.error('Error decoding token:', error);
     return null;
