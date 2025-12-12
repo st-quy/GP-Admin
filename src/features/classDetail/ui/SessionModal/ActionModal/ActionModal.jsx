@@ -1,4 +1,3 @@
-
 import {
   Modal,
   Button,
@@ -8,26 +7,25 @@ import {
   message,
   Form,
   Spin,
-} from "antd";
-import React, { useEffect, useState } from "react";
-import { yupSync } from "@shared/lib/utils";
-import { sessionSchema } from "@features/classDetail/validate";
+} from 'antd';
+import React, { useEffect, useState } from 'react';
+import { yupSync } from '@shared/lib/utils';
+import { sessionSchema } from '@features/classDetail/validate';
 import {
   useCreateSession,
   useGenerateSessionKeyMutation,
   useGetTopics,
   useUpdateSession,
-} from "@features/classDetail/hooks/useClassDetail";
-import dayjs from "dayjs";
+} from '@features/classDetail/hooks/useClassDetail';
+import dayjs from 'dayjs';
 import {
   EditOutlined,
   LoadingOutlined,
   ReloadOutlined,
-} from "@ant-design/icons";
-import { PageSizes } from "pdf-lib";
+} from '@ant-design/icons';
+import { PageSizes } from 'pdf-lib';
 
 const { RangePicker } = DatePicker;
-
 
 const ActionModal = ({
   initialData = null,
@@ -36,9 +34,9 @@ const ActionModal = ({
   onClose,
 }) => {
   const [form] = Form.useForm();
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5);
-  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [search, setSearch] = useState('');
   const [topicList, setTopicList] = useState([]);
 
   const isEdit = !!initialData;
@@ -46,13 +44,11 @@ const ActionModal = ({
     page,
     pageSize,
     searchName: search,
-    status: "approved",
+    status: 'approved',
   });
 
   const topics = data?.data || [];
   const totalItems = data?.totalItems || 0;
-  console.log("topics", topics)
-  console.log("totalItems", totalItems)
 
   const handleSearch = (value) => {
     setSearch(value);
@@ -71,30 +67,27 @@ const ActionModal = ({
     ? useUpdateSession()
     : useCreateSession();
 
-  const modalTitle = isEdit ? "Update Session" : "Create Session";
-  const actionLabel = isEdit ? "Update session" : "Create session";
+  const modalTitle = isEdit ? 'Update Session' : 'Create Session';
+  const actionLabel = isEdit ? 'Update session' : 'Create session';
 
   const handleCancel = () => {
     onClose();
     form.resetFields();
   };
-
   const handlePopupScroll = (e) => {
-    const target = e.target;
+    const target = e.target; // chính xác: lớp scroll của dropdown
 
-    if (
-      target.scrollTop + target.offsetHeight >= target.scrollHeight - 10 &&
-      !isLoadingTopics &&
-      topicList.length < totalItems
-    ) {
+    const bottom =
+      target.scrollTop + target.clientHeight >= target.scrollHeight - 5;
+
+    if (bottom && !isLoadingTopics && topicList.length < totalItems) {
       loadMore();
     }
   };
 
-
   // Add disabledDate function to disable past dates
   const disabledDate = (current) => {
-    return current && current < dayjs().startOf("day");
+    return current && current < dayjs().startOf('day');
   };
 
   const handleGenerateSessionKey = async () => {
@@ -103,7 +96,7 @@ const ActionModal = ({
       await new Promise((resolve) => setTimeout(resolve, 1000));
       form.setFieldsValue({ sessionKey: data.key });
     } catch (error) {
-      message.error("Failed to generate session key");
+      message.error('Failed to generate session key');
     }
   };
 
@@ -129,7 +122,7 @@ const ActionModal = ({
       });
     } catch (error) {
       message.error(
-        error?.response?.data?.message || "Please fill in all fields correctly."
+        error?.response?.data?.message || 'Please fill in all fields correctly.'
       );
     }
   };
@@ -144,8 +137,6 @@ const ActionModal = ({
     }
   }, [data, page]);
 
-
-
   return (
     <>
       <Modal
@@ -153,23 +144,23 @@ const ActionModal = ({
         closable={false}
         confirmLoading={isLoading}
         footer={null}
-        width="50%"
+        width='50%'
       >
-        <div className="px-6">
-          <h4 className="font-bold text-[28px] lg:text-[30px]">{modalTitle}</h4>
-          <p className="mb-6 font-medium text-primaryTextColor text-[16px] lg:text-[18px]">
+        <div className='px-6'>
+          <h4 className='font-bold text-[28px] lg:text-[30px]'>{modalTitle}</h4>
+          <p className='mb-6 font-medium text-primaryTextColor text-[16px] lg:text-[18px]'>
             {isEdit
-              ? "Modify and extend the current session."
-              : "Set up a new session quickly and easily."}
+              ? 'Modify and extend the current session.'
+              : 'Set up a new session quickly and easily.'}
           </p>
 
           <Form
             form={form}
-            layout="vertical"
+            layout='vertical'
             initialValues={{
-              sessionName: initialData?.sessionName || "",
-              sessionKey: initialData?.sessionKey || "",
-              examSet: initialData?.examSet || "",
+              sessionName: initialData?.sessionName || '',
+              sessionKey: initialData?.sessionKey || '',
+              examSet: initialData?.examSet || '',
               dateRange:
                 initialData?.startTime && initialData?.endTime
                   ? [dayjs(initialData.startTime), dayjs(initialData.endTime)]
@@ -177,23 +168,23 @@ const ActionModal = ({
             }}
           >
             <Form.Item
-              name="sessionName"
-              label="Session Name"
+              name='sessionName'
+              label='Session Name'
               rules={[yupSync(sessionSchema)]}
               required
             >
-              <Input placeholder="Session Name" className="!h-[46px]" />
+              <Input placeholder='Session Name' className='!h-[46px]' />
             </Form.Item>
 
             <Form.Item
-              name="sessionKey"
-              label="Session Key"
+              name='sessionKey'
+              label='Session Key'
               required
               rules={[yupSync(sessionSchema)]}
             >
               <Input
-                placeholder="Session Key"
-                className="!h-[46px]"
+                placeholder='Session Key'
+                className='!h-[46px]'
                 required
                 suffix={
                   <div onClick={handleGenerateSessionKey}>
@@ -208,14 +199,14 @@ const ActionModal = ({
             </Form.Item>
 
             <Form.Item
-              name="examSet"
-              label="Exam Set"
+              name='examSet'
+              label='Exam Set'
               required
               rules={[yupSync(sessionSchema)]}
             >
               <Select
                 showSearch
-                placeholder="Select Exam Set"
+                placeholder='Select Exam Set'
                 filterOption={false}
                 onSearch={handleSearch}
                 loading={isLoadingTopics}
@@ -228,28 +219,28 @@ const ActionModal = ({
                 ))}
 
                 {isLoadingTopics && (
-                  <Select.Option disabled key="loading">
-                    <Spin size="small" />
+                  <Select.Option disabled key='loading'>
+                    <Spin size='small' />
                   </Select.Option>
                 )}
               </Select>
             </Form.Item>
 
             <Form.Item
-              name="dateRange"
-              label="Date Range"
+              name='dateRange'
+              label='Date Range'
               required
               rules={[yupSync(sessionSchema)]}
             >
               <RangePicker
-                className="!w-full !h-[46px] py-[12px] pr-[16px] ps-[20px]"
+                className='!w-full !h-[46px] py-[12px] pr-[16px] ps-[20px]'
                 showTime
-                format="DD-MM-YYYY HH:mm:ss"
+                format='DD-MM-YYYY HH:mm:ss'
                 disabledDate={disabledDate}
                 showNow={false}
                 onChange={(dates) => {
-                  if (dates && dates[0] && dates[0].isBefore(dayjs(), "day")) {
-                    message.warning("Start date cannot be in the past");
+                  if (dates && dates[0] && dates[0].isBefore(dayjs(), 'day')) {
+                    message.warning('Start date cannot be in the past');
                     form.setFieldsValue({ dateRange: null });
                   }
                 }}
@@ -258,17 +249,17 @@ const ActionModal = ({
           </Form>
         </div>
 
-        <div className="flex justify-end gap-4 mt-6 px-6 pb-4">
+        <div className='flex justify-end gap-4 mt-6 px-6 pb-4'>
           <Button
             onClick={handleCancel}
-            className="h-[52px] w-[124px] rounded-full border border-primaryColor text-primaryColor"
+            className='h-[52px] w-[124px] rounded-full border border-primaryColor text-primaryColor'
           >
             Cancel
           </Button>
           <Button
             onClick={onAction}
             loading={isLoading}
-            className="h-[52px] w-[124px] rounded-full bg-primaryColor text-white"
+            className='h-[52px] w-[124px] rounded-full bg-primaryColor text-white'
           >
             {actionLabel}
           </Button>

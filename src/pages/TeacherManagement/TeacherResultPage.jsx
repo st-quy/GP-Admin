@@ -376,9 +376,7 @@ const DropdownListResult = ({ question }) => {
           {currentOptions.map((opt, optIdx) => {
             const isOptTrueAnswer = normalize(opt) === normalize(correctItem?.value)
             const isOptSelected = normalize(opt) === normalize(userSelectedValue)
-
-            // Logic hiển thị màu: Giữ nguyên logic của bạn (chỉ hiện đúng khi user chọn đúng)
-            const showAsCorrect = isOptTrueAnswer && isOptSelected
+            const showAsCorrect = isOptTrueAnswer 
             const showAsWrong = isOptSelected && !isOptTrueAnswer
 
             return (
@@ -387,9 +385,9 @@ const DropdownListResult = ({ question }) => {
                   <span
                     className={`flex-1 ${
                       showAsCorrect
-                        ? 'font-semibold text-green-600'
+                        ? 'font-semibold text-green-600' // Luôn xanh nếu là đáp án đúng
                         : showAsWrong
-                        ? 'text-red-500'
+                        ? 'text-red-500' // Đỏ nếu user chọn sai
                         : 'text-gray-700'
                     }`}
                   >
