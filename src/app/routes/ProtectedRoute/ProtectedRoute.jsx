@@ -102,7 +102,7 @@ export const ProtectedRoute = () => {
       key: 'class',
       icon: <ContainerOutlined />,
       label: `Class`,
-      roles: ['superadmin', 'teacher', 'admin'],
+      roles: ['teacher'],
     },
   ];
 
@@ -131,6 +131,7 @@ export const ProtectedRoute = () => {
         className='bg-white shadow-xl min-h-screen'
         breakpoint='lg'
         collapsedWidth='0'
+        width={250}
         // style={siderStyle}
       >
         <div className='flex flex-col justify-between h-full'>

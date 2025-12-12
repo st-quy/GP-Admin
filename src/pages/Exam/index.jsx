@@ -11,7 +11,7 @@ import {
   message,
   Tag,
   Tooltip,
-} from "antd";
+} from 'antd';
 import {
   ClockCircleOutlined,
   CheckCircleOutlined,
@@ -147,13 +147,13 @@ const TopicListPage = () => {
           </Tag>
         );
 
-        if (record.Status === "rejected") {
+        if (record.Status === 'rejected') {
           return (
             <Tooltip
               title={
                 record.ReasonReject
                   ? record.ReasonReject
-                  : "No reject reason provided"
+                  : 'No reject reason provided'
               }
             >
               {tagElement}

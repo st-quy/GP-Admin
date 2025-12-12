@@ -1,14 +1,17 @@
-import TeacherManagement from "@features/teacher/ui/TeacherManagement";
-import React from "react";
+import HeaderInfo from '@app/components/HeaderInfo';
+import TeacherManagement from '@features/teacher/ui/TeacherManagement';
+import { Card } from 'antd';
+import React from 'react';
 const TeacherAccountManagement = () => {
   return (
-    <div className="px-8 mt-8">
-      <h1 className="text-2xl font-bold">Teacher Account Management</h1>
-      <p className="text-gray-500">Manage and organize teacher account.</p>
-
-      <div className="mt-6">
+    <div className=''>
+      <HeaderInfo
+        title='Teacher Account Management'
+        subtitle='Manage and organize teacher account.'
+      />
+      <Card className='m-4'>
         <TeacherManagement />
-      </div>
+      </Card>
     </div>
   );
 };
