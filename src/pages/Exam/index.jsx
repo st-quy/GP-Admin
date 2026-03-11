@@ -112,7 +112,13 @@ const TopicListPage = () => {
     localStorage.removeItem('writingAnswers');
     localStorage.removeItem('timeRemainingData');
     localStorage.removeItem('readingSubmitted');
+    localStorage.removeItem('isPreviewMode');
     navigate(`/waiting-for-approval/${record.ID}`);
+  };
+
+  const onPreviewHandler = (record) => {
+    onStartHandler(record);
+    localStorage.setItem('isPreviewMode', 'true');
   };
 
   const handleEditTopic = (topic) => {
@@ -241,12 +247,23 @@ const TopicListPage = () => {
                 />
               </>
             )}
-            <PlayCircleOutlined
-              title='Do mock test'
-              type='link'
-              className='p-0 flex items-center'
-              onClick={() => onStartHandler(record)}
-            />
+            <Tooltip title='Preview'>
+              <Button
+                type='text'
+                icon={<PlayCircleOutlined className='text-emerald-600' />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onPreviewHandler(record);
+                }}
+              />
+            </Tooltip>
+
+            <Tooltip title='Do mock test'>
+              <PlayCircleOutlined
+                className='p-0 flex items-center text-blue-600 cursor-pointer'
+                onClick={() => onStartHandler(record)}
+              />
+            </Tooltip>
           </Space>
         );
       },

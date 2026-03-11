@@ -109,21 +109,18 @@ const uploadToMinIO = async blob => {
   try {
     const fileName = `recording_${Date.now()}.mp3`
     const file = new File([blob], fileName, { type: 'audio/mpeg' })
-    // Call BE to get presigned URL
-    const res = await axiosInstance.get(`/presigned-url?filename=${file.name}`)
 
-    const { uploadUrl, fileUrl } = await res.data
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', 'audio')
 
-    // Upload to MinIO
-    await fetch(uploadUrl, {
-      method: 'PUT',
-      body: file,
-      headers: {
-        'Content-Type': file.type
-      }
+    const res = await axiosInstance.post('/presigned-url/upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
     })
 
-    console.warn('✅ Uploaded to MinIO successfully:', fileUrl)
+    const { fileUrl } = res.data
+
+    console.warn('✅ Uploaded successfully:', fileUrl)
     return { fileUrl }
   } catch (error) {
     console.error('Upload error:', error)

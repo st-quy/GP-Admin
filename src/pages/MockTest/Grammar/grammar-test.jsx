@@ -72,6 +72,7 @@ const getInitialAnswers = () => {
 };
 
 const GrammarTest = () => {
+  const isPreviewMode = localStorage.getItem('isPreviewMode') === 'true';
   const [isSubmitted, setIsSubmitted] = useState(false);
   useEffect(() => {
     const submitted = localStorage.getItem("isSubmitted") === "true";
@@ -238,11 +239,11 @@ const GrammarTest = () => {
       <Divider orientation="left">
         <Typography.Title level={1}>Grammar and Vocabulary</Typography.Title>
       </Divider>
-      <div className="mb-4 flex justify-end">
-        <Button type="default" onClick={handleAutoFillCorrect}>
+      <div className="mb-4 flex justify-end gap-2">
+        <Button type="default" onClick={handleAutoFillCorrect} disabled={isPreviewMode}>
           Auto-Fill
         </Button>
-        <Button danger onClick={handleClearAnswers}>
+        <Button danger onClick={handleClearAnswers} disabled={isPreviewMode}>
           Clear Answers
         </Button>
       </div>
@@ -265,6 +266,7 @@ const GrammarTest = () => {
           setUserAnswer={setAnswers}
           onSubmit={handleSubmit}
           questionNumber={currentQuestionIndex + 1}
+          disabled={isPreviewMode}
         />
       </Card>
 

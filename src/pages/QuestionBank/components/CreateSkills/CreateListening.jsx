@@ -229,18 +229,13 @@ const CreateListening = () => {
     }
 
     try {
-      const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-        fileName: file.name,
-        type: 'audios',
-      });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'audios');
 
-      const res = await fetch(data.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
+      const { data } = await axiosInstance.post('/presigned-url/upload-url', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
-
-      if (!res.ok) throw new Error('Upload failed');
 
       setUrl(data.fileUrl);
       onSuccess({ url: data.fileUrl });

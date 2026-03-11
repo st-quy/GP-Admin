@@ -167,70 +167,55 @@ const UpdateSpeaking = () => {
 
     customRequest: async ({ file, onSuccess, onError, onProgress }) => {
       try {
-        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-          fileName: file.name,
-          type: 'images',
-        });
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('type', 'images');
 
-        const { uploadUrl, fileUrl } = data;
+        const { data } = await axiosInstance.post('/presigned-url/upload-url', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          onUploadProgress: (progressEvent) => {
+            const percent = Math.round((progressEvent.loaded / progressEvent.total) * 100);
 
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.onprogress = (event) => {
-          const total = event.total || file.size;
-          const percent = Math.round((event.loaded / total) * 100);
-
-          setFileLists((prev) => ({
-            ...prev,
-            [partKey]: prev[partKey].map((f) =>
-              f.uid === file.uid ? { ...f, status: 'uploading', percent } : f
-            ),
-          }));
-
-          onProgress({ percent });
-        };
-
-        xhr.onload = function () {
-          if (xhr.status === 200) {
             setFileLists((prev) => ({
               ...prev,
-              [partKey]: [
-                {
-                  uid: file.uid,
-                  name: file.name,
-                  status: 'done',
-                  url: fileUrl,
-                },
-              ],
+              [partKey]: prev[partKey].map((f) =>
+                f.uid === file.uid ? { ...f, status: 'uploading', percent } : f
+              ),
             }));
 
-            setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
+            onProgress({ percent });
+          },
+        });
 
-            form.setFieldsValue({
-              parts: {
-                ...form.getFieldValue('parts'),
-                [partKey]: {
-                  ...form.getFieldValue(['parts', partKey]),
-                  image: fileUrl,
-                },
-              },
-            });
+        const { fileUrl } = data;
 
-            form.validateFields([['parts', partKey, 'image']]);
+        setFileLists((prev) => ({
+          ...prev,
+          [partKey]: [
+            {
+              uid: file.uid,
+              name: file.name,
+              status: 'done',
+              url: fileUrl,
+            },
+          ],
+        }));
 
-            onSuccess({ fileUrl });
-          } else {
-            onError(new Error('Upload failed'));
-          }
-        };
+        setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
 
-        xhr.onerror = function () {
-          onError(new Error('Upload error'));
-        };
+        form.setFieldsValue({
+          parts: {
+            ...form.getFieldValue('parts'),
+            [partKey]: {
+              ...form.getFieldValue(['parts', partKey]),
+              image: fileUrl,
+            },
+          },
+        });
 
-        xhr.open('PUT', uploadUrl, true);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
+        form.validateFields([['parts', partKey, 'image']]);
+
+        onSuccess({ fileUrl });
       } catch (err) {
         onError(err);
       }

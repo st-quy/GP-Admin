@@ -7,7 +7,7 @@ const { Text, Paragraph } = Typography
 const { Option } = Select
 
 // Custom matching question component for questions 26 and 29 with equals sign format
-const CustomMatchingQuestionEquals = ({ leftItems, rightItems, userAnswer = [], setUserAnswer }) => {
+const CustomMatchingQuestionEquals = ({ leftItems, rightItems, userAnswer = [], setUserAnswer, disabled = false }) => {
   const [selectedOptions, setSelectedOptions] = useState({})
 
   useEffect(() => {
@@ -52,6 +52,7 @@ const CustomMatchingQuestionEquals = ({ leftItems, rightItems, userAnswer = [], 
                     dropdownMatchSelectWidth={false}
                     optionLabelProp="label"
                     getPopupContainer={triggerNode => triggerNode.parentNode}
+                    disabled={disabled}
                   >
                     {rightItems.map((rightItem, rightIndex) => (
                       <Option
@@ -74,7 +75,7 @@ const CustomMatchingQuestionEquals = ({ leftItems, rightItems, userAnswer = [], 
   )
 }
 
-const CustomMatchingQuestionPlus = ({ leftItems, rightItems, userAnswer = [], setUserAnswer }) => {
+const CustomMatchingQuestionPlus = ({ leftItems, rightItems, userAnswer = [], setUserAnswer, disabled = false }) => {
   const [selectedOptions, setSelectedOptions] = useState({})
 
   useEffect(() => {
@@ -117,6 +118,7 @@ const CustomMatchingQuestionPlus = ({ leftItems, rightItems, userAnswer = [], se
                     dropdownMatchSelectWidth={false}
                     optionLabelProp="label"
                     getPopupContainer={triggerNode => triggerNode.parentNode}
+                    disabled={disabled}
                   >
                     {rightItems.map((rightItem, rightIndex) => (
                       <Option
@@ -189,11 +191,11 @@ const formatDialogueContent = content => {
 }
 
 // eslint-disable-next-line no-unused-vars
-const QuestionForm = ({ currentPart, answers, setUserAnswer, onSubmit, questionNumber = 0 }) => {
+const QuestionForm = ({ currentPart, answers, setUserAnswer, onSubmit, questionNumber = 0, disabled = false }) => {
   const [, setUserAnswerSubmit] = useState({})
 
   const handleAnswerSubmit = answer => {
-    if (!currentPart) {
+    if (!currentPart || disabled) {
       return
     }
     const newAnswers = { ...answers, [currentPart.ID]: answer }
@@ -249,6 +251,7 @@ const QuestionForm = ({ currentPart, answers, setUserAnswer, onSubmit, questionN
             setUserAnswer={setUserAnswer}
             onSubmit={undefined}
             setUserAnswerSubmit={setUserAnswerSubmit}
+            disabled={disabled}
           />
         ) : currentPart.Type === 'matching' ? (
           isQuestion26or29 ? (
@@ -257,6 +260,7 @@ const QuestionForm = ({ currentPart, answers, setUserAnswer, onSubmit, questionN
               rightItems={currentPart.AnswerContent.rightItems}
               userAnswer={userAnswer}
               setUserAnswer={handleAnswerSubmit}
+              disabled={disabled}
             />
           ) : isQuestion30 ? (
             <CustomMatchingQuestionPlus
@@ -264,6 +268,7 @@ const QuestionForm = ({ currentPart, answers, setUserAnswer, onSubmit, questionN
               rightItems={currentPart.AnswerContent.rightItems}
               userAnswer={userAnswer}
               setUserAnswer={handleAnswerSubmit}
+              disabled={disabled}
             />
           ) : (
             <MatchingQuestion
@@ -271,6 +276,7 @@ const QuestionForm = ({ currentPart, answers, setUserAnswer, onSubmit, questionN
               rightItems={currentPart.AnswerContent.rightItems}
               userAnswer={userAnswer}
               setUserAnswer={handleAnswerSubmit}
+              disabled={disabled}
             />
           )
         ) : null}

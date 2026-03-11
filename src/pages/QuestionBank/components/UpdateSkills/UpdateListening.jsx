@@ -207,15 +207,12 @@ const UpdateListening = () => {
     try {
       if (file.type !== 'audio/mpeg') return message.error('Only MP3 allowed');
 
-      const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-        fileName: file.name,
-        type: 'audios',
-      });
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'audios');
 
-      await fetch(data.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
+      const { data } = await axiosInstance.post('/presigned-url/upload-url', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
       setUrl(data.fileUrl);

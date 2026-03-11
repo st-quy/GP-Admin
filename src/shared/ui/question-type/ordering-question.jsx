@@ -11,7 +11,7 @@ const validationSchema = yup.object().shape({
   )
 })
 
-const OrderingQuestion = ({ options = [], className = '', userAnswer = [], setUserAnswer, subcontent = '' }) => {
+const OrderingQuestion = ({ options = [], className = '', userAnswer = [], setUserAnswer, subcontent = '', disabled = false }) => {
   const initialItems = useMemo(() => {
     const orderMap = new Map(userAnswer.map(item => [item.key, item.value]))
 
@@ -34,6 +34,10 @@ const OrderingQuestion = ({ options = [], className = '', userAnswer = [], setUs
   const dragOverItem = useRef(null)
 
   const handleDragStart = (e, index) => {
+    if (disabled) {
+      e.preventDefault()
+      return
+    }
     dragItem.current = index
     e.target.classList.add('dragging')
     e.dataTransfer.effectAllowed = 'move'
@@ -186,25 +190,25 @@ const OrderingQuestion = ({ options = [], className = '', userAnswer = [], setUs
                   </div>
                   {placedItem ? (
                     <div
-                      draggable
+                      draggable={!disabled}
                       onDragStart={e => handleDragStart(e, items.indexOf(placedItem))}
                       onDragEnd={handleDragEnd}
-                      className="cursor-grab text-base font-medium text-slate-800 active:cursor-grabbing"
+                      className={`${disabled ? 'cursor-not-allowed' : 'cursor-grab active:cursor-grabbing'} text-base font-medium text-slate-800`}
                     >
                       {placedItem.content}
                     </div>
                   ) : (
                     <div
                       className={`flex-grow select-none text-base ${
-                        selectedItem ? 'cursor-pointer text-slate-600 hover:bg-slate-100' : 'text-slate-400'
+                        selectedItem && !disabled ? 'cursor-pointer text-slate-600 hover:bg-slate-100' : 'text-slate-400'
                       } flex h-full items-center`}
                       onClick={() => {
-                        if (selectedItem) {
+                        if (selectedItem && !disabled) {
                           handleClick(selectedItem, index)
                         }
                       }}
                     >
-                      {selectedItem ? 'Click to place item here' : 'Drop item here'}
+                      {selectedItem && !disabled ? 'Click to place item here' : 'Drop item here'}
                     </div>
                   )}
                 </div>
@@ -226,13 +230,13 @@ const OrderingQuestion = ({ options = [], className = '', userAnswer = [], setUs
                 .map(item => (
                   <div
                     key={item.id}
-                    draggable
+                    draggable={!disabled}
                     onDragStart={e => handleDragStart(e, items.indexOf(item))}
                     onDragEnd={handleDragEnd}
-                    onClick={() => setSelectedItem(item)}
-                    className={`group cursor-pointer rounded-lg border ${
+                    onClick={() => !disabled && setSelectedItem(item)}
+                    className={`group ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} rounded-lg border ${
                       selectedItem?.id === item.id ? 'border-[rgb(0,48,135)] bg-blue-50' : 'border-slate-200 bg-white'
-                    } p-4 shadow-[0_2px_4px_0_rgba(0,0,0,0.1),0_1px_8px_-1px_rgba(0,0,0,0.06)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[rgb(0,48,135)] hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.1),0_4px_24px_-8px_rgba(0,0,0,0.08)] active:cursor-grabbing`}
+                    } p-4 shadow-[0_2px_4px_0_rgba(0,0,0,0.1),0_1px_8px_-1px_rgba(0,0,0,0.06)] transition-all duration-300 ${!disabled && 'hover:-translate-y-0.5 hover:border-[rgb(0,48,135)] hover:shadow-[0_8px_16px_-4px_rgba(0,0,0,0.1),0_4px_24px_-8px_rgba(0,0,0,0.08)] active:cursor-grabbing'}`}
                   >
                     <div className="text-base font-medium text-slate-800">{item.content}</div>
                   </div>

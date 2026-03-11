@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const TestLayout = ({ children }) => {
+  const isPreviewMode = localStorage.getItem('isPreviewMode') === 'true'
   const { showAlert, alertMessage, enableFullScreen } = useAntiCheat()
   const [countdown, setCountdown] = useState(15)
   const [isCounting, setIsCounting] = useState(false)
@@ -90,15 +91,22 @@ const TestLayout = ({ children }) => {
 
   return (
     <>
+      {isPreviewMode && (
+        <div className="sticky top-0 z-[1000] bg-emerald-500 py-2 text-center font-bold tracking-wider text-white shadow-md uppercase">
+          --- Preview Mode - Read Only ---
+        </div>
+      )}
       {children}
-      <CustomAlert
-        show={showAlert}
-        onConfirm={handleContinue}
-        submittedText={alertMessage}
-        countdown={countdown}
-        warningCount={warningCount}
-        totalCount={3}
-      />
+      {!isPreviewMode && (
+        <CustomAlert
+          show={showAlert}
+          onConfirm={handleContinue}
+          submittedText={alertMessage}
+          countdown={countdown}
+          warningCount={warningCount}
+          totalCount={3}
+        />
+      )}
     </>
   )
 }

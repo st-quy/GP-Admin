@@ -11,6 +11,7 @@ const MultipleChoice = ({
   className = '',
   setUserAnswerSubmit,
   onBeforeAnswer,
+  disabled = false,
 }) => {
   const [selectedOption, setSelectedOption] = useState(null)
   const [error, setError] = useState(null)
@@ -35,6 +36,7 @@ const MultipleChoice = ({
   }, [userAnswer, questionData.ID])
 
   const handleClick = optionValue => {
+    if (disabled) return;
     // // *** THÊM LOGIC KIỂM TRA ***
     // // Gọi hàm kiểm tra trước khi làm bất cứ điều gì
     // if (onBeforeAnswer && !onBeforeAnswer()) {
@@ -80,10 +82,12 @@ const MultipleChoice = ({
             <div
               key={option.key}
               onClick={() => handleClick(option.value)}
-              className={`flex h-[64px] w-full cursor-pointer rounded-xl border transition-all duration-200 ${
+              className={`flex h-[64px] w-full ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'} rounded-xl border transition-all duration-200 ${
                 isSelected
                   ? 'border-[#003087] bg-[#003087]/5 shadow-[0_8px_16px_rgba(0,48,135,0.15)]'
-                  : 'border-gray-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:border-[#003087] hover:bg-[#003087]/5 hover:shadow-[0_4px_12px_rgba(0,48,135,0.1)]'
+                  : disabled 
+                    ? 'border-gray-200 bg-gray-50'
+                    : 'border-gray-200 bg-white shadow-[0_2px_8px_rgba(0,0,0,0.05)] hover:border-[#003087] hover:bg-[#003087]/5 hover:shadow-[0_4px_12px_rgba(0,48,135,0.1)]'
               } `}
             >
               <div

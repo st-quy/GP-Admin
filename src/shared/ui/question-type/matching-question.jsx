@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 
 const { Option } = Select
 
-const MatchingQuestion = ({ leftItems, rightItems, userAnswer = [], setUserAnswer, className = '' }) => {
+const MatchingQuestion = ({ leftItems, rightItems, userAnswer = [], setUserAnswer, className = '', disabled = false }) => {
   useEffect(() => {
     const validateData = async () => {
       try {
@@ -79,6 +79,7 @@ const MatchingQuestion = ({ leftItems, rightItems, userAnswer = [], setUserAnswe
                 style={{ width: '100%' }}
                 optionLabelProp="label"
                 getPopupContainer={triggerNode => triggerNode.parentNode}
+                disabled={disabled}
               >
                 {rightItems.map((rightItem, rightIndex) => (
                   <Option
