@@ -17,6 +17,11 @@ FROM nginx:1.23.1-alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY --from=builder /app/nginx/nginx.conf /etc/nginx/conf.d/default.conf
 
+# Copy SSL certificates
+RUN mkdir -p /etc/nginx/certs
+COPY --from=builder /app/nginx/cert.pem /etc/nginx/certs/public.crt
+COPY --from=builder /app/nginx/key.pem /etc/nginx/certs/private.key
+
 EXPOSE 3000
 
 CMD ["nginx", "-g", "daemon off;"]

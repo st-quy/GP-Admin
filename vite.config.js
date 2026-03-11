@@ -14,6 +14,13 @@ export default defineConfig({
     strictPort: true,
     host: true,
     origin: "http://localhost:8081",
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3010/api',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
   },
   resolve: {
     alias: {

@@ -68,7 +68,7 @@ const Dashboard = () => {
   const fetchSessions = async () => {
     try {
       const response = await fetch(
-        "https://dev-api-greenprep.onrender.com/api/sessions/all"
+        "/api/sessions/all"
       );
       const data = await response.json();
       if (data.status === 200) {

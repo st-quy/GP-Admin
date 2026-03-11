@@ -18,10 +18,12 @@ import { useSelector } from 'react-redux';
 import { useQueryClient } from '@tanstack/react-query';
 import PreviewExam from '@shared/ui/PreviewExam';
 import HeaderInfo from '@app/components/HeaderInfo';
+import ImportExcelModal from '@shared/components/ImportExcelModal';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [fileData, setFileData] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
@@ -49,6 +51,19 @@ const ClassManagement = () => {
   const handleDeleteClass = (record) => () => {
     setIsOpen('Delete');
     setClassData(record);
+  };
+
+  const handleConfirmImport = async (file) => {
+    setImportLoading(true);
+    try {
+      await handleFileChange(file);
+      setIsImportModalOpen(false);
+      setFileData(null);
+      // Optionally show PreviewExam after import or just refresh
+      queryClient.invalidateQueries({ queryKey: ['classes'] });
+    } finally {
+      setImportLoading(false);
+    }
   };
 
   const columns = [
@@ -127,12 +142,10 @@ const ClassManagement = () => {
               accept='.xlsx, .xls'
               ref={fileInputRef}
               onChange={(e) => {
-                setFileData(e.target.files[0]);
-                handlePreviewFile(
-                  e.target.files[0],
-                  setIsModalOpen,
-                  setDataExam
-                );
+                if (e.target.files && e.target.files[0]) {
+                  setFileData(e.target.files[0]);
+                  setIsImportModalOpen(true);
+                }
               }}
               style={{ display: 'none' }}
             />
@@ -172,6 +185,17 @@ const ClassManagement = () => {
           isOpen={isOpen === 'Delete' ? true : false}
           onClose={() => setIsOpen(null)}
           classId={dataClass?.ID}
+        />
+        <ImportExcelModal
+          open={isImportModalOpen}
+          file={fileData}
+          onCancel={() => {
+            setIsImportModalOpen(false);
+            setFileData(null);
+          }}
+          onConfirm={handleConfirmImport}
+          loading={importLoading}
+          onDownloadTemplate={handleExport}
         />
         {isModalOpen && (
           <PreviewExam

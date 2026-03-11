@@ -102,7 +102,7 @@ export const ProtectedRoute = () => {
       key: 'class',
       icon: <ContainerOutlined />,
       label: `Class`,
-      roles: ['teacher'],
+      roles: ['teacher', 'admin'],
     },
   ];
 
