@@ -61,7 +61,7 @@ const CreateExamPage = () => {
     const { data: topicData, isLoading } = useGetTopicWithRelations(topicId);
     const { mutateAsync: updateTopic } = useUpdateTopic();
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
-    const { role } = useSelector((state) => state.auth);
+    const { role, user } = useSelector((state) => state.auth);
 
     const handlePartSelect = (sections) => {
         const oldSectionId = selectedSectionBySkill[selectedSkill];
@@ -107,48 +107,48 @@ const CreateExamPage = () => {
         setOpenModal(false);
     };
     const handlePreviewExam = () => {
-  if (!instructions.length) {
-    message.warning("Please select at least one skill before preview");
-    return;
-  }
+        if (!instructions.length) {
+            message.warning("Please select at least one skill before preview");
+            return;
+        }
 
-  const skillOrder = [
-    "LISTENING",
-    "GRAMMAR AND VOCABULARY",
-    "READING",
-    "WRITING",
-    "SPEAKING",
-  ];
+        const skillOrder = [
+            "LISTENING",
+            "GRAMMAR AND VOCABULARY",
+            "READING",
+            "WRITING",
+            "SPEAKING",
+        ];
 
-  const skills = skillOrder.map(skillName => {
-    const found = instructions.find(i => i.skill === skillName);
+        const skills = skillOrder.map(skillName => {
+            const found = instructions.find(i => i.skill === skillName);
 
-    if (!found || !found.section) {
-      return {
-        ID: null,
-        Name: skillName,
-        Parts: [],
-      };
-    }
+            if (!found || !found.section) {
+                return {
+                    ID: null,
+                    Name: skillName,
+                    Parts: [],
+                };
+            }
 
-    return {
-      ID: found.section.SkillID || found.section.Skill?.ID,
-      Name: skillName,
-      Parts: found.section.Parts || [],
+            return {
+                ID: found.section.SkillID || found.section.Skill?.ID,
+                Name: skillName,
+                Parts: found.section.Parts || [],
+            };
+        });
+
+        const previewExamData = {
+            ID: topicData?.ID,
+            Name: form.getFieldValue("name"),
+            Skills: skills,
+            createdAt: topicData?.createdAt || new Date().toISOString(),
+            updatedAt: topicData?.updatedAt || new Date().toISOString(),
+        };
+
+        setPreviewData(previewExamData);
+        setPreviewOpen(true);
     };
-  });
-
-  const previewExamData = {
-    ID: topicData?.ID,
-    Name: form.getFieldValue("name"),
-    Skills: skills,
-    createdAt: topicData?.createdAt || new Date().toISOString(),
-    updatedAt: topicData?.updatedAt || new Date().toISOString(),
-  };
-
-  setPreviewData(previewExamData);
-  setPreviewOpen(true);
-};
 
 
     const handleSaveExam = async () => {
@@ -364,8 +364,26 @@ const CreateExamPage = () => {
     };
 
     useEffect(() => {
+        if (user && !topicId) {
+            const creatorName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+            form.setFieldsValue({ creator: creatorName });
+        }
+    }, [user, form, topicId]);
+
+    useEffect(() => {
         if (!topicData) return;
         form.setFieldsValue({ name: topicData.Name });
+
+        if (topicData.creator) {
+            const creatorName = [topicData.creator.firstName, topicData.creator.lastName].filter(Boolean).join(' ');
+            form.setFieldsValue({ creator: creatorName });
+        }
+
+        if (topicData.updater) {
+            const editorName = [topicData.updater.firstName, topicData.updater.lastName].filter(Boolean).join(' ');
+            form.setFieldsValue({ editor: editorName });
+        }
+
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
@@ -381,6 +399,8 @@ const CreateExamPage = () => {
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
     }, [topicData]);
+
+    const allowedCharactersRegex = /^[a-zA-Z0-9 _-]*$/;
 
     return (
         <>
@@ -427,9 +447,26 @@ const CreateExamPage = () => {
                         <Form.Item
                             label="Exam Name"
                             name="name"
-                            rules={[{ required: true }]}
+                            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '')}
+                            rules={[
+                                { required: true },
+                            ]}
+
                         >
-                            <Input placeholder="Enter exam name" disabled={isViewMode} />
+                            <Input maxLength={255} placeholder="Enter exam name" disabled={isViewMode} />
+                        </Form.Item>
+                        <Form.Item
+                            label={"Creator"}
+                            name="creator"
+                        >
+                            <Input disabled />
+                        </Form.Item>
+
+                        <Form.Item
+                            label={"Last Edited By"}
+                            name="editor"
+                        >
+                            <Input placeholder="None" disabled />
                         </Form.Item>
                     </Card>
 

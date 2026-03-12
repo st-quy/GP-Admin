@@ -128,6 +128,7 @@ const TopicListPage = () => {
       title: 'Topic Name',
       dataIndex: 'Name',
       key: 'Name',
+      ellipsis: true,
       render: (text) => (
         <span className='font-medium text-gray-800'>{text}</span>
       ),
@@ -164,14 +165,14 @@ const TopicListPage = () => {
         return tagElement;
       },
     },
-    {
-      title: 'Creator',
-      dataIndex: 'createdBy',
-      key: 'createdBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
-      ),
-    },
+    // {
+    //   title: 'Creator',
+    //   dataIndex: 'createdBy',
+    //   key: 'createdBy',
+    //   render: (text) => (
+    //     <span className='font-medium text-gray-800'>{text}</span>
+    //   ),
+    // },
     {
       title: 'Creation day',
       dataIndex: 'createdAt',
@@ -192,24 +193,26 @@ const TopicListPage = () => {
         </span>
       ),
     },
-    {
-      title: 'Updator',
-      dataIndex: 'updatedBy',
-      key: 'updatedBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
-      ),
-    },
+    // {
+    //   title: 'Updator',
+    //   dataIndex: 'updatedBy',
+    //   key: 'updatedBy',
+    //   render: (text) => (
+    //     <span className='font-medium text-gray-800'>{text}</span>
+    //   ),
+    // },
     {
       title: 'Action',
       key: 'action',
       align: 'center',
+      // ellipsis: true,
       render: (_, record) => {
         const canModify =
           record.Status === 'submited' || record.Status === 'approved';
         return (
           <Space size='middle'>
             <Button
+              title='Review Topic'
               type='text'
               icon={<EyeOutlined />}
               className='text-[#1890FF]'
@@ -221,6 +224,7 @@ const TopicListPage = () => {
             {!canModify && (
               <>
                 <Button
+                  title='Edit Topic'
                   type='text'
                   icon={<EditOutlined />}
                   className='text-[#1890FF]'
@@ -231,6 +235,7 @@ const TopicListPage = () => {
                 />
 
                 <Button
+                  title='Delete Topic'
                   type='text'
                   icon={<DeleteOutlined />}
                   className='text-[#FF4D4F]'
@@ -340,6 +345,7 @@ const TopicListPage = () => {
                 placeholder='Search topic name...'
                 prefix={<SearchOutlined />}
                 value={search}
+                maxLength={255}
                 onChange={(e) => {
                   setPage(1);
                   setSearch(e.target.value);
@@ -376,9 +382,9 @@ const TopicListPage = () => {
                 {totalItems === 0
                   ? 'No data'
                   : `Showing ${(page - 1) * pageSize + 1}–${Math.min(
-                      page * pageSize,
-                      totalItems
-                    )} of ${totalItems}`}
+                    page * pageSize,
+                    totalItems
+                  )} of ${totalItems}`}
               </Text>
 
               <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600'>
