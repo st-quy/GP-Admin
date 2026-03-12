@@ -347,8 +347,10 @@ const TopicListPage = () => {
                 value={search}
                 maxLength={255}
                 onChange={(e) => {
+                  const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '');
+
                   setPage(1);
-                  setSearch(e.target.value);
+                  setSearch(sanitized);
                 }}
               />
 
