@@ -9,8 +9,6 @@ import {
   Button,
   Typography,
   message,
-  Tag,
-  Tooltip,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -30,18 +28,15 @@ import {
   useGetTopics,
   useDeleteTopic,
   useDeleteTopicSectionByTopicId,
+  useUpdateTopic,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
+import StatusTransitionDropdown from '@shared/components/StatusTransitionDropdown';
 
 const { Option } = Select;
 const { Text } = Typography;
 
-const statusTagConfig = {
-  submited: { bg: 'bg-amber-100', text: 'text-gray-700', label: 'Submited' },
-  approved: { bg: 'bg-emerald-100', text: 'text-gray-700', label: 'Approved' },
-  draft: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Draft' },
-  rejected: { bg: 'bg-rose-100', text: 'text-gray-700', label: 'Rejected' },
-};
+
 
 const TopicListPage = () => {
   const navigate = useNavigate();
@@ -66,6 +61,7 @@ const TopicListPage = () => {
 
   const deleteTopic = useDeleteTopic();
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
+  const { mutateAsync: updateTopic } = useUpdateTopic();
 
   const counts = {
     Submited: data?.statusCounts?.submited || 0,
@@ -136,33 +132,16 @@ const TopicListPage = () => {
       title: 'Status',
       dataIndex: 'Status',
       key: 'Status',
-      render: (_, record) => {
-        const cfg = statusTagConfig[record.Status] || {};
-
-        const tagElement = (
-          <Tag
-            className={`${cfg.bg} ${cfg.text} font-medium px-3 py-1 rounded-md`}
-          >
-            {cfg.label}
-          </Tag>
-        );
-
-        if (record.Status === 'rejected') {
-          return (
-            <Tooltip
-              title={
-                record.ReasonReject
-                  ? record.ReasonReject
-                  : 'No reject reason provided'
-              }
-            >
-              {tagElement}
-            </Tooltip>
-          );
-        }
-
-        return tagElement;
-      },
+      render: (_, record) => (
+        <StatusTransitionDropdown
+          currentStatus={record.Status}
+          rejectReason={record.ReasonReject}
+          onTransition={async (newStatus) => {
+            await updateTopic({ id: record.ID, data: { Status: newStatus } });
+            message.success(`Status changed to ${newStatus}`);
+          }}
+        />
+      ),
     },
     {
       title: 'Creator',
@@ -376,9 +355,9 @@ const TopicListPage = () => {
                 {totalItems === 0
                   ? 'No data'
                   : `Showing ${(page - 1) * pageSize + 1}–${Math.min(
-                      page * pageSize,
-                      totalItems
-                    )} of ${totalItems}`}
+                    page * pageSize,
+                    totalItems
+                  )} of ${totalItems}`}
               </Text>
 
               <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600'>
