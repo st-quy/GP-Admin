@@ -8,7 +8,7 @@ import {
   Form,
   Spin,
 } from 'antd';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { yupSync } from '@shared/lib/utils';
 import { sessionSchema } from '@features/classDetail/validate';
 import {
@@ -19,11 +19,9 @@ import {
 } from '@features/classDetail/hooks/useClassDetail';
 import dayjs from 'dayjs';
 import {
-  EditOutlined,
   LoadingOutlined,
   ReloadOutlined,
 } from '@ant-design/icons';
-import { PageSizes } from 'pdf-lib';
 
 const { RangePicker } = DatePicker;
 
@@ -38,6 +36,8 @@ const ActionModal = ({
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const [topicList, setTopicList] = useState([]);
+  const [submitting, setSubmitting] = useState(false);
+  const submitLockRef = useRef(false);
 
   const isEdit = !!initialData;
   const { data, isLoading: isLoadingTopics } = useGetTopics({
@@ -73,6 +73,8 @@ const ActionModal = ({
   const handleCancel = () => {
     onClose();
     form.resetFields();
+    setSubmitting(false);
+    submitLockRef.current = false;
   };
   const handlePopupScroll = (e) => {
     const target = e.target; // chính xác: lớp scroll của dropdown
@@ -101,8 +103,14 @@ const ActionModal = ({
   };
 
   const onAction = async () => {
+    if (submitLockRef.current) return;
+
     try {
       const values = await form.validateFields();
+
+      submitLockRef.current = true;
+      setSubmitting(true);
+
       const sessionData = {
         sessionId: initialData?.ID || null,
         sessionName: values.sessionName?.trim(),
@@ -119,11 +127,21 @@ const ActionModal = ({
           message.success(msg);
           handleCancel();
         },
+        onError: (error) => {
+          const serverMsg = error?.response?.data?.message || '';
+          if (serverMsg.toLowerCase().includes('key') || serverMsg.toLowerCase().includes('unique') || serverMsg.toLowerCase().includes('duplicate')) {
+            form.setFields([
+              { name: 'sessionKey', errors: ['This session key is already in use. Please generate a new one.'] },
+            ]);
+          }
+        },
+        onSettled: () => {
+          submitLockRef.current = false;
+          setSubmitting(false);
+        },
       });
-    } catch (error) {
-      message.error(
-        error?.response?.data?.message || 'Please fill in all fields correctly.'
-      );
+    } catch {
+      // Form validation failed — Ant Design shows inline errors automatically
     }
   };
 
@@ -258,7 +276,8 @@ const ActionModal = ({
           </Button>
           <Button
             onClick={onAction}
-            loading={isLoading}
+            loading={isLoading || submitting}
+            disabled={isLoading || submitting}
             className='h-[52px] w-[124px] rounded-full bg-primaryColor text-white'
           >
             {actionLabel}
