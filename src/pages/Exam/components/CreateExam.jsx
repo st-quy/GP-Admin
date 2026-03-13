@@ -7,6 +7,7 @@ import {
     EditOutlined,
     BookOutlined,
     CustomerServiceOutlined,
+    HolderOutlined,
 } from "@ant-design/icons";
 import {
     Card,
@@ -25,6 +26,27 @@ import PreviewExam from "@shared/ui/PreviewExam";
 import { useSelector } from "react-redux";
 import useConfirm from "@shared/hook/useConfirm";
 import RejectExamModal from "@features/topic/ui/RejectModal";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+
+const SortableQuestionItem = ({ id, children }) => {
+    const { setNodeRef, listeners, attributes, transform, transition, isDragging } =
+        useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style}>
+            {children(listeners, attributes)}
+        </div>
+    );
+};
 
 const { Text, Title } = Typography;
 
@@ -55,7 +77,9 @@ const CreateExamPage = () => {
     const { openConfirmModal, ModalComponent } = useConfirm();
     const [rejectOpen, setRejectOpen] = useState(false);
 
-
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    );
     const { mutateAsync: createExam } = useCreateTopic();
     const { mutateAsync: createTopicSection } = useCreateTopicSection();
     const { data: topicData, isLoading } = useGetTopicWithRelations(topicId);
@@ -316,41 +340,104 @@ const CreateExamPage = () => {
 
                                     {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
                                         <div style={{ marginTop: 8 }}>
-                                            {(part.Questions || []).map((q, index) => (
-                                                <div
-                                                    key={q.ID}
-                                                    style={{
-                                                        display: "flex",
-                                                        alignItems: "flex-start",
-                                                        gap: 12,
-                                                        marginBottom: 10,
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            width: 28,
-                                                            height: 28,
-                                                            borderRadius: "50%",
-                                                            background: "#0a2a79",
-                                                            color: "white",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            fontWeight: 600,
-                                                            fontSize: 14,
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
-                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
-                                                            : (index + 1)}
-                                                    </div>
+                                            <DndContext
+                                                sensors={sensors}
+                                                collisionDetection={closestCenter}
+                                                modifiers={[restrictToVerticalAxis]}
+                                                onDragEnd={(event) => {
+                                                    if (isViewMode) return;
+                                                    const { active, over } = event;
+                                                    if (!over || active.id === over.id) return;
 
-                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
-                                                        {q.Content}
-                                                    </Text>
-                                                </div>
-                                            ))}
+                                                    const questions = [...(part.Questions || [])];
+                                                    const oldIdx = questions.findIndex(q => q.ID === active.id);
+                                                    const newIdx = questions.findIndex(q => q.ID === over.id);
+                                                    if (oldIdx === -1 || newIdx === -1) return;
+
+                                                    const [moved] = questions.splice(oldIdx, 1);
+                                                    questions.splice(newIdx, 0, moved);
+
+                                                    setInstructions(prev => prev.map(ins => {
+                                                        if (ins.skill !== selectedSkill) return ins;
+                                                        return {
+                                                            ...ins,
+                                                            section: {
+                                                                ...ins.section,
+                                                                Parts: (ins.section.Parts || []).map(p =>
+                                                                    p.ID === part.ID ? { ...p, Questions: questions } : p
+                                                                ),
+                                                            },
+                                                        };
+                                                    }));
+                                                }}
+                                            >
+                                                <SortableContext
+                                                    items={(part.Questions || []).map(q => q.ID)}
+                                                    strategy={verticalListSortingStrategy}
+                                                >
+                                                    {(part.Questions || []).map((q, index) => (
+                                                        <SortableQuestionItem key={q.ID} id={q.ID}>
+                                                            {(listeners, attributes) => (
+                                                                <div
+                                                                    style={{
+                                                                        display: "flex",
+                                                                        alignItems: "flex-start",
+                                                                        gap: 12,
+                                                                        marginBottom: 10,
+                                                                        padding: 8,
+                                                                        borderRadius: 8,
+                                                                        background: "#fff",
+                                                                        border: "1px solid transparent",
+                                                                    }}
+                                                                    onMouseEnter={(e) => {
+                                                                        if (!isViewMode) e.currentTarget.style.border = "1px solid #d9d9d9";
+                                                                    }}
+                                                                    onMouseLeave={(e) => {
+                                                                        e.currentTarget.style.border = "1px solid transparent";
+                                                                    }}
+                                                                >
+                                                                    {!isViewMode && (
+                                                                        <HolderOutlined
+                                                                            {...listeners}
+                                                                            {...attributes}
+                                                                            style={{
+                                                                                cursor: "grab",
+                                                                                color: "#999",
+                                                                                fontSize: 16,
+                                                                                marginTop: 4,
+                                                                                flexShrink: 0,
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                    <div
+                                                                        style={{
+                                                                            width: 28,
+                                                                            height: 28,
+                                                                            borderRadius: "50%",
+                                                                            background: "#0a2a79",
+                                                                            color: "white",
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                            fontWeight: 600,
+                                                                            fontSize: 14,
+                                                                            flexShrink: 0,
+                                                                        }}
+                                                                    >
+                                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
+                                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
+                                                                            : (index + 1)}
+                                                                    </div>
+
+                                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
+                                                                        {q.Content}
+                                                                    </Text>
+                                                                </div>
+                                                            )}
+                                                        </SortableQuestionItem>
+                                                    ))}
+                                                </SortableContext>
+                                            </DndContext>
                                         </div>
                                     )}
                                 </div>
