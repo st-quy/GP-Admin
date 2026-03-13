@@ -43,11 +43,15 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
 
   useEffect(() => {
     if (selectedSectionId) {
-      setSelectedSectionsBySkill(prev => ({ ...prev, [skillName]: [{ ID: selectedSectionId }] }));
+      const fullSection = sections.find(s => s.ID === selectedSectionId);
+      setSelectedSectionsBySkill(prev => ({
+        ...prev,
+        [skillName]: [fullSection || { ID: selectedSectionId }]
+      }));
     } else {
       setSelectedSectionsBySkill(prev => ({ ...prev, [skillName]: [] }));
     }
-  }, [selectedSectionId, skillName]);
+  }, [selectedSectionId, skillName, sections]);
 
   return (
     <Modal
