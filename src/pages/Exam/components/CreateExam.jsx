@@ -16,7 +16,11 @@ import {
     Space,
     Typography,
     Divider,
-    message
+    message,
+    Switch,
+    InputNumber,
+    Row,
+    Col
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
@@ -54,6 +58,11 @@ const CreateExamPage = () => {
     const [previewData, setPreviewData] = useState(null);
     const { openConfirmModal, ModalComponent } = useConfirm();
     const [rejectOpen, setRejectOpen] = useState(false);
+
+    // SCRUM-130 States
+    const [shuffleQuestions, setShuffleQuestions] = useState(false);
+    const [shuffleAnswers, setShuffleAnswers] = useState(false);
+    const [questionScores, setQuestionScores] = useState({});
 
 
     const { mutateAsync: createExam } = useCreateTopic();
@@ -157,20 +166,62 @@ const CreateExamPage = () => {
             const values = form.getFieldsValue();
             if (!values.name) return message.error("Name is required");
 
+            // Logic tự động giới hạn 50 điểm cho từng Section (Score Config)
+            const finalScores = { ...questionScores };
+            instructions.forEach(({ section }) => {
+                const sectionQuestions = [];
+                (section.Parts || []).forEach(p => {
+                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
+                });
+
+                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
+                
+                if (total > 50) {
+                    const ratio = 50 / total;
+                    sectionQuestions.forEach(qid => {
+                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
+                    });
+                }
+            });
+
             let topicResponse;
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'draft' } });
+                topicResponse = await updateTopic({
+                    id: topicId,
+                    data: {
+                        Name: values.name,
+                        Status: 'draft',
+                        ShuffleQuestions: shuffleQuestions,
+                        ShuffleAnswers: shuffleAnswers
+                    }
+                });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
-                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
+                await updateTopicSection({
+                    topicId: savedTopicId,
+                    data: {
+                        sectionIds: selectedParts,
+                        scoreConfig: finalScores
+                    }
+                });
 
             } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'draft' });
+                topicResponse = await createExam({
+                    Name: values.name,
+                    Status: 'draft',
+                    ShuffleQuestions: shuffleQuestions,
+                    ShuffleAnswers: shuffleAnswers
+                });
                 const savedTopicId = topicResponse.ID || topicResponse._ID;
 
                 if (!savedTopicId) return message.error("Cannot get topic ID");
-                for (const sectionId of selectedParts) {
-                    await createTopicSection({ topicId: savedTopicId, sectionId });
-                }
+                
+                await updateTopicSection({
+                    topicId: savedTopicId,
+                    data: {
+                        sectionIds: selectedParts,
+                        scoreConfig: finalScores
+                    }
+                });
             }
 
             message.success(topicId ? "Topic updated successfully!" : "Topic created successfully!");
@@ -191,20 +242,62 @@ const CreateExamPage = () => {
             const values = form.getFieldsValue();
             if (!values.name) return message.error("Name is required");
 
+            // Logic tự động giới hạn 50 điểm cho từng Section (Score Config)
+            const finalScores = { ...questionScores };
+            instructions.forEach(({ section }) => {
+                const sectionQuestions = [];
+                (section.Parts || []).forEach(p => {
+                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
+                });
+
+                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
+                
+                if (total > 50) {
+                    const ratio = 50 / total;
+                    sectionQuestions.forEach(qid => {
+                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
+                    });
+                }
+            });
+
             let topicResponse;
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'submited' } });
+                topicResponse = await updateTopic({
+                    id: topicId,
+                    data: {
+                        Name: values.name,
+                        Status: 'submited',
+                        ShuffleQuestions: shuffleQuestions,
+                        ShuffleAnswers: shuffleAnswers
+                    }
+                });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
-                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
+                await updateTopicSection({
+                    topicId: savedTopicId,
+                    data: {
+                        sectionIds: selectedParts,
+                        scoreConfig: finalScores
+                    }
+                });
 
             } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'submited' });
+                topicResponse = await createExam({
+                    Name: values.name,
+                    Status: 'submited',
+                    ShuffleQuestions: shuffleQuestions,
+                    ShuffleAnswers: shuffleAnswers
+                });
                 const savedTopicId = topicResponse.ID || topicResponse._ID;
 
                 if (!savedTopicId) return message.error("Cannot get topic ID");
-                for (const sectionId of selectedParts) {
-                    await createTopicSection({ topicId: savedTopicId, sectionId });
-                }
+                
+                await updateTopicSection({
+                    topicId: savedTopicId,
+                    data: {
+                        sectionIds: selectedParts,
+                        scoreConfig: finalScores
+                    }
+                });
             }
 
             message.success(topicId ? "Topic updated successfully!" : "Topic created successfully!");
@@ -270,13 +363,23 @@ const CreateExamPage = () => {
                         color: "#9CA3AF",
                         fontSize: 16,
                         fontWeight: 500,
+                        cursor: "pointer"
                     }}
+                    onClick={() => { if (!isViewMode) setOpenModal(true) }} // Chỉ mở modal khi vùng này trống
                 >
                     + Instruction
                 </div>
             );
         }
         const { section } = data;
+
+        // Tính tổng điểm của Section hiện tại
+        const sectionTotalScore = (section.Parts || []).reduce((acc, part) => {
+            const partScore = (part.Questions || []).reduce((pAcc, q) => {
+                return pAcc + (questionScores[q.ID] || 0);
+            }, 0);
+            return acc + partScore;
+        }, 0);
 
         return (
             <div style={{ width: "100%" }}>
@@ -287,10 +390,33 @@ const CreateExamPage = () => {
                         background: "#FAFAFA",
                     }}
                     bodyStyle={{ padding: 16 }}
+                    title={
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                            <div>
+                                <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
+                                <br />
+                                <Text type="secondary" style={{ fontWeight: 'normal', fontSize: 14 }}>{section.Description}</Text>
+                                <div style={{ marginTop: 4 }}>
+                                    <Text strong style={{ color: sectionTotalScore > 50 ? '#faad14' : '#1677ff' }}>
+                                        Total Section Score: {sectionTotalScore.toFixed(2)} 
+                                        {sectionTotalScore > 50 && <span style={{ color: '#ff4d4f' }}> (Will be capped at 50.00)</span>}
+                                    </Text>
+                                </div>
+                            </div>
+                            {!isViewMode && (
+                                <Button 
+                                    type="dashed" 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setOpenModal(true);
+                                    }}
+                                >
+                                    Change Section
+                                </Button>
+                            )}
+                        </div>
+                    }
                 >
-                    <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
-                    <br />
-                    <Text type="secondary">{section.Description}</Text>
 
                     <div style={{ marginTop: 16 }}>
                         <div style={{ marginTop: 16 }}>
@@ -307,52 +433,118 @@ const CreateExamPage = () => {
                                 >
 
                                     <Text strong>{part.Content}</Text>
-                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                        <>
-                                            <br />
-                                            <Text type="secondary">{part.SubContent}</Text>
-                                        </>
-                                    )}
+                                    <br />
+                                    <Text type="secondary">{part.SubContent}</Text>
 
-                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                        <div style={{ marginTop: 8 }}>
-                                            {(part.Questions || []).map((q, index) => (
+                                    <div style={{ marginTop: 8 }}>
+                                        {(() => {
+                                            let questions = [...(part.Questions || [])];
+                                            
+                                            // Logic Xáo trộn trực quan để giáo viên Preview (SCRUM-130 UX Enhancement)
+                                            if (shuffleQuestions) {
+                                                // Sử dụng thuật toán xáo trộn mảng đơn giản
+                                                questions.sort(() => Math.random() - 0.5);
+                                            }
+
+                                            return questions.map((q, index) => (
                                                 <div
                                                     key={q.ID}
                                                     style={{
                                                         display: "flex",
                                                         alignItems: "flex-start",
-                                                        gap: 12,
-                                                        marginBottom: 10,
+                                                        justifyContent: "space-between",
+                                                        gap: 24,
+                                                        marginBottom: 16,
+                                                        padding: '8px 0',
+                                                        borderBottom: '1px dashed #f0f0f0'
                                                     }}
                                                 >
-                                                    <div
-                                                        style={{
-                                                            width: 28,
-                                                            height: 28,
-                                                            borderRadius: "50%",
-                                                            background: "#0a2a79",
-                                                            color: "white",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            fontWeight: 600,
-                                                            fontSize: 14,
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
-                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
-                                                            : (index + 1)}
-                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1 }}>
+                                                        <div
+                                                            style={{
+                                                                width: 28,
+                                                                height: 28,
+                                                                borderRadius: "50%",
+                                                                background: "#0a2a79",
+                                                                color: "white",
+                                                                display: "flex",
+                                                                alignItems: "center",
+                                                                justifyContent: "center",
+                                                                fontWeight: 600,
+                                                                fontSize: 14,
+                                                                flexShrink: 0,
+                                                            }}
+                                                        >
+                                                            {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
+                                                                ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
+                                                                : (index + 1)}
+                                                        </div>
 
-                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
-                                                        {q.Content}
-                                                    </Text>
+                                                        <div style={{ flex: 1 }}>
+                                                            <Text style={{ fontSize: 15, lineHeight: "22px" }}>
+                                                                {q.Content}
+                                                            </Text>
+
+                                                            {/* Hiển thị Shuffle Answers Preview (SCRUM-130 UX) */}
+                                                            {shuffleAnswers && q.AnswerContent?.options && (
+                                                                <div style={{ marginTop: 8, paddingLeft: 8, borderLeft: '2px solid #1677ff' }}>
+                                                                    {(() => {
+                                                                        let options = [...q.AnswerContent.options];
+                                                                        options.sort(() => Math.random() - 0.5); // Xáo trộn đáp án để preview
+                                                                        return options.map((opt, i) => (
+                                                                            <div key={i} style={{ fontSize: 13, color: '#595959', marginBottom: 2 }}>
+                                                                                <Text type="secondary" strong>{String.fromCharCode(65 + i)}. </Text>
+                                                                                {opt.value}
+                                                                            </div>
+                                                                        ));
+                                                                    })()}
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    <div 
+                                                        style={{ 
+                                                            display: 'flex', 
+                                                            alignItems: 'center', 
+                                                            gap: 8,
+                                                            flexShrink: 0,
+                                                            background: '#f9f9f9',
+                                                            padding: '4px 12px',
+                                                            borderRadius: 6
+                                                        }}
+                                                        onClick={(e) => e.stopPropagation()} 
+                                                    >
+                                                        <Text type="secondary" style={{ fontSize: 13, fontWeight: 500 }}>Score:</Text>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="100"
+                                                            step="0.1"
+                                                            value={questionScores[q.ID] || 0}
+                                                            onChange={(e) => {
+                                                                const val = parseFloat(e.target.value);
+                                                                setQuestionScores(prev => ({
+                                                                    ...prev,
+                                                                    [q.ID]: isNaN(val) ? 0 : val
+                                                                }));
+                                                            }}
+                                                            disabled={isViewMode}
+                                                            style={{ 
+                                                                width: 70, 
+                                                                height: 32, 
+                                                                padding: '4px 8px',
+                                                                border: '1px solid #d9d9d9',
+                                                                borderRadius: 4,
+                                                                color: 'black',
+                                                                fontWeight: 'bold',
+                                                                textAlign: 'center'
+                                                            }}
+                                                        />
+                                                    </div>
                                                 </div>
-                                            ))}
-                                        </div>
-                                    )}
+                                            ));
+                                        })()}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -366,20 +558,32 @@ const CreateExamPage = () => {
     useEffect(() => {
         if (!topicData) return;
         form.setFieldsValue({ name: topicData.Name });
+        
+        // Load Shuffle settings
+        setShuffleQuestions(!!topicData.ShuffleQuestions);
+        setShuffleAnswers(!!topicData.ShuffleAnswers);
+
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
+        const scores = {};
 
         (topicData.Sections || []).forEach(section => {
             const skill = section.Skill.Name;
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
             instructionsData.push({ skill, section });
+
+            // Load scores if available in TopicSection relation
+            if (section.TopicSection?.ScoreConfig) {
+                Object.assign(scores, section.TopicSection.ScoreConfig);
+            }
         });
 
         setSelectedSectionBySkill(sectionsBySkill);
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
+        setQuestionScores(scores);
     }, [topicData]);
 
     return (
@@ -431,6 +635,43 @@ const CreateExamPage = () => {
                         >
                             <Input placeholder="Enter exam name" disabled={isViewMode} />
                         </Form.Item>
+
+                        <Row gutter={48}>
+                            <Col>
+                                <Form.Item 
+                                    label={
+                                        <span>
+                                            Shuffle Questions
+                                            {selectedSkill === "LISTENING" && <Text type="secondary" style={{ marginLeft: 8, fontWeight: 'normal', fontSize: 12 }}>(Disabled for Listening)</Text>}
+                                        </span>
+                                    } 
+                                    labelCol={{ span: 24 }}
+                                >
+                                    <Switch
+                                        checked={selectedSkill === "LISTENING" ? false : shuffleQuestions}
+                                        onChange={(checked) => setShuffleQuestions(checked)}
+                                        disabled={isViewMode || selectedSkill === "LISTENING"}
+                                    />
+                                </Form.Item>
+                            </Col>
+                            <Col>
+                                <Form.Item 
+                                    label={
+                                        <span>
+                                            Shuffle Answers
+                                            {(selectedSkill === "WRITING" || selectedSkill === "SPEAKING") && <Text type="secondary" style={{ marginLeft: 8, fontWeight: 'normal', fontSize: 12 }}>(Not applicable)</Text>}
+                                        </span>
+                                    } 
+                                    labelCol={{ span: 24 }}
+                                >
+                                    <Switch
+                                        checked={(selectedSkill === "WRITING" || selectedSkill === "SPEAKING") ? false : shuffleAnswers}
+                                        onChange={(checked) => setShuffleAnswers(checked)}
+                                        disabled={isViewMode || selectedSkill === "WRITING" || selectedSkill === "SPEAKING"}
+                                    />
+                                </Form.Item>
+                            </Col>
+                        </Row>
                     </Card>
 
 
@@ -476,9 +717,7 @@ const CreateExamPage = () => {
                                 padding: "24px 24px 40px",
                                 background: "white",
                                 borderBottom: "1px solid #E5E7EB",
-                                cursor: "pointer",
                             }}
-                            onClick={() => { if (!isViewMode) setOpenModal(true) }}
                         >
                             {renderSelectedSectionUI()}
                         </div>
