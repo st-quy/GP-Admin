@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import HeaderInfo from '@app/components/HeaderInfo';
 import {
     AudioOutlined,
@@ -17,7 +17,8 @@ import {
     Typography,
     Divider,
     message,
-    DatePicker
+    DatePicker,
+    Modal
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
@@ -57,6 +58,9 @@ const CreateExamPage = () => {
     const [previewData, setPreviewData] = useState(null);
     const { openConfirmModal, ModalComponent } = useConfirm();
     const [rejectOpen, setRejectOpen] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+    const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+    const pendingPath = useRef(null);
 
 
     const { mutateAsync: createExam } = useCreateTopic();
@@ -66,7 +70,86 @@ const CreateExamPage = () => {
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
     const { role } = useSelector((state) => state.auth);
 
+    const handleNavigateAway = useCallback((path = '/exam') => {
+        if (isDirty && !isViewMode) {
+            pendingPath.current = path;
+            setLeaveConfirmOpen(true);
+        } else {
+            navigate(path);
+        }
+    }, [isDirty, isViewMode, navigate]);
+
+    const saveDraftAndLeave = async () => {
+        try {
+            const name = form.getFieldValue("name");
+            if (!name) {
+                message.error("Exam name is required to save as draft");
+                return;
+            }
+
+            let topicResponse;
+            if (topicId) {
+                topicResponse = await updateTopic({ id: topicId, data: { Name: name, Status: 'draft' } });
+                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
+                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
+            } else {
+                topicResponse = await createExam({ Name: name, Status: 'draft' });
+                const savedTopicId = topicResponse.ID || topicResponse._ID;
+                if (!savedTopicId) {
+                    message.error("Cannot get topic ID");
+                    return;
+                }
+                for (const sectionId of selectedParts) {
+                    await createTopicSection({ topicId: savedTopicId, sectionId });
+                }
+            }
+            message.success("Saved as draft!");
+            setIsDirty(false);
+            setLeaveConfirmOpen(false);
+            navigate(pendingPath.current || '/exam');
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to save draft");
+        }
+    };
+
+    const discardAndLeave = () => {
+        setIsDirty(false);
+        setLeaveConfirmOpen(false);
+        navigate(pendingPath.current || '/exam');
+    };
+
+    // Warn on browser tab close / refresh
+    useEffect(() => {
+        if (!isDirty || isViewMode) return;
+        const handler = (e) => {
+            e.preventDefault();
+            e.returnValue = '';
+        };
+        window.addEventListener('beforeunload', handler);
+        return () => window.removeEventListener('beforeunload', handler);
+    }, [isDirty, isViewMode]);
+
+    // Intercept browser back button
+    useEffect(() => {
+        if (!isDirty || isViewMode) return;
+
+        // Push a duplicate entry so pressing back stays on the same page
+        window.history.pushState(null, '', window.location.href);
+
+        const handlePopState = () => {
+            // Push again so subsequent back presses are also caught
+            window.history.pushState(null, '', window.location.href);
+            pendingPath.current = '/exam';
+            setLeaveConfirmOpen(true);
+        };
+
+        window.addEventListener('popstate', handlePopState);
+        return () => window.removeEventListener('popstate', handlePopState);
+    }, [isDirty, isViewMode]);
+
     const handlePartSelect = (sections) => {
+        setIsDirty(true);
         const oldSectionId = selectedSectionBySkill[selectedSkill];
 
         // ✅ BỎ CHỌN
@@ -176,6 +259,7 @@ const CreateExamPage = () => {
             }
 
             message.success(topicId ? "Topic updated successfully!" : "Topic created successfully!");
+            setIsDirty(false);
             navigate("/exam");
 
         } catch (error) {
@@ -209,6 +293,7 @@ const CreateExamPage = () => {
             }
 
             message.success(topicId ? "Topic updated successfully!" : "Topic created successfully!");
+            setIsDirty(false);
             navigate("/exam");
 
         } catch (error) {
@@ -381,6 +466,7 @@ const CreateExamPage = () => {
         setSelectedSectionBySkill(sectionsBySkill);
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
+        setIsDirty(false);
     }, [topicData]);
 
     return (
@@ -402,7 +488,7 @@ const CreateExamPage = () => {
                 }
             />
 
-            <Form form={form} layout="vertical" >
+            <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)} >
                 <div style={{ padding: 24 }}>
 
                     <Card style={{ marginBottom: 24 }}>
@@ -508,7 +594,7 @@ const CreateExamPage = () => {
                             Start Exam Preview
                         </Button>
                         <Space>
-                            <Button onClick={() => navigate('/exam')}>Cancel</Button>
+                            <Button onClick={() => handleNavigateAway('/exam')}>Cancel</Button>
                             {!isViewMode && (
                                 <>
                                     <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
@@ -540,6 +626,25 @@ const CreateExamPage = () => {
                     onClose={() => setRejectOpen(false)}
                     onSubmit={handleRejectExam}
                 />
+
+                <Modal
+                    title="You have unsaved changes"
+                    open={leaveConfirmOpen}
+                    onCancel={() => setLeaveConfirmOpen(false)}
+                    footer={[
+                        <Button key="discard" danger onClick={discardAndLeave}>
+                            Leave without Saving
+                        </Button>,
+                        <Button key="save" type="primary" onClick={saveDraftAndLeave}>
+                            Save as Draft & Leave
+                        </Button>,
+                        <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>
+                            Stay on Page
+                        </Button>,
+                    ]}
+                >
+                    <p>Would you like to save your work as a draft before leaving?</p>
+                </Modal>
 
             </Form>
         </>
