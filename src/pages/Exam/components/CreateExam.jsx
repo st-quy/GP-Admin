@@ -240,7 +240,7 @@ const CreateExamPage = () => {
     const handleSaveExam = async () => {
 
         try {
-            const values = await form.validateFields();
+            const values = await form.validateFields(['name']);
 
             let topicResponse;
             if (topicId) {
