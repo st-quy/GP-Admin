@@ -16,7 +16,8 @@ import {
     Space,
     Typography,
     Divider,
-    message
+    message,
+    DatePicker
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
@@ -27,6 +28,8 @@ import useConfirm from "@shared/hook/useConfirm";
 import RejectExamModal from "@features/topic/ui/RejectModal";
 
 const { Text, Title } = Typography;
+const { RangePicker } = DatePicker;
+
 
 const SKILL_TABS = [
     { key: "SPEAKING", label: "Speaking", icon: <AudioOutlined /> },
@@ -107,55 +110,54 @@ const CreateExamPage = () => {
         setOpenModal(false);
     };
     const handlePreviewExam = () => {
-  if (!instructions.length) {
-    message.warning("Please select at least one skill before preview");
-    return;
-  }
+        if (!instructions.length) {
+            message.warning("Please select at least one skill before preview");
+            return;
+        }
 
-  const skillOrder = [
-    "LISTENING",
-    "GRAMMAR AND VOCABULARY",
-    "READING",
-    "WRITING",
-    "SPEAKING",
-  ];
+        const skillOrder = [
+            "LISTENING",
+            "GRAMMAR AND VOCABULARY",
+            "READING",
+            "WRITING",
+            "SPEAKING",
+        ];
 
-  const skills = skillOrder.map(skillName => {
-    const found = instructions.find(i => i.skill === skillName);
+        const skills = skillOrder.map(skillName => {
+            const found = instructions.find(i => i.skill === skillName);
 
-    if (!found || !found.section) {
-      return {
-        ID: null,
-        Name: skillName,
-        Parts: [],
-      };
-    }
+            if (!found || !found.section) {
+                return {
+                    ID: null,
+                    Name: skillName,
+                    Parts: [],
+                };
+            }
 
-    return {
-      ID: found.section.SkillID || found.section.Skill?.ID,
-      Name: skillName,
-      Parts: found.section.Parts || [],
+            return {
+                ID: found.section.SkillID || found.section.Skill?.ID,
+                Name: skillName,
+                Parts: found.section.Parts || [],
+            };
+        });
+
+        const previewExamData = {
+            ID: topicData?.ID,
+            Name: form.getFieldValue("name"),
+            Skills: skills,
+            createdAt: topicData?.createdAt || new Date().toISOString(),
+            updatedAt: topicData?.updatedAt || new Date().toISOString(),
+        };
+
+        setPreviewData(previewExamData);
+        setPreviewOpen(true);
     };
-  });
-
-  const previewExamData = {
-    ID: topicData?.ID,
-    Name: form.getFieldValue("name"),
-    Skills: skills,
-    createdAt: topicData?.createdAt || new Date().toISOString(),
-    updatedAt: topicData?.updatedAt || new Date().toISOString(),
-  };
-
-  setPreviewData(previewExamData);
-  setPreviewOpen(true);
-};
 
 
     const handleSaveExam = async () => {
 
         try {
-            const values = form.getFieldsValue();
-            if (!values.name) return message.error("Name is required");
+            const values = await form.validateFields();
 
             let topicResponse;
             if (topicId) {
@@ -184,12 +186,11 @@ const CreateExamPage = () => {
 
     const handleSubmitExam = async () => {
         if (instructions.length < 5) {
-            message.warning("Please select skill before save");
+            message.warning("Please select all skills before submitting");
             return;
         }
         try {
-            const values = form.getFieldsValue();
-            if (!values.name) return message.error("Name is required");
+            const values = await form.validateFields();
 
             let topicResponse;
             if (topicId) {
@@ -430,6 +431,23 @@ const CreateExamPage = () => {
                             rules={[{ required: true }]}
                         >
                             <Input placeholder="Enter exam name" disabled={isViewMode} />
+                        </Form.Item>
+
+                        <Form.Item
+                            label="Duration"
+                            name="duration"
+                            rules={[{ required: true }]}
+
+                        >
+                            <RangePicker
+                                showTime={{ format: 'HH:mm' }}
+                                format="YYYY-MM-DD HH:mm"
+                                disabled={isViewMode}
+                                onChange={(value, dateString) => {
+                                    console.log('Selected Time: ', value);
+                                    console.log('Formatted Selected Time: ', dateString);
+                                }}
+                            />
                         </Form.Item>
                     </Card>
 
