@@ -26,6 +26,15 @@ export default {
       sans: ["Inter", "sans-serif"],
     },
     extend: {
+      keyframes: {
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translate(-50%, 20px)' },
+          '100%': { opacity: '1', transform: 'translate(-50%, 0)' },
+        },
+      },
+      animation: {
+        'slide-up': 'slide-up 0.2s ease-out',
+      },
       colors: {
         primaryColor: "#003087",
         secondaryColor: "#13C296",

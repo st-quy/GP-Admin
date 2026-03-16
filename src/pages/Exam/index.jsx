@@ -22,6 +22,8 @@ import {
   SearchOutlined,
   EyeOutlined,
   PlayCircleOutlined,
+  ExportOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 
 import HeaderInfo from '@app/components/HeaderInfo';
@@ -30,6 +32,8 @@ import {
   useGetTopics,
   useDeleteTopic,
   useDeleteTopicSectionByTopicId,
+  useUpdateTopic,
+  useCreateTopic,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
 
@@ -43,6 +47,13 @@ const statusTagConfig = {
   rejected: { bg: 'bg-rose-100', text: 'text-gray-700', label: 'Rejected' },
 };
 
+const statusOptions = [
+  { value: 'draft', label: 'Draft' },
+  { value: 'submited', label: 'Submited' },
+  { value: 'approved', label: 'Approved' },
+  { value: 'rejected', label: 'Rejected' },
+];
+
 const TopicListPage = () => {
   const navigate = useNavigate();
   const { openConfirmModal, ModalComponent } = useConfirm();
@@ -52,6 +63,9 @@ const TopicListPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+
+  // Row selection
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   // Query topics from backend with params
   const { data, isLoading } = useGetTopics({
@@ -66,6 +80,8 @@ const TopicListPage = () => {
 
   const deleteTopic = useDeleteTopic();
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
+  const updateTopic = useUpdateTopic();
+  const createTopic = useCreateTopic();
 
   const counts = {
     Submited: data?.statusCounts?.submited || 0,
@@ -74,6 +90,21 @@ const TopicListPage = () => {
     Rejected: data?.statusCounts?.rejected || 0,
   };
 
+  /* =========================================================
+      ROW SELECTION
+     ========================================================= */
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+    columnWidth: 50,
+    renderCell: (checked, record, index, originNode) => (
+      <div className='flex justify-center'>{originNode}</div>
+    ),
+  };
+
+  /* =========================================================
+      SINGLE ROW ACTIONS
+     ========================================================= */
   const handleDeleteTopic = (topic) => {
     openConfirmModal({
       title: 'Are you sure you want to delete this topic?',
@@ -123,6 +154,179 @@ const TopicListPage = () => {
     navigate(`edit/${topic.ID}`);
   };
 
+  /* =========================================================
+      BULK ACTIONS
+     ========================================================= */
+  const getSelectedTopics = () =>
+    topics.filter((t) => selectedRowKeys.includes(t.ID));
+
+  const handleBulkChangeStatus = (newStatus) => {
+    const selected = getSelectedTopics();
+
+    openConfirmModal({
+      title: `Change status to "${newStatus}"`,
+      message: `Update ${selected.length} topic(s) to "${newStatus}"?`,
+      okText: 'Update',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        try {
+          await Promise.all(
+            selected.map((t) =>
+              updateTopic.mutateAsync({ id: t.ID, data: { Status: newStatus } })
+            )
+          );
+          setSelectedRowKeys([]);
+          message.success(`Updated ${selected.length} topic(s) to "${newStatus}"`);
+        } catch {
+          message.error('Failed to update some topics');
+        }
+      },
+    });
+  };
+
+  const handleBulkDelete = () => {
+    const selected = getSelectedTopics();
+    const deletable = selected.filter(
+      (t) => !['approved', 'submited'].includes(t.Status)
+    );
+    const skipped = selected.length - deletable.length;
+
+    openConfirmModal({
+      title: 'Confirm bulk delete',
+      message: `Delete ${deletable.length} topic(s)?${
+        skipped > 0
+          ? ` (${skipped} approved/submitted topic(s) will be skipped)`
+          : ''
+      }`,
+      okText: 'Delete',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          for (const t of deletable) {
+            await deleteTopicSectionsByTopicId.mutateAsync(t.ID);
+            await deleteTopic.mutateAsync(t.ID);
+          }
+          setSelectedRowKeys([]);
+          message.success(`Deleted ${deletable.length} topic(s)`);
+        } catch {
+          message.error('Failed to delete some topics');
+        }
+      },
+    });
+  };
+
+  const handleBulkClone = () => {
+    const selected = getSelectedTopics();
+
+    openConfirmModal({
+      title: 'Clone topics',
+      message: `Clone ${selected.length} topic(s) as draft?`,
+      okText: 'Clone',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        try {
+          for (const t of selected) {
+            await createTopic.mutateAsync({
+              Name: `${t.Name} (Copy)`,
+              Status: 'draft',
+            });
+          }
+          setSelectedRowKeys([]);
+          message.success(`Cloned ${selected.length} topic(s)`);
+        } catch {
+          message.error('Failed to clone some topics');
+        }
+      },
+    });
+  };
+
+  const handleBulkExport = () => {
+    const selected = getSelectedTopics();
+    const csvContent = [
+      ['Topic Name', 'Status', 'Creator', 'Created At', 'Updated At', 'Updator'].join(','),
+      ...selected.map((t) =>
+        [
+          `"${t.Name || ''}"`,
+          `"${t.Status || ''}"`,
+          `"${t.createdBy || ''}"`,
+          `"${t.createdAt ? new Date(t.createdAt).toLocaleDateString() : ''}"`,
+          `"${t.updatedAt ? new Date(t.updatedAt).toLocaleDateString() : ''}"`,
+          `"${t.updatedBy || ''}"`,
+        ].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `topics_export_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    message.success(`Exported ${selected.length} topic(s)`);
+  };
+
+  /* =========================================================
+      BULK TOOLBAR RENDER
+     ========================================================= */
+  const renderBulkToolbar = () => {
+    if (selectedRowKeys.length === 0) return null;
+
+    return (
+      <div className='fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-white rounded-xl shadow-[0_4px_24px_rgba(0,0,0,0.15)] border border-gray-200 px-5 py-3 flex items-center gap-4 animate-slide-up'>
+        <span className='text-sm font-semibold text-gray-700 whitespace-nowrap'>
+          {selectedRowKeys.length} selected
+        </span>
+
+        <div className='w-px h-6 bg-gray-200' />
+
+        <Space size='small'>
+          <Select
+            placeholder='Change Status'
+            size='middle'
+            className='w-[150px]'
+            onChange={(val) => handleBulkChangeStatus(val)}
+            value={undefined}
+          >
+            {statusOptions.map((opt) => (
+              <Option key={opt.value} value={opt.value}>
+                {opt.label}
+              </Option>
+            ))}
+          </Select>
+
+          <Button icon={<CopyOutlined />} onClick={handleBulkClone}>
+            Clone
+          </Button>
+          <Button icon={<ExportOutlined />} onClick={handleBulkExport}>
+            Export
+          </Button>
+          <Button
+            danger
+            icon={<DeleteOutlined />}
+            onClick={handleBulkDelete}
+          >
+            Delete
+          </Button>
+        </Space>
+
+        <div className='w-px h-6 bg-gray-200' />
+
+        <Button
+          type='text'
+          size='small'
+          onClick={() => setSelectedRowKeys([])}
+          className='text-gray-400 hover:text-gray-600'
+        >
+          ✕
+        </Button>
+      </div>
+    );
+  };
+
+  /* =========================================================
+      TABLE COLUMNS
+     ========================================================= */
   const columns = [
     {
       title: 'Topic Name',
@@ -342,6 +546,7 @@ const TopicListPage = () => {
                 value={search}
                 onChange={(e) => {
                   setPage(1);
+                  setSelectedRowKeys([]);
                   setSearch(e.target.value);
                 }}
               />
@@ -351,6 +556,7 @@ const TopicListPage = () => {
                 value={statusFilter}
                 onChange={(val) => {
                   setPage(1);
+                  setSelectedRowKeys([]);
                   setStatusFilter(val);
                 }}
               >
@@ -368,6 +574,7 @@ const TopicListPage = () => {
               dataSource={topics}
               loading={isLoading}
               pagination={false}
+              rowSelection={rowSelection}
             />
 
             {/* Pagination */}
@@ -407,6 +614,9 @@ const TopicListPage = () => {
           </Card>
         </div>
       </div>
+
+      {/* ==================== BULK ACTION TOOLBAR ==================== */}
+      {renderBulkToolbar()}
     </>
   );
 };

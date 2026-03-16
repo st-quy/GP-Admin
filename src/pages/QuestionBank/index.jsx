@@ -11,6 +11,7 @@ import {
   Dropdown,
   Tooltip,
   Tabs,
+  message,
 } from 'antd';
 import {
   SearchOutlined,
@@ -18,11 +19,13 @@ import {
   DeleteOutlined,
   DownOutlined,
   EyeOutlined,
+  ExportOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 import HeaderInfo from '@app/components/HeaderInfo';
 import useConfirm from '@shared/hook/useConfirm';
+import BulkActionToolbar from '@shared/components/BulkActionToolbar';
 import { useDeleteSection, useGetSections } from '@features/sections/hooks';
 
 const { Text } = Typography;
@@ -38,9 +41,13 @@ const QuestionBank = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  // --- Row selection state ---
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   // Khi skill hoặc searchText đổi → reset page về 1
   useEffect(() => {
     setCurrentPage(1);
+    setSelectedRowKeys([]);
   }, [selectedSkill, searchText]);
 
   /* =========================================================
@@ -72,6 +79,87 @@ const QuestionBank = () => {
   const startItem =
     totalItems === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
   const endItem = Math.min(pagination.page * pagination.pageSize, totalItems);
+
+  /* =========================================================
+      ROW SELECTION
+     ========================================================= */
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+    columnWidth: 50,
+    renderCell: (checked, record, index, originNode) => (
+      <div className='flex justify-center'>{originNode}</div>
+    ),
+  };
+
+  /* =========================================================
+      BULK ACTIONS
+     ========================================================= */
+  const handleBulkDelete = () => {
+    const deletableItems = listPart.filter(
+      (item) => selectedRowKeys.includes(item.ID) && item.Topics.length === 0
+    );
+    const skippedCount = selectedRowKeys.length - deletableItems.length;
+
+    openConfirmModal({
+      title: 'Confirm bulk delete',
+      message: `Delete ${deletableItems.length} section(s)?${
+        skippedCount > 0
+          ? ` (${skippedCount} section(s) with topics will be skipped)`
+          : ''
+      }`,
+      okText: 'Delete',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        for (const item of deletableItems) {
+          deleteSection(item.ID);
+        }
+        setSelectedRowKeys([]);
+        message.success(`Deleted ${deletableItems.length} section(s)`);
+      },
+    });
+  };
+
+  const handleBulkExport = () => {
+    const selectedSections = listPart.filter((item) =>
+      selectedRowKeys.includes(item.ID)
+    );
+    const csvContent = [
+      ['Section Name', 'Description', 'Skill'].join(','),
+      ...selectedSections.map((s) =>
+        [
+          `"${s.Name || ''}"`,
+          `"${s.SubContent || ''}"`,
+          `"${s.Skill?.Name || ''}"`,
+        ].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sections_export_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    message.success(`Exported ${selectedSections.length} section(s)`);
+  };
+
+  const bulkActions = [
+    {
+      key: 'delete',
+      label: 'Delete',
+      icon: <DeleteOutlined />,
+      danger: true,
+      onClick: handleBulkDelete,
+    },
+    {
+      key: 'export',
+      label: 'Export',
+      icon: <ExportOutlined />,
+      onClick: handleBulkExport,
+    },
+  ];
 
   /* =========================================================
       TABLE COLUMNS
@@ -224,6 +312,7 @@ const QuestionBank = () => {
               dataSource={listPart}
               loading={loadingSections}
               pagination={false}
+              rowSelection={rowSelection}
               rowClassName='hover:bg-gray-50 cursor-pointer'
               scroll={{ y: 'calc(100vh - 500px)' }}
             />
@@ -271,6 +360,13 @@ const QuestionBank = () => {
           </div>
         </Card>
       </div>
+
+      {/* ==================== BULK ACTION TOOLBAR ==================== */}
+      <BulkActionToolbar
+        selectedCount={selectedRowKeys.length}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedRowKeys([])}
+      />
     </>
   );
 };

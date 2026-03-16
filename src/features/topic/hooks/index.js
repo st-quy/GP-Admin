@@ -52,19 +52,22 @@ export const useGetTopics = (params) => {
 };
 
 
-export const useCreateTopic = () => {  
+export const useCreateTopic = () => {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (payload) => {
       const { data } = await TopicApi.create(payload);
       return data.data;
-    }
-    ,
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
     onError(error) {
       const msg = error?.response?.data?.message || "Create topic failed";
       message.error(msg);
     },
   });
-} ;
+};
 
 export const useCreateTopicSection = () => {
   return useMutation({
