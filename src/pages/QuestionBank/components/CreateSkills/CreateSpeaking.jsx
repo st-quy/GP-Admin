@@ -1,14 +1,11 @@
+// @ts-nocheck
 import React, { useState } from 'react';
-import { Input, Button, Upload, Form, Card } from 'antd';
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  CloudUploadOutlined,
-} from '@ant-design/icons';
+import { Input, Button, Form, Card } from 'antd';
+import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-import axiosInstance from '@shared/config/axios';
 import { useCreateQuestion } from '../../../../features/questions/hooks';
+import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
 import { yupSync } from '@shared/lib/utils';
@@ -19,136 +16,6 @@ const CreateSpeaking = () => {
 
   const { mutate: createSpeaking, isPending } = useCreateQuestion();
   const [images, setImages] = useState({});
-  const [fileLists, setFileLists] = useState({
-    part1: [],
-    part2: [],
-    part3: [],
-    part4: [],
-  });
-
-  /** Validate file type + size */
-  const beforeUpload = (file) => {
-    const valid = file.type === 'image/jpeg' || file.type === 'image/png';
-    if (!valid) return Upload.LIST_IGNORE;
-
-    if (file.size / 1024 / 1024 >= 10) return Upload.LIST_IGNORE;
-    return true;
-  };
-
-  /** Upload logic */
-  const uploadProps = (partKey) => ({
-    maxCount: 1,
-    listType: 'picture-card',
-    beforeUpload,
-
-    onChange(info) {
-      // Khi user vừa chọn file → thêm vào fileList để hiển thị loading
-      if (info.file.status === 'uploading') {
-        setFileLists((prev) => ({
-          ...prev,
-          [partKey]: [
-            {
-              uid: info.file.uid,
-              name: info.file.name,
-              status: 'uploading',
-              percent: 0,
-            },
-          ],
-        }));
-      }
-    },
-
-    customRequest: async ({ file, onSuccess, onError, onProgress }) => {
-      try {
-        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-          fileName: file.name,
-          type: 'images',
-        });
-
-        const { uploadUrl, fileUrl } = data;
-
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.onprogress = (event) => {
-          const total = event.total || file.size; // fallback
-          const percent = Math.round((event.loaded / total) * 100);
-
-          setFileLists((prev) => ({
-            ...prev,
-            [partKey]: prev[partKey].map((f) =>
-              f.uid === file.uid ? { ...f, status: 'uploading', percent } : f
-            ),
-          }));
-
-          onProgress({ percent });
-        };
-
-        xhr.onload = function () {
-          if (xhr.status === 200) {
-            setFileLists((prev) => ({
-              ...prev,
-              [partKey]: [
-                {
-                  uid: file.uid,
-                  name: file.name,
-                  status: 'done',
-                  url: fileUrl,
-                },
-              ],
-            }));
-
-            setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
-
-            form.setFieldsValue({
-              parts: {
-                ...form.getFieldValue('parts'),
-                [partKey]: {
-                  ...form.getFieldValue(['parts', partKey]),
-                  image: fileUrl,
-                },
-              },
-            });
-
-            onSuccess({ fileUrl });
-          } else {
-            onError(new Error('Upload failed'));
-          }
-        };
-
-        xhr.onerror = function () {
-          onError(new Error('Upload error'));
-        };
-
-        xhr.open('PUT', uploadUrl, true);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
-      } catch (err) {
-        onError(err);
-      }
-    },
-
-    onRemove: () => {
-      setImages((prev) => ({ ...prev, [partKey]: null }));
-      setFileLists((prev) => ({ ...prev, [partKey]: [] }));
-      form.setFieldsValue({
-        parts: {
-          ...form.getFieldValue('parts'),
-          [partKey]: {
-            ...form.getFieldValue(['parts', partKey]),
-            image: null,
-          },
-        },
-      });
-      return true;
-    },
-
-    onPreview: (file) => {
-      const src = file.url || file.response?.fileUrl;
-      if (src) window.open(src);
-    },
-
-    fileList: fileLists[partKey],
-  });
 
   /** FE → BE Payload */
   const handleSubmit = async () => {
@@ -208,15 +75,28 @@ const CreateSpeaking = () => {
             }),
           ]}
         >
-          <Upload {...uploadProps(key)}>
-            {fileLists[key].length === 0 ||
-            fileLists[key][0].status === 'done' ? (
-              <div style={{ textAlign: 'center' }}>
-                <CloudUploadOutlined style={{ fontSize: 40 }} />
-                <div>Upload</div>
-              </div>
-            ) : null}
-          </Upload>
+          <MinioUploadDragger
+            accept='.jpg,.jpeg,.png'
+            allowedMimeTypes={['image/jpeg', 'image/png']}
+            bucketType='images'
+            hint='Drop a JPG or PNG image here or click to browse'
+            listType='picture'
+            onChange={(url) => {
+              setImages((prev) => ({ ...prev, [key]: url }));
+              form.setFieldsValue({
+                parts: {
+                  ...form.getFieldValue('parts'),
+                  [key]: {
+                    ...form.getFieldValue(['parts', key]),
+                    image: url,
+                  },
+                },
+              });
+              form.validateFields([['parts', key, 'image']]);
+            }}
+            title='Upload instruction image'
+            value={images[key]}
+          />
         </Form.Item>
 
         {/* QUESTIONS */}

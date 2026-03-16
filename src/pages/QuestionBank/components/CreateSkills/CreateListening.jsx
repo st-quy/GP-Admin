@@ -4,21 +4,20 @@ import {
   Input,
   Select,
   Button,
-  Upload,
   message,
   Form,
   Card,
   Space,
   Collapse,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined, AudioOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { useNavigate } from 'react-router-dom';
 import { useCreateQuestion } from '@features/questions/hooks';
 
 import ListeningMatchingEditor from './Listening/ListeningMatchingEditor';
-import axiosInstance from '@shared/config/axios';
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
+import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
@@ -217,47 +216,6 @@ const CreateListening = () => {
       )
     );
   };
-
-  // =====================================
-  // UPLOAD AUDIO (only accept mp3)
-  // =====================================
-  const uploadAudio = async (file, onSuccess, onError, setUrl) => {
-    if (file.type !== 'audio/mpeg') {
-      message.error('Only MP3 files are allowed!');
-      onError('Invalid file type');
-      return;
-    }
-
-    try {
-      const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-        fileName: file.name,
-        type: 'audios',
-      });
-
-      const res = await fetch(data.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-
-      if (!res.ok) throw new Error('Upload failed');
-
-      setUrl(data.fileUrl);
-      onSuccess({ url: data.fileUrl });
-      message.success('Uploaded!');
-    } catch (err) {
-      console.error(err);
-      onError(err);
-      message.error('Upload failed');
-    }
-  };
-
-  const uploadProps = (setter) => ({
-    accept: '.mp3',
-    maxCount: 1,
-    customRequest: ({ file, onSuccess, onError }) =>
-      uploadAudio(file, onSuccess, onError, setter),
-  });
 
   // =====================================
   // VALIDATION ICONS
@@ -567,16 +525,15 @@ const CreateListening = () => {
                   />
                 </Form.Item>
 
-                <Upload
+                <MinioUploadDragger
                   accept='.mp3'
-                  {...uploadProps((url) =>
-                    updatePart1Field(q.id, 'audioUrl', url)
-                  )}
-                >
-                  <Button icon={<AudioOutlined />} className='mb-6'>
-                    Upload audio (MP3)
-                  </Button>
-                </Upload>
+                  allowedMimeTypes={['audio/mpeg']}
+                  bucketType='audios'
+                  hint='Drop an MP3 file here or click to browse'
+                  onChange={(url) => updatePart1Field(q.id, 'audioUrl', url)}
+                  title='Upload question audio'
+                  value={q.audioUrl}
+                />
 
                 {q.audioUrl && (
                   <audio src={q.audioUrl} controls style={{ marginTop: 10 }} />
@@ -649,12 +606,15 @@ const CreateListening = () => {
             />
           </Form.Item>
 
-          <Upload
+          <MinioUploadDragger
             accept='.mp3'
-            {...uploadProps((url) => setPart2({ ...part2, audioUrl: url }))}
-          >
-            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
-          </Upload>
+            allowedMimeTypes={['audio/mpeg']}
+            bucketType='audios'
+            hint='Drop an MP3 file here or click to browse'
+            onChange={(url) => setPart2((prev) => ({ ...prev, audioUrl: url }))}
+            title='Upload Part 2 audio'
+            value={part2.audioUrl}
+          />
 
           {part2.audioUrl && <audio src={part2.audioUrl} controls />}
 
@@ -692,12 +652,15 @@ const CreateListening = () => {
             />
           </Form.Item>
 
-          <Upload
+          <MinioUploadDragger
             accept='.mp3'
-            {...uploadProps((url) => setPart3({ ...part3, audioUrl: url }))}
-          >
-            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
-          </Upload>
+            allowedMimeTypes={['audio/mpeg']}
+            bucketType='audios'
+            hint='Drop an MP3 file here or click to browse'
+            onChange={(url) => setPart3((prev) => ({ ...prev, audioUrl: url }))}
+            title='Upload Part 3 audio'
+            value={part3.audioUrl}
+          />
 
           {part3.audioUrl && <audio src={part3.audioUrl} controls />}
 
@@ -744,14 +707,15 @@ const CreateListening = () => {
                   />
                 </Form.Item>
 
-                <Upload
+                <MinioUploadDragger
                   accept='.mp3'
-                  {...uploadProps((url) =>
-                    updateGroupField(g.id, 'audioUrl', url)
-                  )}
-                >
-                  <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
-                </Upload>
+                  allowedMimeTypes={['audio/mpeg']}
+                  bucketType='audios'
+                  hint='Drop an MP3 file here or click to browse'
+                  onChange={(url) => updateGroupField(g.id, 'audioUrl', url)}
+                  title='Upload group audio'
+                  value={g.audioUrl}
+                />
 
                 {g.audioUrl && <audio src={g.audioUrl} controls />}
 
