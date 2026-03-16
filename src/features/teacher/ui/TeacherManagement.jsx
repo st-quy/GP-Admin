@@ -1,10 +1,17 @@
 import React, { useState } from 'react';
-import { Table, Input, Select, Space, Tag } from 'antd';
+import { Table, Input, Select, Space, Tag, message } from 'antd';
 import { SearchOutlined } from '@ant-design/icons';
-import { useFetchTeachers } from '../hook/useTeacherQuery';
+import { useFetchTeachers, useUpdateTeacher } from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
+import BulkActionToolbar from '@shared/components/BulkActionToolbar';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
+import {
+  CheckCircleOutlined,
+  StopOutlined,
+  ExportOutlined,
+} from '@ant-design/icons';
+
 const { Option } = Select;
 
 const TeacherManagement = () => {
@@ -14,12 +21,20 @@ const TeacherManagement = () => {
   const [pageSize, setPageSize] = useState(5);
   const { openConfirmModal, ModalComponent } = useConfirm();
   const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
+
+  // Row selection
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   const { data: teachersData, isLoading } = useFetchTeachers({
     page: currentPage,
     limit: pageSize,
     search: debouncedSearchTerm,
     ...(statusFilter !== null && { status: statusFilter }),
   });
+
+  const updateTeacher = useUpdateTeacher();
+
+  const teachers = teachersData?.data?.teachers || [];
 
   const handleStatusFilter = (value) => {
     if (value === 'All') {
@@ -28,8 +43,105 @@ const TeacherManagement = () => {
       const fil = value === 'Active' ? true : false;
       setStatusFilter(fil);
     }
+    setSelectedRowKeys([]);
   };
 
+  /* =========================================================
+      ROW SELECTION
+     ========================================================= */
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+    columnWidth: 50,
+    renderCell: (checked, record, index, originNode) => (
+      <div className='flex justify-center'>{originNode}</div>
+    ),
+  };
+
+  /* =========================================================
+      BULK ACTIONS
+     ========================================================= */
+  const getSelectedTeachers = () =>
+    teachers.filter((t) => selectedRowKeys.includes(t.ID));
+
+  const handleBulkStatusChange = (newStatus) => {
+    const selected = getSelectedTeachers();
+    const statusLabel = newStatus ? 'Active' : 'Deactive';
+
+    openConfirmModal({
+      title: `Change status to "${statusLabel}"`,
+      message: `Update ${selected.length} teacher(s) to "${statusLabel}"?`,
+      okText: 'Update',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        try {
+          await Promise.all(
+            selected.map((t) =>
+              updateTeacher.mutateAsync({ ...t, status: newStatus })
+            )
+          );
+          setSelectedRowKeys([]);
+          message.success(
+            `Updated ${selected.length} teacher(s) to "${statusLabel}"`
+          );
+        } catch {
+          message.error('Failed to update some teachers');
+        }
+      },
+    });
+  };
+
+  const handleBulkExport = () => {
+    const selected = getSelectedTeachers();
+    const csvContent = [
+      ['Teacher Name', 'Teacher ID', 'Email', 'Phone', 'Status'].join(','),
+      ...selected.map((t) =>
+        [
+          `"${t.firstName || ''} ${t.lastName || ''}"`,
+          `"${t.teacherCode || ''}"`,
+          `"${t.email || ''}"`,
+          `"${t.phone || ''}"`,
+          `"${t.status ? 'Active' : 'Deactive'}"`,
+        ].join(',')
+      ),
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `teachers_export_${Date.now()}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+    message.success(`Exported ${selected.length} teacher(s)`);
+  };
+
+  const bulkActions = [
+    {
+      key: 'activate',
+      label: 'Activate',
+      icon: <CheckCircleOutlined />,
+      onClick: () => handleBulkStatusChange(true),
+      className: 'text-green-600 border-green-300 hover:!text-green-700 hover:!border-green-400',
+    },
+    {
+      key: 'deactivate',
+      label: 'Deactivate',
+      icon: <StopOutlined />,
+      onClick: () => handleBulkStatusChange(false),
+      className: 'text-gray-600 border-gray-300',
+    },
+    {
+      key: 'export',
+      label: 'Export',
+      icon: <ExportOutlined />,
+      onClick: handleBulkExport,
+    },
+  ];
+
+  /* =========================================================
+      TABLE COLUMNS
+     ========================================================= */
   const columns = [
     {
       title: 'TEACHER NAME',
@@ -85,7 +197,6 @@ const TeacherManagement = () => {
       title: 'ACTIONS',
       key: 'actions',
       width: '100px',
-      // fixed: "right",
       render: (_, record) => (
         <Space size='small' className='bg-white rounded-lg px-1'>
           <TeacherActionModal initialData={record} />
@@ -137,6 +248,7 @@ const TeacherManagement = () => {
             onChange={(e) => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
+              setSelectedRowKeys([]);
             }}
             className='w-full md:w-[200px]'
             allowClear
@@ -158,12 +270,13 @@ const TeacherManagement = () => {
       <Table
         // @ts-ignore
         columns={columns}
-        dataSource={teachersData?.data?.teachers}
+        dataSource={teachers}
         rowKey={(record) => record.ID}
         scroll={{ x: 600 }}
         className='mb-4'
         components={tableComponents}
         loading={isLoading || !teachersData}
+        rowSelection={rowSelection}
         pagination={{
           current: currentPage,
           pageSize: pageSize,
@@ -178,7 +291,7 @@ const TeacherManagement = () => {
           },
           itemRender: (page, type, original) => {
             if (type === 'page') {
-              const isActive = currentPage === page; // FIX: phải dùng currentPage, không dùng pagination.page
+              const isActive = currentPage === page;
 
               return (
                 <button
@@ -198,6 +311,13 @@ const TeacherManagement = () => {
             return original;
           },
         }}
+      />
+
+      {/* ==================== BULK ACTION TOOLBAR ==================== */}
+      <BulkActionToolbar
+        selectedCount={selectedRowKeys.length}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedRowKeys([])}
       />
     </div>
   );
