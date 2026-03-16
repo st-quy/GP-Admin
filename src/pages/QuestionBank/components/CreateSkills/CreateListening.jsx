@@ -65,11 +65,11 @@ const CreateListening = () => {
       prev.map((q) =>
         q.id === qId
           ? {
-              ...q,
-              options: q.options.map((o) =>
-                o.id === optId ? { ...o, value } : o
-              ),
-            }
+            ...q,
+            options: q.options.map((o) =>
+              o.id === optId ? { ...o, value } : o
+            ),
+          }
           : q
       )
     );
@@ -148,11 +148,11 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: g.subQuestions.map((s) =>
-                s.id === sId ? { ...s, [key]: value } : s
-              ),
-            }
+            ...g,
+            subQuestions: g.subQuestions.map((s) =>
+              s.id === sId ? { ...s, [key]: value } : s
+            ),
+          }
           : g
       )
     );
@@ -163,18 +163,18 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: g.subQuestions.map((s) =>
-                s.id === sId
-                  ? {
-                      ...s,
-                      options: s.options.map((o) =>
-                        o.id === oId ? { ...o, value } : o
-                      ),
-                    }
-                  : s
-              ),
-            }
+            ...g,
+            subQuestions: g.subQuestions.map((s) =>
+              s.id === sId
+                ? {
+                  ...s,
+                  options: s.options.map((o) =>
+                    o.id === oId ? { ...o, value } : o
+                  ),
+                }
+                : s
+            ),
+          }
           : g
       )
     );
@@ -185,21 +185,21 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: [
-                ...g.subQuestions,
-                {
-                  id: g.subQuestions.length + 1,
-                  content: '',
-                  options: [
-                    { id: 1, label: 'A', value: '' },
-                    { id: 2, label: 'B', value: '' },
-                    { id: 3, label: 'C', value: '' },
-                  ],
-                  correctId: null,
-                },
-              ],
-            }
+            ...g,
+            subQuestions: [
+              ...g.subQuestions,
+              {
+                id: g.subQuestions.length + 1,
+                content: '',
+                options: [
+                  { id: 1, label: 'A', value: '' },
+                  { id: 2, label: 'B', value: '' },
+                  { id: 3, label: 'C', value: '' },
+                ],
+                correctId: null,
+              },
+            ],
+          }
           : g
       )
     );
@@ -210,9 +210,9 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: g.subQuestions.filter((s) => s.id !== sId),
-            }
+            ...g,
+            subQuestions: g.subQuestions.filter((s) => s.id !== sId),
+          }
           : g
       )
     );
@@ -510,8 +510,12 @@ const CreateListening = () => {
           rules={[{ required: true, message: 'Section name is required' }]}
         >
           <Input
+            maxLength={255}
             placeholder='e.g., Fitness Club Listening Test'
-            onChange={(e) => setSectionName(e.target.value)}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+              setSectionName(sanitized)
+            }}
           />
         </Form.Item>
       </Card>
@@ -528,7 +532,11 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 1 name...'
               value={part1Name}
-              onChange={(e) => setPart1Name(e.target.value)}
+              maxLength={255}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                setPart1Name(sanitized)
+              }}
             />
           </Form.Item>
 
@@ -540,9 +548,9 @@ const CreateListening = () => {
                   `Question ${q.id}`,
                   Boolean(
                     q.instruction.trim() &&
-                      q.audioUrl &&
-                      q.options.filter((o) => o.value.trim()).length >= 2 &&
-                      q.options.find((o) => o.id === q.correctId)
+                    q.audioUrl &&
+                    q.options.filter((o) => o.value.trim()).length >= 2 &&
+                    q.options.find((o) => o.id === q.correctId)
                   )
                 )}
               >
@@ -550,8 +558,11 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={q.instruction}
-                    onChange={(e) =>
-                      updatePart1Field(q.id, 'instruction', e.target.value)
+                    maxLength={255}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                      updatePart1Field(q.id, 'instruction', sanitized)
+                    }
                     }
                   />
                 </Form.Item>
@@ -585,11 +596,10 @@ const CreateListening = () => {
 
                     {/* DELETE BUTTON */}
                     <DeleteOutlined
-                      className={`cursor-pointer text-red-500 ${
-                        q.options.length <= 3
-                          ? 'opacity-30 pointer-events-none'
-                          : ''
-                      }`}
+                      className={`cursor-pointer text-red-500 ${q.options.length <= 3
+                        ? 'opacity-30 pointer-events-none'
+                        : ''
+                        }`}
                       onClick={() => deletePart1Option(q.id, o.id)}
                     />
                   </div>
@@ -783,11 +793,10 @@ const CreateListening = () => {
                           />
 
                           <DeleteOutlined
-                            className={`cursor-pointer text-red-500 ${
-                              s.options.length <= 3
-                                ? 'opacity-30 pointer-events-none'
-                                : ''
-                            }`}
+                            className={`cursor-pointer text-red-500 ${s.options.length <= 3
+                              ? 'opacity-30 pointer-events-none'
+                              : ''
+                              }`}
                             onClick={() => deletePart4Option(g.id, s.id, o.id)}
                           />
                         </div>
