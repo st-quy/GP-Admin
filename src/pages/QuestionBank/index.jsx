@@ -207,12 +207,18 @@ const QuestionBank = () => {
           {/* ==================== SEARCH BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
             <Input
+              maxLength={255}
               size='large'
               placeholder='Search section name...'
               prefix={<SearchOutlined className='text-gray-400' />}
               className='w-full sm:w-[260px] lg:w-[320px]'
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                setSearchText(sanitized)
+              }
+              }
+
             />
           </div>
 
@@ -253,10 +259,9 @@ const QuestionBank = () => {
                   return (
                     <button
                       className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-                        ${
-                          isActive
-                            ? 'bg-[#003087] text-white border-[#003087]'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
+                        ${isActive
+                          ? 'bg-[#003087] text-white border-[#003087]'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
                         }
                       `}
                     >
