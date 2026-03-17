@@ -12,7 +12,6 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
   const { data: sections = [], isLoading } = useGetSections(skillName, {
     enabled: open,
   });
-      const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
 
   const toggleSelect = (section) => {
     setSelectedSectionsBySkill((prev) => {
@@ -33,7 +32,10 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
   };
 
   const handleSubmit = () => {
-    const sectionsSelected = selectedSectionsBySkill[skillName] || [];
+    const sectionsSelected = (selectedSectionsBySkill[skillName] || []).map((selectedSection) => {
+      const sectionFromList = sections.find((section) => section.ID === selectedSection.ID);
+      return sectionFromList || selectedSection;
+    });
     onSelect(sectionsSelected);
     console.log(sectionsSelected)
     onClose();
@@ -43,11 +45,12 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
 
   useEffect(() => {
     if (selectedSectionId) {
-      setSelectedSectionsBySkill(prev => ({ ...prev, [skillName]: [{ ID: selectedSectionId }] }));
+      const sectionFromList = sections.find((section) => section.ID === selectedSectionId);
+      setSelectedSectionsBySkill(prev => ({ ...prev, [skillName]: [sectionFromList || { ID: selectedSectionId }] }));
     } else {
       setSelectedSectionsBySkill(prev => ({ ...prev, [skillName]: [] }));
     }
-  }, [selectedSectionId, skillName]);
+  }, [selectedSectionId, skillName, sections]);
 
   return (
     <Modal
@@ -114,14 +117,14 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
                                 >
 
                                     <Text strong>{part.Content}</Text>
-                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                    {!(skillName === "READING" || skillName === "WRITING") && (
                                         <>
                                             <br />
                                             <Text type="secondary">{part.SubContent}</Text>
                                         </>
                                     )}
 
-                                    {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                    {!(skillName === "READING" || skillName === "WRITING") && (
                                         <div style={{ marginTop: 8 }}>
                                             {(part.Questions || []).map((q, index) => (
                                                 <div
@@ -148,7 +151,7 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
                                                             flexShrink: 0,
                                                         }}
                                                     >
-                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
+                                                        {(skillName === "SPEAKING" && part.Content === "Part 4")
                                                             ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
                                                             : (index + 1)}
                                                     </div>
