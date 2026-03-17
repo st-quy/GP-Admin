@@ -114,42 +114,51 @@ const QuestionBank = () => {
       align: 'center',
       render: (_, record) => (
         <Space size='middle'>
-          <Button
-            type='text'
-            className='text-green-600 hover:bg-blue-50 px-2'
-            icon={<EyeOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`${record.ID}?skillName=${record.Skill.Name}`);
-            }}
-          />
-          {record.Topics.length === 0 && (
+          <Tooltip title='Preview Questions'>
             <Button
               type='text'
-              className='text-blue-600 hover:bg-blue-50 px-2'
-              icon={<EditOutlined />}
+              className='text-green-600 hover:bg-blue-50 px-2'
+              icon={<EyeOutlined />}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+                navigate(`${record.ID}?skillName=${record.Skill.Name}`);
               }}
             />
+          </Tooltip>
+
+          {record.Topics.length === 0 && (
+            <Tooltip title='Edit Questions'>
+              <Button
+                type='text'
+                className='text-blue-600 hover:bg-blue-50 px-2'
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+                }}
+              />
+            </Tooltip>
+
           )}
           {record.Topics.length === 0 && (
-            <Button
-              type='text'
-              className='text-red-500 hover:bg-red-50 px-2'
-              icon={<DeleteOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                openConfirmModal({
-                  title: 'Confirm delete',
-                  message: 'Do you really want to delete this section?',
-                  okText: 'Delete',
-                  okButtonColor: '#FF4D4F',
-                  onConfirm: () => deleteSection(record.ID),
-                });
-              }}
-            />
+            <Tooltip title='Delete Questions'>
+              <Button
+                type='text'
+                className='text-red-500 hover:bg-red-50 px-2'
+                icon={<DeleteOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openConfirmModal({
+                    title: 'Confirm delete',
+                    message: 'Do you really want to delete this section?',
+                    okText: 'Delete',
+                    okButtonColor: '#FF4D4F',
+                    onConfirm: () => deleteSection(record.ID),
+                  });
+                }}
+              />
+            </Tooltip>
+
           )}
         </Space>
       ),

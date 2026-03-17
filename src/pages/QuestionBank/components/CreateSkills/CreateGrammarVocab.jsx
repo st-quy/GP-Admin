@@ -170,8 +170,15 @@ const CreateGrammarVocab = () => {
     >
       {/* SECTION */}
       <Card title='Section Information' className='mb-5'>
-        <Form.Item label='Name' name='sectionName' rules={[{ required: true }]}>
-          <Input />
+        <Form.Item
+          label='Name'
+          name='sectionName'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+          rules={[{ required: true }]}>
+          <Input
+            maxLength={255}
+            placeholder="Section Name Here..."
+          />
         </Form.Item>
       </Card>
 
@@ -180,9 +187,10 @@ const CreateGrammarVocab = () => {
         <Form.Item
           label='Part Name'
           name='part1Name'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input maxLength={255}/>
         </Form.Item>
 
         <Collapse accordion>
