@@ -18,14 +18,40 @@ const yupSync = (schema) => ({
 });
 
 const accountSchema = Yup.object().shape({
-  firstName: Yup.string().required('First name is required'),
-  lastName: Yup.string().required('Last name is required'),
-  email: Yup.string().email('Invalid email').required('Email is required'),
-  teacherCode: Yup.string().required('Teacher Code is required'),
+  firstName: Yup.string()
+    .required('First name is required')
+    .max(50, 'First name must not exceed 50 characters')
+    .transform((value) => value?.trim())
+    .test('not-only-spaces', 'First name cannot be only spaces', (value) => {
+      return !value || value.trim().length > 0;
+    }),
+  lastName: Yup.string()
+    .required('Last name is required')
+    .max(50, 'Last name must not exceed 50 characters')
+    .transform((value) => value?.trim())
+    .test('not-only-spaces', 'Last name cannot be only spaces', (value) => {
+      return !value || value.trim().length > 0;
+    }),
+  email: Yup.string()
+    .email('Invalid email')
+    .required('Email is required')
+    .max(100, 'Email must not exceed 100 characters')
+    .transform((value) => value?.trim()),
+  teacherCode: Yup.string()
+    .required('Teacher Code is required')
+    .max(20, 'Teacher Code must not exceed 20 characters')
+    .transform((value) => value?.trim())
+    .test('not-only-spaces', 'Teacher Code cannot be only spaces', (value) => {
+      return !value || value.trim().length > 0;
+    }),
   password: Yup.string()
     .transform((value) => (value === '' ? undefined : value))
     .min(6, 'Password must be at least 6 characters')
+    .max(50, 'Password must not exceed 50 characters')
     .notRequired(),
+  phone: Yup.string()
+    .matches(/^[0-9+\-\s()]*$/, 'Phone number must contain only digits, +, -, spaces, and parentheses')
+    .max(20, 'Phone number must not exceed 20 characters'),
 });
 
 const TeacherActionModal = ({ initialData = null }) => {
@@ -214,6 +240,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                 label={<span className='text-[16px]'>Phone Number</span>}
                 // @ts-ignore
                 name='phone'
+                rules={[yupSync(accountSchema)]}
               >
                 <Input className='h-[46px]' placeholder='Phone Number' />
               </Form.Item>

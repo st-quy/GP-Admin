@@ -13,3 +13,6 @@ export const getTeachers = async (data) => {
   });
   return res.data;
 };
+export const deleteTeachers = async (id) => {
+  return await axiosInstance.delete(`/users/${id}`);
+};

@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { Table, Input, Select, Space, Tag } from 'antd';
-import { SearchOutlined } from '@ant-design/icons';
+import { Table, Input, Select, Space, Tag, message } from 'antd';
+import { SearchOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useFetchTeachers } from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
+import { useNavigate } from 'react-router-dom';
+import { deleteTeachers } from '../api/teacherAPI';
 const { Option } = Select;
 
 const TeacherManagement = () => {
@@ -12,9 +14,16 @@ const TeacherManagement = () => {
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+  const navigate = useNavigate();
   const { openConfirmModal, ModalComponent } = useConfirm();
-  const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
-  const { data: teachersData, isLoading } = useFetchTeachers({
+  
+  // Escape special SQL-like characters for search
+  const escapeSearchTerm = (term) => {
+    return term.replace(/([%_\\])/g, '\\$1');
+  };
+  
+  const debouncedSearchTerm = useDebouncedValue(escapeSearchTerm(searchTerm), 500);
+  const { data: teachersData, isLoading, refetch } = useFetchTeachers({
     page: currentPage,
     limit: pageSize,
     search: debouncedSearchTerm,
@@ -30,6 +39,26 @@ const TeacherManagement = () => {
     }
   };
 
+  const handleDeleteTeacher = (record) => {
+    openConfirmModal({
+      title: 'Delete Teacher',
+      message: `Are you sure you want to delete teacher "${record.firstName} ${record.lastName}"?`,
+      okText: 'Delete',
+      okButtonColor: '#ff4d4f',
+      onConfirm: async () => {
+        try {
+          await deleteTeachers(record.ID);
+          message.success('Teacher deleted successfully!');
+          refetch();
+        } catch (error) {
+          message.error(
+            error?.response?.data?.message || 'Failed to delete teacher. Please try again.'
+          );
+        }
+      },
+    });
+  };
+
   const columns = [
     {
       title: 'TEACHER NAME',
@@ -38,7 +67,10 @@ const TeacherManagement = () => {
       width: '200px',
       render: (text, record) => (
         <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
-          <a className='cursor-pointer text-[10px] md:text-[14px] underline hover:opacity-80'>
+          <a
+            className='cursor-pointer text-[10px] md:text-[14px] underline hover:opacity-80'
+            onClick={() => navigate(`/teacher/edit/${record.ID}`)}
+          >
             {`${record.firstName} ${record.lastName}` || 'Unknown'}
           </a>
         </div>
@@ -77,18 +109,22 @@ const TeacherManagement = () => {
               : 'bg-[#E5E7EB] text-[#374151]'
           } border-none text-[10px] md:text-[14px]`}
         >
-          {status === true ? 'Active' : 'Deactive'}
+          {status === true ? 'Active' : 'Inactive'}
         </Tag>
       ),
     },
     {
       title: 'ACTIONS',
       key: 'actions',
-      width: '100px',
+      width: '150px',
       // fixed: "right",
       render: (_, record) => (
         <Space size='small' className='bg-white rounded-lg px-1'>
           <TeacherActionModal initialData={record} />
+          <DeleteOutlined
+            onClick={() => handleDeleteTeacher(record)}
+            className='text-red-500 text-[18px] cursor-pointer hover:opacity-80'
+          />
         </Space>
       ),
     },
@@ -150,7 +186,7 @@ const TeacherManagement = () => {
           >
             <Option value='All'>All</Option>
             <Option value='Active'>Active</Option>
-            <Option value='Deactive'>Deactive</Option>
+            <Option value='Inactive'>Inactive</Option>
           </Select>
         </div>
         <TeacherActionModal />
