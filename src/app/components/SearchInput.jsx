@@ -5,6 +5,7 @@ const { Search } = Input;
 
 const SearchInput = ({
   onSearchChange,
+  value,
   placeholder = "Search...",
   className = "",
 }) => {
@@ -12,6 +13,7 @@ const SearchInput = ({
     <Search
       placeholder={placeholder}
       size="large"
+      value={value}
       onChange={onSearchChange}
       className={`mb-4 w-[250px] sm:w-[200px] md:w-[250px] lg:w-[250px] text-[#9CA3AF] ${className}`}
     />
