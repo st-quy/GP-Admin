@@ -11,7 +11,12 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
   const { user } = useSelector((state) => state.auth);
 
   const handleFinish = (values) => {
-    updateProfile(values, {
+    const trimmedValues = {
+      ...values,
+      firstName: values.firstName?.trim(),
+      lastName: values.lastName?.trim(),
+    };
+    updateProfile(trimmedValues, {
       onSuccess: () => {
         onClose();
       },
@@ -71,7 +76,11 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input
+              placeholder={"Test..."}
+              className="h-[46px] w-full max-w-[458px] rounded-lg"
+              maxLength={50}
+            />
           </Form.Item>
           <Form.Item
             label={
@@ -85,7 +94,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" maxLength={50} />
           </Form.Item>
           <Form.Item
             label={

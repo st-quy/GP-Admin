@@ -11,8 +11,14 @@ export const ChangePasswordSchema = Yup.object().shape({
 
 
 export const UpdateProfileSchema = Yup.object().shape({
-  firstName: Yup.string().required("First name is required"),
-  lastName: Yup.string().required("Last name is required"),
+  firstName: Yup.string()
+    .trim()
+    .max(50, "First name cannot exceed 50 characters")
+    .required("First name is required"),
+  lastName: Yup.string()
+    .trim()
+    .max(50, "Last name cannot exceed 50 characters")
+    .required("Last name is required"),
   teacherCode: Yup.string().required("Code is required"),
   dob: Yup.string().nullable(),
   email: Yup.string()
