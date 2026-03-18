@@ -366,7 +366,10 @@ const CreateListening = () => {
         message.success('Created Listening successfully!');
         navigate('/questions?skillName=LISTENING', { replace: true });
       },
-      onError: () => message.error('Failed to create listening'),
+      onError: (err) =>
+        message.error(
+          err?.response?.data?.message || 'Failed to create listening'
+        ),
     });
   };
   // Generate Excel-like labels: A, B, ..., Z, AA, AB, ...

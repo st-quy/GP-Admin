@@ -149,7 +149,10 @@ const CreateGrammarVocab = () => {
             replace: true,
           });
         },
-        onError: () => message.error('Failed to create listening'),
+        onError: (err) =>
+          message.error(
+            err?.response?.data?.message || 'Failed to create section'
+          ),
       });
     } catch {
       message.error('Please fix errors in Part 1');
