@@ -71,6 +71,7 @@ const UpdateReading = () => {
 
     const transformed = {
       sectionName: apiData.SectionName || '',
+      description: apiData.Description || '',
     };
 
     /* ---------------- PART 1 ---------------- */
@@ -254,6 +255,9 @@ const UpdateReading = () => {
             rules={[{ required: true }]}
           >
             <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+          </Form.Item>
+          <Form.Item label='Description' name='description'>
+            <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
         </Card>
 

@@ -99,6 +99,7 @@ const UpdateSpeaking = () => {
 
     form.setFieldsValue({
       sectionName: data.SectionName,
+      description: data.Description || '',
       parts: {
         part1: {
           ...data.part1,
@@ -293,6 +294,7 @@ const UpdateSpeaking = () => {
       const payload = {
         SkillName: 'SPEAKING',
         SectionName: values.sectionName,
+        Description: values.description?.trim() || '',
         parts: {
           part1: mapPartPayload('part1', values.parts.part1, 0, images.part1),
           part2: mapPartPayload('part2', values.parts.part2, 1, images.part2),
@@ -437,6 +439,9 @@ const UpdateSpeaking = () => {
             rules={[{ required: true, message: 'Section name is required' }]}
           >
             <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
+          </Form.Item>
+          <Form.Item label='Description' name='description'>
+            <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
         </Card>
 

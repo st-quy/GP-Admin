@@ -417,6 +417,7 @@ export const buildFullReadingPayload = (values) => {
   const result = {
     SkillName: 'READING',
     SectionName: values.sectionName,
+    Description: values.description?.trim() || '',
     parts: [],
   };
 
@@ -568,6 +569,7 @@ export function buildWritingFullPayload(values) {
   return {
     SkillName: 'WRITING',
     SectionName: values.sectionName?.trim() || 'Untitled Writing Section',
+    Description: values.description?.trim() || '',
     parts: {
       part1: {
         PartID: values.part1?.PartID || null,

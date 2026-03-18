@@ -27,6 +27,7 @@ const UpdateWriting = () => {
 
     form.setFieldsValue({
       sectionName: detail.SectionName || '',
+      description: detail.Description || '',
 
       // ===== PART 1 =====
       part1: {
@@ -102,6 +103,7 @@ const UpdateWriting = () => {
       className='flex flex-col gap-8 pb-20'
       initialValues={{
         sectionName: '',
+        description: '',
         part1: { title: '', questions: [{ question: '' }] },
         part2: { title: '', question: '', fields: [''] },
         part3: {
@@ -128,6 +130,9 @@ const UpdateWriting = () => {
         </Form.Item>
         <Form.Item name={['part3', 'PartID']} style={{ display: 'none' }}>
           <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+        </Form.Item>
+        <Form.Item label='Description' name='description'>
+          <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
         </Form.Item>
         <Form.Item name={['part4', 'PartID']} style={{ display: 'none' }}>
           <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />

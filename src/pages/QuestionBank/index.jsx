@@ -117,7 +117,7 @@ const QuestionBank = () => {
           record?.Parts?.[0]?.Content ||
           '-';
 
-        const description = record?.SubContent || fallbackContent;
+        const description = record?.Description || record?.SubContent || fallbackContent;
 
         return (
           <Tooltip title={description}>

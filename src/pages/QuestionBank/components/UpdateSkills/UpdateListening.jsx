@@ -42,6 +42,7 @@ const UpdateListening = () => {
   // STATE
   // ===============================
   const [sectionName, setSectionName] = useState('');
+  const [description, setDescription] = useState('');
   const [part1Name, setPart1Name] = useState('');
   const [part2Name, setPart2Name] = useState('');
   const [part3Name, setPart3Name] = useState('');
@@ -90,6 +91,7 @@ const UpdateListening = () => {
     const d = detail;
 
     setSectionName(d.SectionName);
+    setDescription(d.Description || '');
 
     // ---- PART 1 ----
     setPart1Id(d.part1?.id);
@@ -277,6 +279,7 @@ const UpdateListening = () => {
     }
     const values = {
       sectionName,
+      description,
       part1Id,
       part2Id,
       part3Id,
@@ -523,6 +526,15 @@ const UpdateListening = () => {
           <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
             value={sectionName}
             onChange={(e) => setSectionName(e.target.value)}
+          />
+        </Form.Item>
+        <Form.Item label='Description'>
+          <TextArea
+            rows={3}
+            value={description}
+            placeholder='Enter section description...'
+            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </Form.Item>
       </Card>

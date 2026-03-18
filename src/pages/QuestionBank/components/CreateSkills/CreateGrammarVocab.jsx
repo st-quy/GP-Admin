@@ -82,7 +82,7 @@ const CreateGrammarVocab = () => {
       await form.validateFields();
 
       const values = form.getFieldsValue(true);
-      const { sectionName, part1Name, part2Name, part1 } = values;
+      const { sectionName, description, part1Name, part2Name, part1 } = values;
 
       /* Part 1 build */
       const part1Questions = part1.map((q, idx) => {
@@ -127,6 +127,7 @@ const CreateGrammarVocab = () => {
       const payload = {
         SkillName: 'GRAMMAR AND VOCABULARY',
         SectionName: sectionName,
+        Description: description?.trim() || '',
         parts: {
           part1: {
             name: part1Name,
@@ -164,6 +165,7 @@ const CreateGrammarVocab = () => {
       }}
       initialValues={{
         sectionName: '',
+        description: '',
         part1Name: '',
         part2Name: '',
         part1: Array.from({ length: 25 }, () => ({
@@ -184,6 +186,9 @@ const CreateGrammarVocab = () => {
             maxLength={255}
             placeholder="Section Name Here..."
           />
+        </Form.Item>
+        <Form.Item label='Description' name='description'>
+          <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
         </Form.Item>
       </Card>
 

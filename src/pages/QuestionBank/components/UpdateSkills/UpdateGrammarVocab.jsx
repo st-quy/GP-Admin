@@ -36,6 +36,7 @@ const UpdateGrammarVocab = () => {
         STATE
   ============================ */
   const [sectionName, setSectionName] = useState('');
+    const [description, setDescription] = useState('');
 
   // PART 1
   const [part1Id, setPart1Id] = useState(null);
@@ -62,6 +63,7 @@ const UpdateGrammarVocab = () => {
     if (!data) return;
 
     setSectionName(data.SectionName);
+    setDescription(data.Description || '');
 
     /* ---------- PART 1 ---------- */
     setPart1Id(data.part1?.PartID);
@@ -204,6 +206,7 @@ const UpdateGrammarVocab = () => {
       groupId: sectionId,
       SkillName: 'GRAMMAR AND VOCABULARY',
       SectionName: sectionName,
+      Description: description?.trim() || '',
       parts: {
         part1: {
           id: part1Id,
@@ -264,6 +267,15 @@ const UpdateGrammarVocab = () => {
               setSectionName(sanitized)
             }
             }
+          />
+        </Form.Item>
+        <Form.Item label='Description'>
+          <Input.TextArea
+            rows={3}
+            value={description}
+            placeholder='Enter section description...'
+            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </Form.Item>
       </Card>

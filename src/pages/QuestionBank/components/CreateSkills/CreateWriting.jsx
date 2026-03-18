@@ -45,6 +45,7 @@ const CreateWriting = () => {
       layout='vertical'
       initialValues={{
         sectionName: '',
+        description: '',
         part1: { title: '', questions: [{ question: '' }] },
         part2: { title: '', question: '', wordLimit: '', fields: [''] },
         part3: {
@@ -69,6 +70,9 @@ const CreateWriting = () => {
           rules={[{ required: true, message: 'Section name is required' }]}
         >
           <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='e.g., Fitness Club Writing Test' />
+        </Form.Item>
+        <Form.Item label='Description' name='description'>
+          <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
         </Form.Item>
       </Card>
 

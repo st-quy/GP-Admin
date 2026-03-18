@@ -36,6 +36,7 @@ const CreateListening = () => {
   const [part3Name, setPart3Name] = useState('');
   const [part4Name, setPart4Name] = useState('');
   const [sectionName, setSectionName] = useState('');
+  const [description, setDescription] = useState('');
 
   // ================================
   // PART 1 — 13 Multiple Choice
@@ -347,6 +348,7 @@ const CreateListening = () => {
 
     const values = {
       sectionName,
+      description,
       part1Name,
       part1,
       part2Name,
@@ -512,6 +514,15 @@ const CreateListening = () => {
           <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
             placeholder='e.g., Fitness Club Listening Test'
             onChange={(e) => setSectionName(e.target.value)}
+          />
+        </Form.Item>
+        <Form.Item label='Description' name='description'>
+          <TextArea
+            rows={3}
+            placeholder='Enter section description...'
+            value={description}
+            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            onChange={(e) => setDescription(e.target.value)}
           />
         </Form.Item>
       </Card>
