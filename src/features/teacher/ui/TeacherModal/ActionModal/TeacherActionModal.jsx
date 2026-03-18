@@ -1,5 +1,5 @@
 import { Modal, Button, Input, message, Form, Switch } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as Yup from 'yup';
 import {
   useCreateTeacher,
@@ -54,23 +54,49 @@ const accountSchema = Yup.object().shape({
     .max(20, 'Phone number must not exceed 20 characters'),
 });
 
-const TeacherActionModal = ({ initialData = null }) => {
+const TeacherActionModal = ({
+  initialData = null,
+  open: controlledOpen,
+  onClose,
+  hideTrigger = false,
+}) => {
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
   const [passwordValue, setPasswordValue] = useState('');
 
   const isEdit = initialData !== null;
+  const isControlled = typeof controlledOpen === 'boolean';
+  const isModalOpen = isControlled ? controlledOpen : open;
   // @ts-ignore
   const { mutate: teacherAction, isPending: isOnAction } = isEdit
     ? useUpdateTeacher()
     : useCreateTeacher();
 
+  useEffect(() => {
+    form.resetFields();
+    form.setFieldsValue({
+      firstName: isEdit ? initialData?.firstName : '',
+      lastName: isEdit ? initialData?.lastName : '',
+      email: isEdit ? initialData?.email : '',
+      teacherCode: isEdit ? initialData?.teacherCode : '',
+      password: '',
+      status: isEdit ? initialData?.status : true,
+      phone: isEdit ? initialData?.phone : '',
+    });
+    setPasswordValue('');
+  }, [form, initialData, isEdit, isModalOpen]);
+
   const showModal = () => {
-    setOpen(true);
+    if (!isControlled) {
+      setOpen(true);
+    }
   };
 
   const handleCancel = () => {
-    setOpen(false);
+    if (!isControlled) {
+      setOpen(false);
+    }
+    onClose?.();
     form.resetFields();
   };
 
@@ -114,22 +140,23 @@ const TeacherActionModal = ({ initialData = null }) => {
 
   return (
     <>
-      {isEdit ? (
-        <EditOutlined
-          onClick={showModal}
-          className='text-primaryColor text-[20px]'
-        />
-      ) : (
-        <Button
-          icon={<PlusCircleOutlined />}
-          onClick={showModal}
-          className='bg-primaryColor text-white py-6 rounded-full px-4 text-base border-none'
-        >
-          Create new account
-        </Button>
-      )}
+      {!hideTrigger &&
+        (isEdit ? (
+          <EditOutlined
+            onClick={showModal}
+            className='text-primaryColor text-[20px]'
+          />
+        ) : (
+          <Button
+            icon={<PlusCircleOutlined />}
+            onClick={showModal}
+            className='bg-primaryColor text-white py-6 rounded-full px-4 text-base border-none'
+          >
+            Create new account
+          </Button>
+        ))}
       <Modal
-        open={open}
+        open={isModalOpen}
         okText={isEdit ? 'Update' : 'Create'}
         // onOk={onAction}
         closable={false}

@@ -5,7 +5,7 @@ import { useFetchTeachers } from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { deleteTeachers } from '../api/teacherAPI';
 const { Option } = Select;
 
@@ -15,6 +15,7 @@ const TeacherManagement = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
   const navigate = useNavigate();
+  const { id: editingTeacherId } = useParams();
   const { openConfirmModal, ModalComponent } = useConfirm();
   
   // Escape special SQL-like characters for search
@@ -162,9 +163,26 @@ const TeacherManagement = () => {
     },
   };
 
+  const selectedTeacher =
+    teachersData?.data?.teachers?.find(
+      (teacher) => teacher.ID === editingTeacherId
+    ) || null;
+
+  const handleCloseEditModal = () => {
+    navigate('/teacher');
+  };
+
   return (
     <div className='w-full'>
       <ModalComponent />
+      {selectedTeacher && (
+        <TeacherActionModal
+          initialData={selectedTeacher}
+          open
+          hideTrigger
+          onClose={handleCloseEditModal}
+        />
+      )}
       <div className='flex justify-between items-center mb-4'>
         <div className='flex flex-col md:flex-row md:items-center md:space-x-4 space-y-2 md:space-y-0'>
           <Input
