@@ -157,7 +157,8 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               <div className="flex font-medium">
                 <span>Phone number</span>
               </div>
-            }        
+            }
+            getValueFromEvent={(e) => e.target.value.replace(/[^0-9]/g, '')}
             name="phone"
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
