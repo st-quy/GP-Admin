@@ -188,7 +188,7 @@ const CreateSpeaking = () => {
           validateTrigger={['onChange', 'onBlur']}
           required
         >
-          <Input placeholder='Enter part name' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter part name' />
         </Form.Item>
 
         {/* UPLOAD FIELD WITH VALIDATION */}
@@ -244,7 +244,7 @@ const CreateSpeaking = () => {
                     ]}
                     validateTrigger={['onChange', 'onBlur']}
                   >
-                    <Input placeholder='Enter question' />
+                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter question' />
                   </Form.Item>
 
                   {field.name >= 3 && (
@@ -292,7 +292,7 @@ const CreateSpeaking = () => {
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='Enter section name' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
         </Form.Item>
       </Card>
 

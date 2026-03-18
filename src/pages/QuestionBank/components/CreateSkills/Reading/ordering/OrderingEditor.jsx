@@ -97,7 +97,7 @@ const OrderingEditor = ({ fields, helpers, listPath = [] }) => {
                         ]}
                         style={{ flex: 1, margin: 0 }}
                       >
-                        <Input placeholder={`Enter sentence ${index + 1}`} />
+                        <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder={`Enter sentence ${index + 1}`} />
                       </Form.Item>
 
                       <DeleteOutlined

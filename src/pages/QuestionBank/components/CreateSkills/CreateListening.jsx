@@ -509,7 +509,7 @@ const CreateListening = () => {
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
             placeholder='e.g., Fitness Club Listening Test'
             onChange={(e) => setSectionName(e.target.value)}
           />
@@ -525,7 +525,7 @@ const CreateListening = () => {
           )}
         >
           <Form.Item label='Part Name' required>
-            <Input
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 1 name...'
               value={part1Name}
               onChange={(e) => setPart1Name(e.target.value)}
@@ -550,6 +550,7 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={q.instruction}
+                    onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                     onChange={(e) =>
                       updatePart1Field(q.id, 'instruction', e.target.value)
                     }
@@ -575,7 +576,7 @@ const CreateListening = () => {
                   <div key={o.id} className='flex items-center gap-2 mb-2'>
                     <div className='w-6 font-bold'>{o.label}</div>
 
-                    <Input
+                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                       className='flex-1'
                       value={o.value}
                       onChange={(e) =>
@@ -622,7 +623,7 @@ const CreateListening = () => {
         {/* PART 2 */}
         <Card title={renderHeader('PART 2 — Matching', valid2)}>
           <Form.Item label='Part Name' required>
-            <Input
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 2 name...'
               value={part2Name}
               onChange={(e) => setPart2Name(e.target.value)}
@@ -633,6 +634,7 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part2.instruction}
+              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart2({ ...part2, instruction: e.target.value })
               }
@@ -665,7 +667,7 @@ const CreateListening = () => {
         {/* PART 3 */}
         <Card title={renderHeader('PART 3 — Matching', valid3)}>
           <Form.Item label='Part Name' required>
-            <Input
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 3 name...'
               value={part3Name}
               onChange={(e) => setPart3Name(e.target.value)}
@@ -676,6 +678,7 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part3.instruction}
+              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart3({ ...part3, instruction: e.target.value })
               }
@@ -708,7 +711,7 @@ const CreateListening = () => {
         {/* PART 4 */}
         <Card title={renderHeader('PART 4 — Listening Groups', valid4)}>
           <Form.Item label='Part Name' required>
-            <Input
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 4 name...'
               value={part4Name}
               onChange={(e) => setPart4Name(e.target.value)}
@@ -728,6 +731,7 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={g.instruction}
+                    onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                     onChange={(e) =>
                       updateGroupField(g.id, 'instruction', e.target.value)
                     }
@@ -749,7 +753,7 @@ const CreateListening = () => {
                   <div key={s.id} className='flex gap-4'>
                     <Card size='small' className='flex-1 mt-4'>
                       <Form.Item label={`Sub question ${s.id}`} required>
-                        <Input
+                        <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                           value={s.content}
                           onChange={(e) =>
                             updateGroupSub(
@@ -769,7 +773,7 @@ const CreateListening = () => {
                         >
                           <div className='w-6 font-bold'>{o.label}</div>
 
-                          <Input
+                          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                             className='flex-1'
                             value={o.value}
                             onChange={(e) =>

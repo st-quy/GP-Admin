@@ -175,7 +175,7 @@ const CreateGrammarVocab = () => {
           name='sectionName'
           getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
           rules={[{ required: true }]}>
-          <Input
+          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
             maxLength={255}
             placeholder="Section Name Here..."
           />
@@ -190,7 +190,7 @@ const CreateGrammarVocab = () => {
           getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
           rules={[{ required: true }]}
         >
-          <Input maxLength={255}/>
+          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} maxLength={255} />
         </Form.Item>
 
         <Collapse accordion>
@@ -211,7 +211,7 @@ const CreateGrammarVocab = () => {
                 label='Instruction'
                 rules={[{ required: true }]}
               >
-                <Input.TextArea rows={2} />
+                <Input.TextArea rows={2} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
               </Form.Item>
 
               {/* OPTIONS — 3 fixed + dynamic additional */}
@@ -246,7 +246,7 @@ const CreateGrammarVocab = () => {
                               { required: true, message: 'Option is required' },
                             ]}
                           >
-                            <Input placeholder={`Option ${LETTERS[optIdx]}`} />
+                            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} maxLength={255} placeholder={`Option ${LETTERS[optIdx]}`} />
                           </Form.Item>
 
                           {/* DELETE BUTTON (only delete from option #4 → index ≥ 3) */}
@@ -306,7 +306,7 @@ const CreateGrammarVocab = () => {
           name='part2Name'
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
         </Form.Item>
 
         <Collapse accordion>
@@ -329,6 +329,7 @@ const CreateGrammarVocab = () => {
               >
                 <Input.TextArea
                   value={g.content}
+                  onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                   onChange={(e) =>
                     updateGroup(idx, { content: e.target.value })
                   }

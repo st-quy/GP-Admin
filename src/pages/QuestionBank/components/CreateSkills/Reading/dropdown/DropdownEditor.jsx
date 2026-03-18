@@ -57,6 +57,7 @@ const DropdownEditor = () => {
         <TextArea
           rows={6}
           placeholder='Type reading text... Example: Dear [0], thank you for [1].'
+          onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           onChange={(e) => handleChange(e.target.value)}
         />
       </Form.Item>

@@ -121,23 +121,23 @@ const UpdateWriting = () => {
       <Card title='Section Information'>
         {/* HIDDEN: giữ PartID cho 4 phần (sẽ không hiển thị) */}
         <Form.Item name={['part1', 'PartID']} style={{ display: 'none' }}>
-          <Input />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
         </Form.Item>
         <Form.Item name={['part2', 'PartID']} style={{ display: 'none' }}>
-          <Input />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
         </Form.Item>
         <Form.Item name={['part3', 'PartID']} style={{ display: 'none' }}>
-          <Input />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
         </Form.Item>
         <Form.Item name={['part4', 'PartID']} style={{ display: 'none' }}>
-          <Input />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
         </Form.Item>
         <Form.Item
           label='Section Name'
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='e.g., Fitness Club Writing Test' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='e.g., Fitness Club Writing Test' />
         </Form.Item>
       </Card>
 

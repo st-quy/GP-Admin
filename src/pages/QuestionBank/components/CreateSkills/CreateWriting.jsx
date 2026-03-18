@@ -68,7 +68,7 @@ const CreateWriting = () => {
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='e.g., Fitness Club Writing Test' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='e.g., Fitness Club Writing Test' />
         </Form.Item>
       </Card>
 

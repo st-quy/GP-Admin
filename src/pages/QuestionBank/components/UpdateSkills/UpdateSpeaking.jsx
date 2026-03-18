@@ -330,7 +330,7 @@ const UpdateSpeaking = () => {
             yupSync(createSpeakingSchema, ['parts', key, 'name']),
           ]}
         >
-          <Input placeholder='Enter part name' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter part name' />
         </Form.Item>
 
         {/* Upload with VALIDATION */}
@@ -375,7 +375,7 @@ const UpdateSpeaking = () => {
                       { required: true, message: 'Question cannot be empty' },
                     ]}
                   >
-                    <Input placeholder='Enter question' />
+                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter question' />
                   </Form.Item>
 
                   {f.name >= 3 && (
@@ -414,7 +414,7 @@ const UpdateSpeaking = () => {
             name='sectionName'
             rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Input placeholder='Enter section name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
           </Form.Item>
         </Card>
 

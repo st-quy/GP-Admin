@@ -86,7 +86,7 @@ const CreateReading = () => {
             required
             rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Input placeholder='Enter section name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
           </Form.Item>
         </Card>
 
@@ -99,7 +99,7 @@ const CreateReading = () => {
             name={['part1', 'name']}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input placeholder='Enter Part 1 Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 1 Name' />
           </Form.Item>
 
           <Form.Item
@@ -176,7 +176,7 @@ const CreateReading = () => {
             name={['part2A', 'name']}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input placeholder='Enter Part 2A Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2A Name' />
           </Form.Item>
 
           <Form.Item
@@ -184,7 +184,7 @@ const CreateReading = () => {
             name={['part2A', 'intro']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.List name={['part2A', 'items']}>
@@ -208,7 +208,7 @@ const CreateReading = () => {
             name={['part2B', 'name']}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input placeholder='Enter Part 2B Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2B Name' />
           </Form.Item>
 
           <Form.Item
@@ -216,7 +216,7 @@ const CreateReading = () => {
             name={['part2B', 'intro']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.List name={['part2B', 'items']}>
@@ -239,7 +239,7 @@ const CreateReading = () => {
             name={['part3', 'name']}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input placeholder='Enter Part 3 Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 3 Name' />
           </Form.Item>
           {/* CONTENT */}
           <Form.Item
@@ -247,7 +247,7 @@ const CreateReading = () => {
             name={['part3', 'content']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter content...' />
+            <Input.TextArea rows={3} placeholder='Enter content...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part3']}>
@@ -302,7 +302,7 @@ const CreateReading = () => {
             name={['part4', 'name']}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input placeholder='Enter Part 4 Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 4 Name' />
           </Form.Item>
           {/* CONTENT */}
           <Form.Item
@@ -310,7 +310,7 @@ const CreateReading = () => {
             name={['part4', 'content']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' />
+            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part4']}>
