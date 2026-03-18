@@ -15,6 +15,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
       ...values,
       firstName: values.firstName?.trim(),
       lastName: values.lastName?.trim(),
+      address: values.address?.trim(),
     };
     updateProfile(trimmedValues, {
       onSuccess: () => {
@@ -156,7 +157,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               <div className="flex font-medium">
                 <span>Phone number</span>
               </div>
-            }
+            }        
             name="phone"
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
@@ -171,9 +172,10 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               </div>
             }
             name="address"
+            rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" maxLength={255} />
           </Form.Item>
 
           <div className="md:col-span-2 flex justify-end gap-3 mt-2">
