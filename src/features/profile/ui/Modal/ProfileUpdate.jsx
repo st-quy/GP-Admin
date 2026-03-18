@@ -28,7 +28,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
   const initialValues = {
     firstName: user?.firstName,
     lastName: user?.lastName,
-    dob: dayjs(user?.dob),
+    dob: user?.dob ? dayjs(user.dob) : null,
     teacherCode: user?.teacherCode,
     email: user?.email,
     phone: user?.phone,
@@ -122,7 +122,6 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="dob"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
             className="w-full"
           >
             <DatePicker

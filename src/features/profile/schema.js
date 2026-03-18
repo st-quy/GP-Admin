@@ -20,7 +20,7 @@ export const UpdateProfileSchema = Yup.object().shape({
     .max(50, "Last name cannot exceed 50 characters")
     .required("Last name is required"),
   teacherCode: Yup.string().required("Code is required"),
-  dob: Yup.string().nullable(),
+  dob: Yup.mixed().nullable(),
   email: Yup.string()
     .email("Enter a valid email")
     .required("Email is required"),
