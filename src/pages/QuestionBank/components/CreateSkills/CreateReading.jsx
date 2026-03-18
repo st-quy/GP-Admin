@@ -28,13 +28,12 @@ const CreateReading = () => {
       createQuestion(payload, {
         onSuccess: () => {
           message.success('Created successfully!');
-          navigate(-1);
+          navigate('/questions?skillName=READING', { replace: true });
         },
         onError: (err) => {
           message.error(err?.response?.data?.message || 'Failed to create');
         },
       });
-      message.success('Created reading successfully!');
     } catch (err) {
       console.error(err);
       message.error('Form error — check again!');

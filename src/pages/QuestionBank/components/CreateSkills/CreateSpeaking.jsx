@@ -167,7 +167,8 @@ const CreateSpeaking = () => {
       };
 
       createSpeaking(payload, {
-        onSuccess: () => navigate(-1),
+        onSuccess: () =>
+          navigate('/questions?skillName=SPEAKING', { replace: true }),
       });
     } catch (err) {
       console.error(err);

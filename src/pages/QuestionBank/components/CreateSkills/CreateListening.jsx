@@ -362,7 +362,7 @@ const CreateListening = () => {
     createQuestion(payload, {
       onSuccess: () => {
         message.success('Created Listening successfully!');
-        navigate(-1);
+        navigate('/questions?skillName=LISTENING', { replace: true });
       },
       onError: () => message.error('Failed to create listening'),
     });

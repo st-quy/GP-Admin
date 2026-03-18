@@ -25,7 +25,7 @@ const CreateWriting = () => {
       createWritingGroup(payload, {
         onSuccess: () => {
           message.success('Writing test created successfully!');
-          navigate(-1);
+          navigate('/questions?skillName=WRITING', { replace: true });
         },
         onError: (err) => {
           message.error(

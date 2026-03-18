@@ -144,7 +144,9 @@ const CreateGrammarVocab = () => {
       createQuestion(payload, {
         onSuccess: () => {
           message.success('Created successfully!');
-          navigate(-1);
+          navigate('/questions?skillName=GRAMMAR%20AND%20VOCABULARY', {
+            replace: true,
+          });
         },
         onError: () => message.error('Failed to create listening'),
       });
