@@ -275,19 +275,7 @@ const StudentSessionTable = ({
         // @ts-ignore
         columns={columns}
         dataSource={filteredData.map((item) => ({ ...item, key: item.ID }))}
-        pagination={{
-          current: currentPage,
-          pageSize: pageSize,
-          total: data?.pagination?.totalItems || 0,
-          showSizeChanger: true,
-          pageSizeOptions: ["5", "10", "15", "20"],
-          showTotal: (total, range) =>
-            `Showing ${range[0]}-${range[1]} of ${total}`,
-          onChange: (page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          },
-        }}
+        pagination={false}
         bordered
         className="border border-gray-200 pagination w-full p-0 m-0 overflow-x-auto bg-none"
         rowClassName="text-center"
@@ -317,6 +305,25 @@ const StudentSessionTable = ({
           },
         }}
       />
+      <div className='flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm'>
+        <div className='text-gray-600 font-medium'>
+          {data?.pagination?.totalItems > 0 
+            ? `Showing ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, data?.pagination?.totalItems)} of ${data?.pagination?.totalItems} entries` 
+            : 'No entries found'}
+        </div>
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={data?.pagination?.totalItems || 0}
+          onChange={(page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          }}
+          showSizeChanger
+          pageSizeOptions={['5', '10', '15', '20']}
+          className='ant-pagination-custom'
+        />
+      </div>
     </div>
   );
 };
