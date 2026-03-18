@@ -7,7 +7,7 @@ import {
   useUpdateLevel,
 } from "../hooks/useSession";
 import "../css/index.scss";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const StudentSessionTable = ({
   id,
@@ -20,6 +20,7 @@ const StudentSessionTable = ({
   const { mutate: updateLevel } = useUpdateLevel();
 
   const navigate = useNavigate();
+  const { classId, sessionId } = useParams();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [levels, setLevels] = useState({});
@@ -137,7 +138,7 @@ const StudentSessionTable = ({
         type === TableType.SESSION && status !== StatusType.PUBLISHED ? (
           <a
             onClick={() =>
-              navigate(`participant/${record.ID}?skill=speaking`, {
+              navigate(`/class/${classId}/session/${sessionId}/participant/${record.ID}?skill=speaking`, {
                 state: { isPublished },
               })
             }
@@ -164,7 +165,7 @@ const StudentSessionTable = ({
         type === TableType.SESSION && status !== StatusType.PUBLISHED ? (
           <a
             onClick={() =>
-              navigate(`participant/${record.ID}?skill=writing`, {
+              navigate(`/class/${classId}/session/${sessionId}/participant/${record.ID}?skill=writing`, {
                 state: { isPublished },
               })
             }
