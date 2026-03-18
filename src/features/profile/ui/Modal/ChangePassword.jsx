@@ -35,7 +35,10 @@ const ChangePassword = ({ isOpen, onClose }) => {
       open={isOpen}
       footer={null}
       centered
-      onCancel={onClose}
+      onCancel={() => {
+        form.resetFields();
+        onClose();
+      }}
       className="w-[90%] md:w-[500px] lg:w-[500px]"
       width={500}
     >
