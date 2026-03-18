@@ -40,7 +40,7 @@ const CreateGrammarVocab = () => {
   /* VALIDATE PART 1 */
   const validatePart1Question = (q) => {
     if (!q?.instruction?.trim()) return false;
-    if (!q.options || q.options.some((o) => !o.value?.trim())) return false;
+    if (!q.options || q.options.some((o) => !o?.value?.trim())) return false;
     if (q.correctOptionId === null || q.correctOptionId === undefined)
       return false;
     return true;
@@ -157,6 +157,9 @@ const CreateGrammarVocab = () => {
     <Form
       layout='vertical'
       form={form}
+      onSubmitCapture={(e) => {
+        e.preventDefault();
+      }}
       initialValues={{
         sectionName: '',
         part1Name: '',
@@ -266,8 +269,9 @@ const CreateGrammarVocab = () => {
                       {/* ADD OPTION BUTTON */}
                       <Button
                         type='dashed'
+                        htmlType='button'
                         icon={<PlusOutlined />}
-                        onClick={() => add()}
+                        onClick={() => add({ value: '' })}
                         style={{ marginTop: 8 }}
                       >
                         Add option
@@ -395,7 +399,7 @@ const CreateGrammarVocab = () => {
       </Card>
 
       <div className='flex justify-end gap-4 mt-6'>
-        <Button onClick={() => navigate(-1)}>Cancel</Button>
+        <Button htmlType='button' onClick={() => navigate(-1)}>Cancel</Button>
         <Button type='primary' loading={isPending} onClick={handleSaveAll}>
           Save
         </Button>

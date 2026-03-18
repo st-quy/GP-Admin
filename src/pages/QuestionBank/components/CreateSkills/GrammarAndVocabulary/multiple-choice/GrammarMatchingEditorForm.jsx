@@ -178,6 +178,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 <Button
                   danger
                   type='text'
+                  htmlType='button'
                   icon={<DeleteOutlined />}
                   onClick={() => removeLeft(index)}
                 />
@@ -192,6 +193,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
           ))}
 
           <Button
+            htmlType='button'
             icon={<PlusOutlined />}
             onClick={addLeft}
             style={{ width: '100%', marginTop: 10 }}
@@ -246,6 +248,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 <Button
                   danger
                   type='text'
+                  htmlType='button'
                   icon={<DeleteOutlined />}
                   onClick={() => removeRight(index)}
                 />
@@ -260,6 +263,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
           ))}
 
           <Button
+            htmlType='button'
             icon={<PlusOutlined />}
             onClick={addRight}
             style={{ width: '100%', marginTop: 10 }}
