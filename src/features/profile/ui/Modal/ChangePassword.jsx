@@ -25,16 +25,25 @@ const ChangePassword = ({ isOpen, onClose }) => {
   };
 
   useEffect(() => {
+    if (isOpen) {
+      form.resetFields();
+    }
+  }, [isOpen, form]);
+
+  useEffect(() => {
     if (isSuccess) {
       form.resetFields();
     }
-  }, [isSuccess]);
+  }, [isSuccess, form]);
 
   return (
     <Modal
       open={isOpen}
       footer={null}
       centered
+      destroyOnClose
+      keyboard={true}
+      maskClosable={true}
       onCancel={() => {
         form.resetFields();
         onClose();
