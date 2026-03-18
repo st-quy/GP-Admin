@@ -273,8 +273,8 @@ const UpdateGrammarVocab = () => {
           <Input.TextArea
             rows={3}
             value={description}
-            placeholder='Enter section description...'
-            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            placeholder='-'
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             onChange={(e) => setDescription(e.target.value)}
           />
         </Form.Item>
@@ -322,7 +322,7 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={q.instruction}
-                  onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+                  maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                   onChange={(e) =>
                     setPart1((prev) =>
                       prev.map((x) =>
@@ -482,7 +482,7 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={g.content}
-                  onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+                  maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                   onChange={(e) =>
                     updateGroupState(idx, { content: e.target.value })
                   }

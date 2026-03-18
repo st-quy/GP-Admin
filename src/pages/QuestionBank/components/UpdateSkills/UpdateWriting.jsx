@@ -132,7 +132,7 @@ const UpdateWriting = () => {
           <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
         </Form.Item>
         <Form.Item label='Description' name='description'>
-          <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+          <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
         </Form.Item>
         <Form.Item name={['part4', 'PartID']} style={{ display: 'none' }}>
           <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />

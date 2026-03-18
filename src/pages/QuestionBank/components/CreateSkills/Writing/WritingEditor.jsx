@@ -19,7 +19,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., Answer the following questions.'
-            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -87,7 +87,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., You are filling in a registration form...'
-            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -99,7 +99,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., Complete the form below with appropriate information.'
-            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -131,7 +131,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., Answer the questions in the chat room below.'
-            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -184,7 +184,7 @@ const WritingEditor = ({ partType, requireImage }) => {
                         { required: true, message: 'Question is required' },
                       ]}
                     >
-                      <TextArea rows={2} placeholder='Enter question...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+                      <TextArea rows={2} placeholder='Enter question...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
                     </Form.Item>
 
                     {/* <Form.Item
@@ -242,7 +242,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={5}
             placeholder='Paste the news / situation / email text here...'
-            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -255,7 +255,7 @@ const WritingEditor = ({ partType, requireImage }) => {
             <TextArea
               rows={3}
               placeholder='e.g., Write an email to your friend...'
-              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             />
           </Form.Item>
           {/* <Form.Item
@@ -281,7 +281,7 @@ const WritingEditor = ({ partType, requireImage }) => {
             <TextArea
               rows={3}
               placeholder='e.g., Write an email to the club president...'
-              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             />
           </Form.Item>
           {/* <Form.Item

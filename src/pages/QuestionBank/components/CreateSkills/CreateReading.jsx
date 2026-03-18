@@ -88,7 +88,7 @@ const CreateReading = () => {
             <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
           </Form.Item>
           <Form.Item label='Description' name='description'>
-            <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
         </Card>
 
@@ -249,7 +249,7 @@ const CreateReading = () => {
             name={['part3', 'content']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter content...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='Enter content...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part3']}>
@@ -312,7 +312,7 @@ const CreateReading = () => {
             name={['part4', 'content']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part4']}>

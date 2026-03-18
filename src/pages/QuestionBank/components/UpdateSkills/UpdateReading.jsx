@@ -257,7 +257,7 @@ const UpdateReading = () => {
             <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
           <Form.Item label='Description' name='description'>
-            <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
         </Card>
 
@@ -347,7 +347,7 @@ const UpdateReading = () => {
             name={['part2A', 'intro']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.List name={['part2A', 'items']}>
@@ -380,7 +380,7 @@ const UpdateReading = () => {
             name={['part2B', 'intro']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.List name={['part2B', 'items']}>
@@ -413,7 +413,7 @@ const UpdateReading = () => {
             name={['part3', 'content']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part3']}>
@@ -474,7 +474,7 @@ const UpdateReading = () => {
             name={['part4', 'content']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part4']}>

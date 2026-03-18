@@ -82,7 +82,7 @@ const GrammarMultipleChoiceEditor = ({
           rows={3}
           placeholder='Enter grammar/vocabulary question...'
           value={questionText}
-          onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+          maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           onChange={(e) => setQuestionText(e.target.value)}
           style={{ marginTop: 8 }}
         />

@@ -112,16 +112,11 @@ const QuestionBank = () => {
       align: 'left',
       ellipsis: { showTitle: false },
       render: (_, record) => {
-        const fallbackContent =
-          record?.Parts?.[0]?.Questions?.[0]?.Content ||
-          record?.Parts?.[0]?.Content ||
-          '-';
-
-        const description = record?.Description || record?.SubContent || fallbackContent;
+        const description = record?.Description ?? '—';
 
         return (
           <Tooltip title={description}>
-            <span className='text-gray-500'>{description || '—'}</span>
+            <span className='text-gray-500'>{description}</span>
           </Tooltip>
         );
       },

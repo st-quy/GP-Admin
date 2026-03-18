@@ -522,9 +522,9 @@ const CreateListening = () => {
         <Form.Item label='Description' name='description'>
           <TextArea
             rows={3}
-            placeholder='Enter section description...'
+            placeholder='-'
             value={description}
-            onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             onChange={(e) => setDescription(e.target.value)}
           />
         </Form.Item>
@@ -564,7 +564,7 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={q.instruction}
-                    onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+                    maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                     onChange={(e) =>
                       updatePart1Field(q.id, 'instruction', e.target.value)
                     }
@@ -648,7 +648,7 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part2.instruction}
-              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart2({ ...part2, instruction: e.target.value })
               }
@@ -692,7 +692,7 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part3.instruction}
-              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart3({ ...part3, instruction: e.target.value })
               }
@@ -745,7 +745,7 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={g.instruction}
-                    onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+                    maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                     onChange={(e) =>
                       updateGroupField(g.id, 'instruction', e.target.value)
                     }

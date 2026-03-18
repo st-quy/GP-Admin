@@ -191,7 +191,7 @@ const CreateGrammarVocab = () => {
           />
         </Form.Item>
         <Form.Item label='Description' name='description'>
-          <Input.TextArea rows={3} placeholder='Enter section description...' onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+          <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
         </Form.Item>
       </Card>
 
@@ -224,7 +224,7 @@ const CreateGrammarVocab = () => {
                 label='Instruction'
                 rules={[{ required: true }]}
               >
-                <Input.TextArea rows={2} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+                <Input.TextArea rows={2} maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
               </Form.Item>
 
               {/* OPTIONS — 3 fixed + dynamic additional */}
@@ -343,7 +343,7 @@ const CreateGrammarVocab = () => {
               >
                 <Input.TextArea
                   value={g.content}
-                  onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
+                  maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                   onChange={(e) =>
                     updateGroup(idx, { content: e.target.value })
                   }
