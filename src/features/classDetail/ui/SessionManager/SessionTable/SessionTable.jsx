@@ -46,7 +46,7 @@ const SessionTable = ({ data, columns, isLoading }) => {
     <div className="mt-4">
       <div className="flex items-center gap-4 mb-4">
         <Search
-          placeholder="Search anything..."
+          placeholder="Search for Session"
           onChange={(e) => {
             setSearchText(e.target.value);
             setCurrentPage(1);
