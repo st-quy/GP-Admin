@@ -4,29 +4,24 @@ import { CameraOutlined } from '@ant-design/icons';
 import defaultAvatar from '@assets/images/avatar.png';
 import ProfileUpdate from '@features/profile/ui/Modal/ProfileUpdate';
 import ChangePassword from '@features/profile/ui/Modal/ChangePassword';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
-import { useNavigate } from 'react-router-dom';
-import { logout } from '@app/providers/reducer/auth/authSlice';
+import { useLogout } from '@features/auth/hooks';
 const { Title, Text } = Typography;
 
 const ProfilePage = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-
   const fileInputRef = useRef(null);
   const [avatar, setAvatar] = useState(defaultAvatar);
   const [openKey, setOpenKey] = useState(null);
   const { user } = useSelector((state) => state.auth);
+  const logout = useLogout();
 
   const handleAvatarClick = () => {
     fileInputRef.current?.click();
   };
 
   const handleLogout = () => {
-    localStorage.clear();
-    navigate('/login');
-    dispatch(logout());
+    logout();
   };
 
   const handleFileChange = (event) => {
