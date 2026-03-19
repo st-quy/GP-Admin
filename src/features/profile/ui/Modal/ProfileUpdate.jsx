@@ -156,6 +156,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             label={
               <div className="flex font-medium">
                 <span>Phone number</span>
+                <span className="text-red-500 ml-1">*</span>
               </div>
             }
             getValueFromEvent={(e) => e.target.value.replace(/[^0-9]/g, '')}
@@ -163,7 +164,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input maxLength= {20} className="h-[46px] w-full max-w-[458px] rounded-lg" />
           </Form.Item>
 
           <Form.Item
