@@ -50,8 +50,12 @@ const accountSchema = Yup.object().shape({
     .max(50, 'Password must not exceed 50 characters')
     .notRequired(),
   phone: Yup.string()
-    .matches(/^[0-9+\-\s()]*$/, 'Phone number must contain only digits, +, -, spaces, and parentheses')
-    .max(20, 'Phone number must not exceed 20 characters'),
+    .transform((value) => {
+      const trimmedValue = value?.trim();
+      return trimmedValue === '' ? undefined : trimmedValue;
+    })
+    .matches(/^\d{10}$/, 'Phone number must be exactly 10 digits')
+    .notRequired(),
 });
 
 const TeacherActionModal = ({
@@ -71,6 +75,48 @@ const TeacherActionModal = ({
   const { mutate: teacherAction, isPending: isOnAction } = isEdit
     ? useUpdateTeacher()
     : useCreateTeacher();
+
+  const applyBackendFieldErrors = (messages = []) => {
+    const normalizedMessages = messages
+      .filter(Boolean)
+      .map((backendMessage) =>
+        String(backendMessage)
+          .replace(/^Error updating user:\s*/i, '')
+          .replace(/^Validation Error:\s*/i, '')
+          .trim()
+      );
+    const fieldErrorMap = {
+      email: [],
+      teacherCode: [],
+      phone: [],
+    };
+
+    normalizedMessages.forEach((backendMessage) => {
+      const messageText = backendMessage.toLowerCase();
+
+      if (messageText.includes('email')) {
+        fieldErrorMap.email.push(backendMessage);
+      } else if (messageText.includes('teacher code')) {
+        fieldErrorMap.teacherCode.push(backendMessage);
+      } else if (messageText.includes('phone')) {
+        fieldErrorMap.phone.push(backendMessage);
+      }
+    });
+
+    const fields = Object.entries(fieldErrorMap)
+      .filter(([, errors]) => errors.length > 0)
+      .map(([name, errors]) => ({
+        name,
+        errors,
+      }));
+
+    if (fields.length > 0) {
+      form.setFields(fields);
+      return true;
+    }
+
+    return false;
+  };
 
   useEffect(() => {
     form.resetFields();
@@ -103,6 +149,12 @@ const TeacherActionModal = ({
   // @ts-ignore
   const onAction = async (values) => {
     try {
+      form.setFields([
+        { name: 'email', errors: [] },
+        { name: 'teacherCode', errors: [] },
+        { name: 'phone', errors: [] },
+      ]);
+
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
         firstName: values.firstName,
@@ -123,11 +175,41 @@ const TeacherActionModal = ({
           handleCancel();
         },
         onError: (error) => {
-          message.error(
-            // @ts-ignore
-            error?.response?.data?.message ||
-              `Failed to ${isEdit ? 'update' : 'create'} account.`
+          const backendErrors = error?.response?.data?.errors;
+          // @ts-ignore
+          const backendMessage = error?.response?.data?.message;
+          const normalizedMessages = Array.isArray(backendErrors)
+            ? backendErrors
+            : backendMessage
+              ? [backendMessage]
+              : [];
+
+          const hasInlineFieldError = applyBackendFieldErrors(
+            normalizedMessages
           );
+
+          const fallbackMessage =
+            normalizedMessages.length > 0
+              ? normalizedMessages
+                  .map((item) =>
+                    String(item)
+                      .replace(/^Error updating user:\s*/i, '')
+                      .replace(/^Validation Error:\s*/i, '')
+                      .trim()
+                  )
+                  .join(', ')
+              : `Failed to ${isEdit ? 'update' : 'create'} account.`;
+
+          message.error(fallbackMessage);
+
+          if (!hasInlineFieldError) {
+            form.setFields([
+              {
+                name: 'email',
+                errors: [fallbackMessage],
+              },
+            ]);
+          }
         },
       });
     } catch (error) {
