@@ -1,41 +1,39 @@
 import * as yup from "yup";
 import dayjs from "dayjs";
 
-function isStartDateValid(startDate) {
-  if (!startDate) return false;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const start = new Date(startDate);
-  start.setHours(0, 0, 0, 0);
-
-  return start.getTime() >= today.getTime();
-}
-
 export const sessionSchema = yup.object().shape({
-  sessionName: yup.string().required("Session name is required"),
+  sessionName: yup
+    .string()
+    .required("Session name is required")
+    .max(100, "Session name cannot exceed 100 characters")
+    .test("not-only-spaces", "Session name cannot be only spaces", (value) => {
+      return value && value.trim().length > 0;
+    }),
   sessionKey: yup
     .string()
     .required("Session key is required")
-    .min(10, "Session key must be at least 10 characters"),
-  examSet: yup.string().required("Please select a exam set"),
+    .min(10, "Session key must be at least 10 characters")
+    .max(20, "Session key cannot exceed 20 characters")
+    .matches(/^[a-zA-Z0-9]+$/, "Session key can only contain letters and numbers"),
+  examSet: yup.string().required("Please select an exam set"),
   dateRange: yup
     .array()
-    .of(yup.date().nullable())
-    .min(2, "Date range must have start and end date")
-    .test("start-date", "Start date must be today or later", function (value) {
-      return isStartDateValid(value?.[0]);
+    .of(yup.mixed())
+    .test("required", "Date range is required", (value) => {
+      return value && value.length === 2 && value[0] && value[1];
     })
-    .test(
-      "end-date",
-      "End date must be after start date",
-      function (value) {
-        const [startDate, endDate] = value || [];
-        if (startDate && endDate) {
-          return dayjs(endDate).isAfter(dayjs(startDate));
-        }
-        return true;
+    .test("start-date-future", "Start time cannot be in the past", function (value) {
+      const [startDate] = value || [];
+      if (!startDate) return true;
+      
+      const now = dayjs().subtract(1, 'minute'); // 1 min grace period
+      return dayjs(startDate).isAfter(now);
+    })
+    .test("end-after-start", "End time must be strictly after start time", function (value) {
+      const [startDate, endDate] = value || [];
+      if (startDate && endDate) {
+        return dayjs(endDate).isAfter(dayjs(startDate));
       }
-    ),
+      return true;
+    }),
 });
