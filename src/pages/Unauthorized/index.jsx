@@ -1,15 +1,16 @@
-import { logout } from '@app/providers/reducer/auth/authSlice';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
+import { logout } from '@app/providers/reducer/auth/authSlice';
+import { clearAuthState } from '@shared/lib/auth/clearAuthState';
 
 const Unauthorized = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    localStorage.clear();
+    clearAuthState();
     dispatch(logout());
-  }, []);
+  }, [dispatch]);
 
   return (
     <div className='flex flex-col items-center justify-center min-h-screen bg-gray-100'>

@@ -4,21 +4,20 @@ import {
   Input,
   Select,
   Button,
-  Upload,
   message,
   Form,
   Card,
   Space,
   Collapse,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined, AudioOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { useNavigate } from 'react-router-dom';
 import { useCreateQuestion } from '@features/questions/hooks';
 
 import ListeningMatchingEditor from './Listening/ListeningMatchingEditor';
-import axiosInstance from '@shared/config/axios';
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
+import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
@@ -65,11 +64,11 @@ const CreateListening = () => {
       prev.map((q) =>
         q.id === qId
           ? {
-              ...q,
-              options: q.options.map((o) =>
-                o.id === optId ? { ...o, value } : o
-              ),
-            }
+            ...q,
+            options: q.options.map((o) =>
+              o.id === optId ? { ...o, value } : o
+            ),
+          }
           : q
       )
     );
@@ -148,11 +147,11 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: g.subQuestions.map((s) =>
-                s.id === sId ? { ...s, [key]: value } : s
-              ),
-            }
+            ...g,
+            subQuestions: g.subQuestions.map((s) =>
+              s.id === sId ? { ...s, [key]: value } : s
+            ),
+          }
           : g
       )
     );
@@ -163,18 +162,18 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: g.subQuestions.map((s) =>
-                s.id === sId
-                  ? {
-                      ...s,
-                      options: s.options.map((o) =>
-                        o.id === oId ? { ...o, value } : o
-                      ),
-                    }
-                  : s
-              ),
-            }
+            ...g,
+            subQuestions: g.subQuestions.map((s) =>
+              s.id === sId
+                ? {
+                  ...s,
+                  options: s.options.map((o) =>
+                    o.id === oId ? { ...o, value } : o
+                  ),
+                }
+                : s
+            ),
+          }
           : g
       )
     );
@@ -185,21 +184,21 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: [
-                ...g.subQuestions,
-                {
-                  id: g.subQuestions.length + 1,
-                  content: '',
-                  options: [
-                    { id: 1, label: 'A', value: '' },
-                    { id: 2, label: 'B', value: '' },
-                    { id: 3, label: 'C', value: '' },
-                  ],
-                  correctId: null,
-                },
-              ],
-            }
+            ...g,
+            subQuestions: [
+              ...g.subQuestions,
+              {
+                id: g.subQuestions.length + 1,
+                content: '',
+                options: [
+                  { id: 1, label: 'A', value: '' },
+                  { id: 2, label: 'B', value: '' },
+                  { id: 3, label: 'C', value: '' },
+                ],
+                correctId: null,
+              },
+            ],
+          }
           : g
       )
     );
@@ -210,54 +209,13 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-              ...g,
-              subQuestions: g.subQuestions.filter((s) => s.id !== sId),
-            }
+            ...g,
+            subQuestions: g.subQuestions.filter((s) => s.id !== sId),
+          }
           : g
       )
     );
   };
-
-  // =====================================
-  // UPLOAD AUDIO (only accept mp3)
-  // =====================================
-  const uploadAudio = async (file, onSuccess, onError, setUrl) => {
-    if (file.type !== 'audio/mpeg') {
-      message.error('Only MP3 files are allowed!');
-      onError('Invalid file type');
-      return;
-    }
-
-    try {
-      const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-        fileName: file.name,
-        type: 'audios',
-      });
-
-      const res = await fetch(data.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-
-      if (!res.ok) throw new Error('Upload failed');
-
-      setUrl(data.fileUrl);
-      onSuccess({ url: data.fileUrl });
-      message.success('Uploaded!');
-    } catch (err) {
-      console.error(err);
-      onError(err);
-      message.error('Upload failed');
-    }
-  };
-
-  const uploadProps = (setter) => ({
-    accept: '.mp3',
-    maxCount: 1,
-    customRequest: ({ file, onSuccess, onError }) =>
-      uploadAudio(file, onSuccess, onError, setter),
-  });
 
   // =====================================
   // VALIDATION ICONS
@@ -510,8 +468,12 @@ const CreateListening = () => {
           rules={[{ required: true, message: 'Section name is required' }]}
         >
           <Input
+            maxLength={255}
             placeholder='e.g., Fitness Club Listening Test'
-            onChange={(e) => setSectionName(e.target.value)}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+              setSectionName(sanitized)
+            }}
           />
         </Form.Item>
       </Card>
@@ -528,7 +490,11 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 1 name...'
               value={part1Name}
-              onChange={(e) => setPart1Name(e.target.value)}
+              maxLength={255}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                setPart1Name(sanitized)
+              }}
             />
           </Form.Item>
 
@@ -540,9 +506,9 @@ const CreateListening = () => {
                   `Question ${q.id}`,
                   Boolean(
                     q.instruction.trim() &&
-                      q.audioUrl &&
-                      q.options.filter((o) => o.value.trim()).length >= 2 &&
-                      q.options.find((o) => o.id === q.correctId)
+                    q.audioUrl &&
+                    q.options.filter((o) => o.value.trim()).length >= 2 &&
+                    q.options.find((o) => o.id === q.correctId)
                   )
                 )}
               >
@@ -550,22 +516,24 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={q.instruction}
-                    onChange={(e) =>
-                      updatePart1Field(q.id, 'instruction', e.target.value)
+                    maxLength={255}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                      updatePart1Field(q.id, 'instruction', sanitized)
+                    }
                     }
                   />
                 </Form.Item>
 
-                <Upload
+                <MinioUploadDragger
                   accept='.mp3'
-                  {...uploadProps((url) =>
-                    updatePart1Field(q.id, 'audioUrl', url)
-                  )}
-                >
-                  <Button icon={<AudioOutlined />} className='mb-6'>
-                    Upload audio (MP3)
-                  </Button>
-                </Upload>
+                  allowedMimeTypes={['audio/mpeg']}
+                  bucketType='audios'
+                  hint='Drop an MP3 file here or click to browse'
+                  onChange={(url) => updatePart1Field(q.id, 'audioUrl', url)}
+                  title='Upload question audio'
+                  value={q.audioUrl}
+                />
 
                 {q.audioUrl && (
                   <audio src={q.audioUrl} controls style={{ marginTop: 10 }} />
@@ -585,11 +553,10 @@ const CreateListening = () => {
 
                     {/* DELETE BUTTON */}
                     <DeleteOutlined
-                      className={`cursor-pointer text-red-500 ${
-                        q.options.length <= 3
-                          ? 'opacity-30 pointer-events-none'
-                          : ''
-                      }`}
+                      className={`cursor-pointer text-red-500 ${q.options.length <= 3
+                        ? 'opacity-30 pointer-events-none'
+                        : ''
+                        }`}
                       onClick={() => deletePart1Option(q.id, o.id)}
                     />
                   </div>
@@ -639,12 +606,15 @@ const CreateListening = () => {
             />
           </Form.Item>
 
-          <Upload
+          <MinioUploadDragger
             accept='.mp3'
-            {...uploadProps((url) => setPart2({ ...part2, audioUrl: url }))}
-          >
-            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
-          </Upload>
+            allowedMimeTypes={['audio/mpeg']}
+            bucketType='audios'
+            hint='Drop an MP3 file here or click to browse'
+            onChange={(url) => setPart2((prev) => ({ ...prev, audioUrl: url }))}
+            title='Upload Part 2 audio'
+            value={part2.audioUrl}
+          />
 
           {part2.audioUrl && <audio src={part2.audioUrl} controls />}
 
@@ -682,12 +652,15 @@ const CreateListening = () => {
             />
           </Form.Item>
 
-          <Upload
+          <MinioUploadDragger
             accept='.mp3'
-            {...uploadProps((url) => setPart3({ ...part3, audioUrl: url }))}
-          >
-            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
-          </Upload>
+            allowedMimeTypes={['audio/mpeg']}
+            bucketType='audios'
+            hint='Drop an MP3 file here or click to browse'
+            onChange={(url) => setPart3((prev) => ({ ...prev, audioUrl: url }))}
+            title='Upload Part 3 audio'
+            value={part3.audioUrl}
+          />
 
           {part3.audioUrl && <audio src={part3.audioUrl} controls />}
 
@@ -734,14 +707,15 @@ const CreateListening = () => {
                   />
                 </Form.Item>
 
-                <Upload
+                <MinioUploadDragger
                   accept='.mp3'
-                  {...uploadProps((url) =>
-                    updateGroupField(g.id, 'audioUrl', url)
-                  )}
-                >
-                  <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
-                </Upload>
+                  allowedMimeTypes={['audio/mpeg']}
+                  bucketType='audios'
+                  hint='Drop an MP3 file here or click to browse'
+                  onChange={(url) => updateGroupField(g.id, 'audioUrl', url)}
+                  title='Upload group audio'
+                  value={g.audioUrl}
+                />
 
                 {g.audioUrl && <audio src={g.audioUrl} controls />}
 
@@ -783,11 +757,10 @@ const CreateListening = () => {
                           />
 
                           <DeleteOutlined
-                            className={`cursor-pointer text-red-500 ${
-                              s.options.length <= 3
-                                ? 'opacity-30 pointer-events-none'
-                                : ''
-                            }`}
+                            className={`cursor-pointer text-red-500 ${s.options.length <= 3
+                              ? 'opacity-30 pointer-events-none'
+                              : ''
+                              }`}
                             onClick={() => deletePart4Option(g.id, s.id, o.id)}
                           />
                         </div>

@@ -170,8 +170,14 @@ const CreateGrammarVocab = () => {
     >
       {/* SECTION */}
       <Card title='Section Information' className='mb-5'>
-        <Form.Item label='Name' name='sectionName' rules={[{ required: true }]}>
-          <Input />
+        <Form.Item
+          label='Name'
+          name='sectionName'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+          rules={[{ required: true }]}>
+          <Input
+            maxLength={255}
+            placeholder={"Section Name Here..."} />
         </Form.Item>
       </Card>
 
@@ -180,9 +186,12 @@ const CreateGrammarVocab = () => {
         <Form.Item
           label='Part Name'
           name='part1Name'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input
+            maxLength={255}
+          />
         </Form.Item>
 
         <Collapse accordion>
@@ -201,9 +210,12 @@ const CreateGrammarVocab = () => {
               <Form.Item
                 name={['part1', idx, 'instruction']}
                 label='Instruction'
+                getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
                 rules={[{ required: true }]}
               >
-                <Input.TextArea rows={2} />
+                <Input.TextArea
+                  maxLength={255}
+                  rows={2} />
               </Form.Item>
 
               {/* OPTIONS — 3 fixed + dynamic additional */}
@@ -234,11 +246,14 @@ const CreateGrammarVocab = () => {
                             {...field}
                             name={[field.name, 'value']}
                             style={{ flex: 1, marginBottom: 0 }}
+                            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
                             rules={[
                               { required: true, message: 'Option is required' },
                             ]}
                           >
-                            <Input placeholder={`Option ${LETTERS[optIdx]}`} />
+                            <Input
+                              maxLength={255}
+                              placeholder={`Option ${LETTERS[optIdx]}`} />
                           </Form.Item>
 
                           {/* DELETE BUTTON (only delete from option #4 → index ≥ 3) */}
@@ -296,9 +311,11 @@ const CreateGrammarVocab = () => {
         <Form.Item
           label='Part Name'
           name='part2Name'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input maxLength={255}
+          />
         </Form.Item>
 
         <Collapse accordion>
@@ -317,12 +334,15 @@ const CreateGrammarVocab = () => {
               <Form.Item
                 label='Instruction Text'
                 required
-                rules={[{ required: true, message: 'Required' }]}
+                rules={[{ required: true, message: 'Instruction is Required' }]}
               >
                 <Input.TextArea
+                  maxLength={255}
                   value={g.content}
-                  onChange={(e) =>
-                    updateGroup(idx, { content: e.target.value })
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                    updateGroup(idx, { content: sanitized })
+                  }
                   }
                   rows={2}
                 />

@@ -1,5 +1,5 @@
 import { Modal, Button, Input, message, Form, Switch } from 'antd';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import * as Yup from 'yup';
 import {
   useCreateTeacher,
@@ -39,6 +39,24 @@ const TeacherActionModal = ({ initialData = null }) => {
     ? useUpdateTeacher()
     : useCreateTeacher();
 
+  useEffect(() => {
+    if (open) {
+      if (isEdit && initialData) {
+        form.setFieldsValue({
+          firstName: initialData?.firstName || '',
+          lastName: initialData?.lastName || '',
+          email: initialData?.email || '',
+          teacherCode: initialData?.teacherCode || '',
+          status: initialData?.status ?? true,
+          phone: initialData?.phone || '',
+          password: '',
+        });
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [open, isEdit, initialData, form]);
+
   const showModal = () => {
     setOpen(true);
   };
@@ -46,6 +64,7 @@ const TeacherActionModal = ({ initialData = null }) => {
   const handleCancel = () => {
     setOpen(false);
     form.resetFields();
+    setPasswordValue('');
   };
 
   // @ts-ignore
@@ -104,9 +123,13 @@ const TeacherActionModal = ({ initialData = null }) => {
       )}
       <Modal
         open={open}
+        onCancel={handleCancel}
         okText={isEdit ? 'Update' : 'Create'}
         // onOk={onAction}
-        closable={false}
+        closable={true}
+        destroyOnClose
+        keyboard={true}
+        maskClosable={true}
         confirmLoading={isOnAction}
         width={{
           xs: '90%',
