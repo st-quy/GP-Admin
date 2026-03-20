@@ -19,7 +19,7 @@ import {
   DownOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import HeaderInfo from '@app/components/HeaderInfo';
 import useConfirm from '@shared/hook/useConfirm';
@@ -29,10 +29,23 @@ const { Text } = Typography;
 
 const QuestionBank = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openConfirmModal, ModalComponent } = useConfirm();
 
+  const queryParams = new URLSearchParams(location.search);
+  const skillFromQuery = queryParams.get('skillName')?.trim().toUpperCase();
+  const validSkills = new Set([
+    'SPEAKING',
+    'LISTENING',
+    'READING',
+    'WRITING',
+    'GRAMMAR AND VOCABULARY',
+  ]);
+
   // --- Filter & pagination state ---
-  const [selectedSkill, setSelectedSkill] = useState('SPEAKING');
+  const [selectedSkill, setSelectedSkill] = useState(
+    validSkills.has(skillFromQuery) ? skillFromQuery : 'SPEAKING'
+  );
   const [searchText, setSearchText] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,6 +55,12 @@ const QuestionBank = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSkill, searchText]);
+
+  useEffect(() => {
+    if (validSkills.has(skillFromQuery) && skillFromQuery !== selectedSkill) {
+      setSelectedSkill(skillFromQuery);
+    }
+  }, [skillFromQuery, selectedSkill]);
 
   /* =========================================================
       LOAD SECTION LIST TỪ API (CÓ PHÂN TRANG)
@@ -92,11 +111,15 @@ const QuestionBank = () => {
       dataIndex: 'Description',
       align: 'left',
       ellipsis: { showTitle: false },
-      render: (text, record) => (
-        <Tooltip title={record?.Description || record?.SubContent || '-'}>
-          <span className='text-gray-500'>{record?.Description || record?.SubContent || '—'}</span>
-        </Tooltip>
-      ),
+      render: (_, record) => {
+        const description = record?.Description || record?.SubContent || '—';
+
+        return (
+          <Tooltip title={description}>
+            <span className='text-gray-500'>{description}</span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Skill',
@@ -114,7 +137,7 @@ const QuestionBank = () => {
       align: 'center',
       render: (_, record) => (
         <Space size='middle'>
-          <Tooltip title="View Detail">
+          <Tooltip title='Preview Questions'>
             <Button
               type='text'
               className='text-green-600 hover:bg-blue-50 px-2'
@@ -125,8 +148,9 @@ const QuestionBank = () => {
               }}
             />
           </Tooltip>
+
           {record.Topics.length === 0 && (
-            <Tooltip title="Edit Section">
+            <Tooltip title='Edit Questions'>
               <Button
                 type='text'
                 className='text-blue-600 hover:bg-blue-50 px-2'
@@ -138,8 +162,9 @@ const QuestionBank = () => {
               />
             </Tooltip>
           )}
+
           {record.Topics.length === 0 && (
-            <Tooltip title="Delete Section">
+            <Tooltip title='Delete Questions'>
               <Button
                 type='text'
                 className='text-red-500 hover:bg-red-50 px-2'
@@ -200,7 +225,12 @@ const QuestionBank = () => {
             type='card'
             tabBarGutter={32}
             activeKey={selectedSkill ?? ''}
-            onChange={(key) => setSelectedSkill(key)}
+            onChange={(key) => {
+              setSelectedSkill(key);
+              navigate(`/questions?skillName=${encodeURIComponent(key)}`, {
+                replace: true,
+              });
+            }}
             items={[
               { key: 'SPEAKING', label: 'Speaking' },
               { key: 'LISTENING', label: 'Listening' },
