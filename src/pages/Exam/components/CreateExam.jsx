@@ -155,11 +155,11 @@ const CreateExamPage = () => {
 
         try {
             const values = form.getFieldsValue();
-            if (!values.name) return message.error("Name is required");
+            if (!values.name || !values.name.trim()) return message.error("Exam name is required and cannot be only whitespace");
 
             let topicResponse;
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'draft' } });
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'draft' } });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
                 await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
 
@@ -189,11 +189,11 @@ const CreateExamPage = () => {
         }
         try {
             const values = form.getFieldsValue();
-            if (!values.name) return message.error("Name is required");
+            if (!values.name || !values.name.trim()) return message.error("Exam name is required and cannot be only whitespace");
 
             let topicResponse;
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'submited' } });
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'submited' } });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
                 await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
 
