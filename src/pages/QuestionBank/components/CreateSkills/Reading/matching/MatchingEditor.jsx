@@ -101,7 +101,7 @@ const MatchingEditor = ({ errors = {} }) => {
                 <div className='w-full flex items-center gap-2'>
                   <Text className='min-w-10'>{idx + 1}</Text>
 
-                  <Input
+                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                     placeholder={`Content ${idx + 1}`}
                     value={item.text}
                     onChange={(e) => {
@@ -158,7 +158,7 @@ const MatchingEditor = ({ errors = {} }) => {
                   >
                     {letterLabels[idx]}
                   </div>
-                  <Input
+                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
                     onChange={(e) => {

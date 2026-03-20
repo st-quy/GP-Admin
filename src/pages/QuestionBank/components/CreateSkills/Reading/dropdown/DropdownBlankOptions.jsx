@@ -78,8 +78,7 @@ const DropdownBlankOptions = () => {
                                 e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
                               }
                             >
-                              <Input
-                                maxLength={255}
+                              <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                                 placeholder='Enter option text'
                                 onChange={() => {
                                   form.setFieldValue(
