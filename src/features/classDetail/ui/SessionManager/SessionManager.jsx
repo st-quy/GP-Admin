@@ -6,7 +6,7 @@ import { formatDateTime } from "@shared/lib/utils/formatString";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import SessionTable from "./SessionTable/SessionTable";
-import { Button, message } from "antd";
+import { Button, message, Tooltip } from "antd";
 
 const SessionManager = ({ data, isLoading }) => {
   const [modalState, setModalState] = useState({
@@ -95,19 +95,24 @@ const SessionManager = ({ data, isLoading }) => {
       className: "!text-center",
       render: (_, record) => (
         <div className="flex justify-center items-center gap-4">
-          <span className="text-xl">
-            <EditOutlined
+          <Tooltip title={record.status === "ON_GOING" ? "Cannot edit ongoing session" : "Edit Session"}>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
               onClick={() => openModal("edit", record)}
-              className="hover:opacity-50"
+              disabled={record.status === "ON_GOING"}
+              className="text-xl !text-primaryColor hover:opacity-70 disabled:opacity-30"
             />
-          </span>
+          </Tooltip>
           {record.SessionParticipants.length === 0 && (
-            <span className="text-xl">
-              <DeleteOutlined
+            <Tooltip title="Delete Session">
+              <Button
+                type="link"
+                icon={<DeleteOutlined />}
                 onClick={() => openModal("delete", record)}
-                className="hover:opacity-50"
+                className="text-xl !text-red-500 hover:opacity-70"
               />
-            </span>
+            </Tooltip>
           )}
         </div>
       ),
