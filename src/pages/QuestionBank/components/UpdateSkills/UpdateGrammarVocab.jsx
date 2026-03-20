@@ -258,7 +258,12 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Section Name' required>
           <Input
             value={sectionName}
-            onChange={(e) => setSectionName(e.target.value)}
+            maxLength={255}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+              setSectionName(sanitized)
+            }
+            }
           />
         </Form.Item>
       </Card>
@@ -275,8 +280,11 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Part Name' required>
           <Input
             value={part1Name}
-            onChange={(e) => setPart1Name(e.target.value)}
-          />
+            maxLength={255}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+              setSectionName(sanitized)
+            }} />
         </Form.Item>
 
         <Collapse accordion>
@@ -290,8 +298,8 @@ const UpdateGrammarVocab = () => {
                   Question {q.id}
                   {renderStatus(
                     q.instruction.trim() &&
-                      q.options.every((o) => o.value.trim()) &&
-                      q.correctId
+                    q.options.every((o) => o.value.trim()) &&
+                    q.correctId
                   )}
                 </div>
               }
@@ -301,14 +309,19 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={q.instruction}
-                  onChange={(e) =>
+                  maxLength={255}
+
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
                     setPart1((prev) =>
                       prev.map((x) =>
                         x.id === q.id
-                          ? { ...x, instruction: e.target.value }
+                          ? { ...x, instruction: sanitized }
                           : x
                       )
                     )
+                  }
+
                   }
                 />
               </Form.Item>
@@ -324,21 +337,25 @@ const UpdateGrammarVocab = () => {
 
                   <Input
                     value={o.value}
-                    onChange={(e) =>
+                    maxLength={255}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
                       setPart1((prev) =>
                         prev.map((x) =>
                           x.id === q.id
                             ? {
-                                ...x,
-                                options: x.options.map((opt) =>
-                                  opt.id === o.id
-                                    ? { ...opt, value: e.target.value }
-                                    : opt
-                                ),
-                              }
+                              ...x,
+                              options: x.options.map((opt) =>
+                                opt.id === o.id
+                                  ? { ...opt, value: sanitized }
+                                  : opt
+                              ),
+                            }
                             : x
                         )
                       )
+                    }
+
                     }
                   />
 
@@ -386,16 +403,16 @@ const UpdateGrammarVocab = () => {
                     prev.map((x) =>
                       x.id === q.id
                         ? {
-                            ...x,
-                            options: [
-                              ...x.options,
-                              {
-                                id: x.options.length + 1,
-                                label: generateLabel(x.options.length),
-                                value: '',
-                              },
-                            ],
-                          }
+                          ...x,
+                          options: [
+                            ...x.options,
+                            {
+                              id: x.options.length + 1,
+                              label: generateLabel(x.options.length),
+                              value: '',
+                            },
+                          ],
+                        }
                         : x
                     )
                   )
@@ -437,7 +454,11 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Part Name' required>
           <Input
             value={part2Name}
-            onChange={(e) => setPart2Name(e.target.value)}
+            maxLength={255}
+            onChange={(e) => {
+              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+              setSectionName(sanitized)
+            }}
           />
         </Form.Item>
 
@@ -458,9 +479,11 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={g.content}
-                  onChange={(e) =>
-                    updateGroupState(idx, { content: e.target.value })
-                  }
+                  maxLength={255}
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                    setSectionName(sanitized)
+                  }}
                 />
               </Form.Item>
 
