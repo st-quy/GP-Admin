@@ -19,6 +19,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., Answer the following questions.'
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -55,7 +56,7 @@ const WritingEditor = ({ partType, requireImage }) => {
                     ]}
                     className='!m-0'
                   >
-                    <Input placeholder='Enter question...' />
+                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter question...' />
                   </Form.Item>
                 </div>
               ))}
@@ -86,6 +87,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., You are filling in a registration form...'
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -97,6 +99,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., Complete the form below with appropriate information.'
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -105,7 +108,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           label='Word limit'
           rules={[{ required: true, message: 'Word limit is required' }]}
         >
-          <Input
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
             placeholder='e.g., 30'
             addonAfter='words'
             type='number'
@@ -128,6 +131,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={3}
             placeholder='e.g., Answer the questions in the chat room below.'
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -168,7 +172,7 @@ const WritingEditor = ({ partType, requireImage }) => {
                         { required: true, message: 'Speaker is required' },
                       ]}
                     >
-                      <Input placeholder='e.g., Ben, Quinn, Chris, Hannah...' />
+                      <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='e.g., Ben, Quinn, Chris, Hannah...' />
                     </Form.Item>
 
                     <Form.Item
@@ -180,7 +184,7 @@ const WritingEditor = ({ partType, requireImage }) => {
                         { required: true, message: 'Question is required' },
                       ]}
                     >
-                      <TextArea rows={2} placeholder='Enter question...' />
+                      <TextArea rows={2} placeholder='Enter question...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
                     </Form.Item>
 
                     {/* <Form.Item
@@ -192,7 +196,7 @@ const WritingEditor = ({ partType, requireImage }) => {
                         { required: true, message: 'Word limit is required' },
                       ]}
                     >
-                      <Input
+                      <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                         placeholder='e.g., 30'
                         addonAfter='words'
                         type='number'
@@ -228,7 +232,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           label='Instruction Text'
           rules={[{ required: true, message: 'Instruction text is required' }]}
         >
-          <Input placeholder='e.g., You are a member of the Fitness Club. ...' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='e.g., You are a member of the Fitness Club. ...' />
         </Form.Item>
         <Form.Item
           name={['part4', 'emailText']}
@@ -238,6 +242,7 @@ const WritingEditor = ({ partType, requireImage }) => {
           <TextArea
             rows={5}
             placeholder='Paste the news / situation / email text here...'
+            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           />
         </Form.Item>
 
@@ -250,6 +255,7 @@ const WritingEditor = ({ partType, requireImage }) => {
             <TextArea
               rows={3}
               placeholder='e.g., Write an email to your friend...'
+              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             />
           </Form.Item>
           {/* <Form.Item
@@ -257,7 +263,7 @@ const WritingEditor = ({ partType, requireImage }) => {
             label='Word limit'
             rules={[{ required: true, message: 'Word limit is required' }]}
           >
-            <Input
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='e.g., 50'
               addonAfter='words'
               type='number'
@@ -275,6 +281,7 @@ const WritingEditor = ({ partType, requireImage }) => {
             <TextArea
               rows={3}
               placeholder='e.g., Write an email to the club president...'
+              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             />
           </Form.Item>
           {/* <Form.Item
@@ -282,7 +289,7 @@ const WritingEditor = ({ partType, requireImage }) => {
             label='Word limit'
             rules={[{ required: true, message: 'Word limit is required' }]}
           >
-            <Input
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='e.g., 120-150'
               addonAfter='words'
               // nếu muốn cho dạng range thì để type text
