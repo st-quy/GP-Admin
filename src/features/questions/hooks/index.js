@@ -1,11 +1,12 @@
 // @ts-nocheck
 // hooks/useCreateSpeaking.ts
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { message } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QuestionApi } from '../api';
 
 export const useCreateQuestion = () => {
+  const queryClient = useQueryClient();
   const navigate = useNavigate();
   const { partId } = useParams();
 
@@ -17,6 +18,10 @@ export const useCreateQuestion = () => {
       };
       const { data } = await QuestionApi.createQuestions(payload);
       return data.data;
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['sections'] });
+      await queryClient.invalidateQueries({ queryKey: ['questions'] });
     },
     onError(error) {
       const msg = error?.response?.data?.message || 'Create failed';
@@ -76,13 +81,23 @@ export const useGetQuestionGroupDetail = (skillName, sectionId) => {
 };
 
 export const useUpdateQuestionGroup = () => {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({ sectionId, payload }) => {
       const { data } = await QuestionApi.update({
         sectionId,
         payload,
       });
-      return data?.data;
+      return data;
+    },
+
+    onSuccess: async (_response, variables) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['sections'] }),
+        queryClient.invalidateQueries({ queryKey: ['question-group-detail'] }),
+        queryClient.invalidateQueries({ queryKey: ['question-group-detail', variables?.payload?.SkillName, variables?.sectionId] }),
+      ]);
     },
 
     onError(error) {
