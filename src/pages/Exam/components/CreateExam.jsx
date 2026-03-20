@@ -7,6 +7,7 @@ import {
     EditOutlined,
     BookOutlined,
     CustomerServiceOutlined,
+    HolderOutlined,
 } from "@ant-design/icons";
 import {
     Card,
@@ -25,6 +26,27 @@ import PreviewExam from "@shared/ui/PreviewExam";
 import { useSelector } from "react-redux";
 import useConfirm from "@shared/hook/useConfirm";
 import RejectExamModal from "@features/topic/ui/RejectModal";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
+
+const SortableQuestionItem = ({ id, children }) => {
+    const { setNodeRef, listeners, attributes, transform, transition, isDragging } =
+        useSortable({ id });
+
+    const style = {
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+    };
+
+    return (
+        <div ref={setNodeRef} style={style}>
+            {children(listeners, attributes)}
+        </div>
+    );
+};
 
 const { Text, Title } = Typography;
 
@@ -55,13 +77,15 @@ const CreateExamPage = () => {
     const { openConfirmModal, ModalComponent } = useConfirm();
     const [rejectOpen, setRejectOpen] = useState(false);
 
-
+    const sensors = useSensors(
+        useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+    );
     const { mutateAsync: createExam } = useCreateTopic();
     const { mutateAsync: createTopicSection } = useCreateTopicSection();
     const { data: topicData, isLoading } = useGetTopicWithRelations(topicId);
     const { mutateAsync: updateTopic } = useUpdateTopic();
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
-    const { role } = useSelector((state) => state.auth);
+    const { role, user } = useSelector((state) => state.auth);
 
     const handlePartSelect = (sections) => {
         const oldSectionId = selectedSectionBySkill[selectedSkill];
@@ -107,48 +131,48 @@ const CreateExamPage = () => {
         setOpenModal(false);
     };
     const handlePreviewExam = () => {
-  if (!instructions.length) {
-    message.warning("Please select at least one skill before preview");
-    return;
-  }
+        if (!instructions.length) {
+            message.warning("Please select at least one skill before preview");
+            return;
+        }
 
-  const skillOrder = [
-    "LISTENING",
-    "GRAMMAR AND VOCABULARY",
-    "READING",
-    "WRITING",
-    "SPEAKING",
-  ];
+        const skillOrder = [
+            "LISTENING",
+            "GRAMMAR AND VOCABULARY",
+            "READING",
+            "WRITING",
+            "SPEAKING",
+        ];
 
-  const skills = skillOrder.map(skillName => {
-    const found = instructions.find(i => i.skill === skillName);
+        const skills = skillOrder.map(skillName => {
+            const found = instructions.find(i => i.skill === skillName);
 
-    if (!found || !found.section) {
-      return {
-        ID: null,
-        Name: skillName,
-        Parts: [],
-      };
-    }
+            if (!found || !found.section) {
+                return {
+                    ID: null,
+                    Name: skillName,
+                    Parts: [],
+                };
+            }
 
-    return {
-      ID: found.section.SkillID || found.section.Skill?.ID,
-      Name: skillName,
-      Parts: found.section.Parts || [],
+            return {
+                ID: found.section.SkillID || found.section.Skill?.ID,
+                Name: skillName,
+                Parts: found.section.Parts || [],
+            };
+        });
+
+        const previewExamData = {
+            ID: topicData?.ID,
+            Name: form.getFieldValue("name"),
+            Skills: skills,
+            createdAt: topicData?.createdAt || new Date().toISOString(),
+            updatedAt: topicData?.updatedAt || new Date().toISOString(),
+        };
+
+        setPreviewData(previewExamData);
+        setPreviewOpen(true);
     };
-  });
-
-  const previewExamData = {
-    ID: topicData?.ID,
-    Name: form.getFieldValue("name"),
-    Skills: skills,
-    createdAt: topicData?.createdAt || new Date().toISOString(),
-    updatedAt: topicData?.updatedAt || new Date().toISOString(),
-  };
-
-  setPreviewData(previewExamData);
-  setPreviewOpen(true);
-};
 
 
     const handleSaveExam = async () => {
@@ -316,41 +340,104 @@ const CreateExamPage = () => {
 
                                     {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
                                         <div style={{ marginTop: 8 }}>
-                                            {(part.Questions || []).map((q, index) => (
-                                                <div
-                                                    key={q.ID}
-                                                    style={{
-                                                        display: "flex",
-                                                        alignItems: "flex-start",
-                                                        gap: 12,
-                                                        marginBottom: 10,
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            width: 28,
-                                                            height: 28,
-                                                            borderRadius: "50%",
-                                                            background: "#0a2a79",
-                                                            color: "white",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            fontWeight: 600,
-                                                            fontSize: 14,
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
-                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
-                                                            : (index + 1)}
-                                                    </div>
+                                            <DndContext
+                                                sensors={sensors}
+                                                collisionDetection={closestCenter}
+                                                modifiers={[restrictToVerticalAxis]}
+                                                onDragEnd={(event) => {
+                                                    if (isViewMode) return;
+                                                    const { active, over } = event;
+                                                    if (!over || active.id === over.id) return;
 
-                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
-                                                        {q.Content}
-                                                    </Text>
-                                                </div>
-                                            ))}
+                                                    const questions = [...(part.Questions || [])];
+                                                    const oldIdx = questions.findIndex(q => q.ID === active.id);
+                                                    const newIdx = questions.findIndex(q => q.ID === over.id);
+                                                    if (oldIdx === -1 || newIdx === -1) return;
+
+                                                    const [moved] = questions.splice(oldIdx, 1);
+                                                    questions.splice(newIdx, 0, moved);
+
+                                                    setInstructions(prev => prev.map(ins => {
+                                                        if (ins.skill !== selectedSkill) return ins;
+                                                        return {
+                                                            ...ins,
+                                                            section: {
+                                                                ...ins.section,
+                                                                Parts: (ins.section.Parts || []).map(p =>
+                                                                    p.ID === part.ID ? { ...p, Questions: questions } : p
+                                                                ),
+                                                            },
+                                                        };
+                                                    }));
+                                                }}
+                                            >
+                                                <SortableContext
+                                                    items={(part.Questions || []).map(q => q.ID)}
+                                                    strategy={verticalListSortingStrategy}
+                                                >
+                                                    {(part.Questions || []).map((q, index) => (
+                                                        <SortableQuestionItem key={q.ID} id={q.ID}>
+                                                            {(listeners, attributes) => (
+                                                                <div
+                                                                    style={{
+                                                                        display: "flex",
+                                                                        alignItems: "flex-start",
+                                                                        gap: 12,
+                                                                        marginBottom: 10,
+                                                                        padding: 8,
+                                                                        borderRadius: 8,
+                                                                        background: "#fff",
+                                                                        border: "1px solid transparent",
+                                                                    }}
+                                                                    onMouseEnter={(e) => {
+                                                                        if (!isViewMode) e.currentTarget.style.border = "1px solid #d9d9d9";
+                                                                    }}
+                                                                    onMouseLeave={(e) => {
+                                                                        e.currentTarget.style.border = "1px solid transparent";
+                                                                    }}
+                                                                >
+                                                                    {!isViewMode && (
+                                                                        <HolderOutlined
+                                                                            {...listeners}
+                                                                            {...attributes}
+                                                                            style={{
+                                                                                cursor: "grab",
+                                                                                color: "#999",
+                                                                                fontSize: 16,
+                                                                                marginTop: 4,
+                                                                                flexShrink: 0,
+                                                                            }}
+                                                                        />
+                                                                    )}
+                                                                    <div
+                                                                        style={{
+                                                                            width: 28,
+                                                                            height: 28,
+                                                                            borderRadius: "50%",
+                                                                            background: "#0a2a79",
+                                                                            color: "white",
+                                                                            display: "flex",
+                                                                            alignItems: "center",
+                                                                            justifyContent: "center",
+                                                                            fontWeight: 600,
+                                                                            fontSize: 14,
+                                                                            flexShrink: 0,
+                                                                        }}
+                                                                    >
+                                                                        {(selectedSkill === "SPEAKING" && part.Content === "Part 4")
+                                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
+                                                                            : (index + 1)}
+                                                                    </div>
+
+                                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
+                                                                        {q.Content}
+                                                                    </Text>
+                                                                </div>
+                                                            )}
+                                                        </SortableQuestionItem>
+                                                    ))}
+                                                </SortableContext>
+                                            </DndContext>
                                         </div>
                                     )}
                                 </div>
@@ -364,8 +451,26 @@ const CreateExamPage = () => {
     };
 
     useEffect(() => {
+        if (user && !topicId) {
+            const creatorName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+            form.setFieldsValue({ creator: creatorName });
+        }
+    }, [user, form, topicId]);
+
+    useEffect(() => {
         if (!topicData) return;
         form.setFieldsValue({ name: topicData.Name });
+
+        if (topicData.creator) {
+            const creatorName = [topicData.creator.firstName, topicData.creator.lastName].filter(Boolean).join(' ');
+            form.setFieldsValue({ creator: creatorName });
+        }
+
+        if (topicData.updater) {
+            const editorName = [topicData.updater.firstName, topicData.updater.lastName].filter(Boolean).join(' ');
+            form.setFieldsValue({ editor: editorName });
+        }
+
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
@@ -381,6 +486,8 @@ const CreateExamPage = () => {
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
     }, [topicData]);
+
+    const allowedCharactersRegex = /^[a-zA-Z0-9 _-]*$/;
 
     return (
         <>
@@ -427,9 +534,26 @@ const CreateExamPage = () => {
                         <Form.Item
                             label="Exam Name"
                             name="name"
-                            rules={[{ required: true }]}
+                            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '')}
+                            rules={[
+                                { required: true },
+                            ]}
+
                         >
-                            <Input placeholder="Enter exam name" disabled={isViewMode} />
+                            <Input maxLength={255} placeholder="Enter exam name" disabled={isViewMode} />
+                        </Form.Item>
+                        <Form.Item
+                            label={"Creator"}
+                            name="creator"
+                        >
+                            <Input disabled />
+                        </Form.Item>
+
+                        <Form.Item
+                            label={"Last Edited By"}
+                            name="editor"
+                        >
+                            <Input placeholder="None" disabled />
                         </Form.Item>
                     </Card>
 

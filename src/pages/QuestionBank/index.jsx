@@ -213,12 +213,17 @@ const QuestionBank = () => {
           {/* ==================== SEARCH BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
             <Input
+              maxLength={255}
               size='large'
               placeholder='Search section name...'
               prefix={<SearchOutlined className='text-gray-400' />}
               className='w-full sm:w-[260px] lg:w-[320px]'
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                setSearchText(sanitized)
+              }
+              }
             />
           </div>
 

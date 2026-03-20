@@ -124,6 +124,7 @@ const TopicListPage = () => {
       title: 'Topic Name',
       dataIndex: 'Name',
       key: 'Name',
+      ellipsis: true,
       render: (text) => (
         <span className='font-medium text-gray-800'>{text}</span>
       ),
@@ -143,14 +144,14 @@ const TopicListPage = () => {
         />
       ),
     },
-    {
-      title: 'Creator',
-      dataIndex: 'createdBy',
-      key: 'createdBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
-      ),
-    },
+    // {
+    //   title: 'Creator',
+    //   dataIndex: 'createdBy',
+    //   key: 'createdBy',
+    //   render: (text) => (
+    //     <span className='font-medium text-gray-800'>{text}</span>
+    //   ),
+    // },
     {
       title: 'Creation day',
       dataIndex: 'createdAt',
@@ -171,24 +172,26 @@ const TopicListPage = () => {
         </span>
       ),
     },
-    {
-      title: 'Updator',
-      dataIndex: 'updatedBy',
-      key: 'updatedBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
-      ),
-    },
+    // {
+    //   title: 'Updator',
+    //   dataIndex: 'updatedBy',
+    //   key: 'updatedBy',
+    //   render: (text) => (
+    //     <span className='font-medium text-gray-800'>{text}</span>
+    //   ),
+    // },
     {
       title: 'Action',
       key: 'action',
       align: 'center',
+      // ellipsis: true,
       render: (_, record) => {
         const canModify =
           record.Status === 'submited' || record.Status === 'approved';
         return (
           <Space size='middle'>
             <Button
+              title='Review Topic'
               type='text'
               icon={<EyeOutlined />}
               className='text-[#1890FF]'
@@ -200,6 +203,7 @@ const TopicListPage = () => {
             {!canModify && (
               <>
                 <Button
+                  title='Edit Topic'
                   type='text'
                   icon={<EditOutlined />}
                   className='text-[#1890FF]'
@@ -210,6 +214,7 @@ const TopicListPage = () => {
                 />
 
                 <Button
+                  title='Delete Topic'
                   type='text'
                   icon={<DeleteOutlined />}
                   className='text-[#FF4D4F]'
@@ -319,9 +324,12 @@ const TopicListPage = () => {
                 placeholder='Search topic name...'
                 prefix={<SearchOutlined />}
                 value={search}
+                maxLength={255}
                 onChange={(e) => {
+                  const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '');
+
                   setPage(1);
-                  setSearch(e.target.value);
+                  setSearch(sanitized);
                 }}
               />
 

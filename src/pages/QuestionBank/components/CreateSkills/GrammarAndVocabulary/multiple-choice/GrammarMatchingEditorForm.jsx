@@ -164,9 +164,13 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 </div>
 
                 <Input
+                  maxLength={255}
                   placeholder={`Content ${index + 1}`}
                   value={item.text}
-                  onChange={(e) => updateLeft(index, e.target.value)}
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                    updateLeft(index, sanitized)
+                  }}
                   status={leftErrors[index] ? 'error' : ''}
                 />
 
@@ -227,9 +231,14 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 </div>
 
                 <Input
+                  maxLength={255}
                   placeholder={`Option ${LETTERS[index]}`}
                   value={item.text}
-                  onChange={(e) => updateRight(index, e.target.value)}
+                  onChange={(e) => {
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                    updateRight(index, sanitized)
+                  }
+                  }
                   status={rightErrors[index] ? 'error' : ''}
                 />
 
