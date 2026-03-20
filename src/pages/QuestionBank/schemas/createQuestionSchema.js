@@ -331,6 +331,7 @@ export const readingFullSchema = yup.object().shape({
 export const buildListeningPayload = (values) => {
   const {
     sectionName,
+    description,
     part1Name,
     part1,
     part2Name,
@@ -465,6 +466,7 @@ export const buildListeningPayload = (values) => {
   return {
     SkillName: 'LISTENING',
     SectionName: sectionName,
+    Description: description?.trim() || '',
     parts: {
       part1: part1Payload,
       part2: part2Payload,

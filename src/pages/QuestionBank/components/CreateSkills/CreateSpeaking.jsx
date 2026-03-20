@@ -25,6 +25,7 @@ const CreateSpeaking = () => {
       const payload = {
         SkillName: 'SPEAKING',
         SectionName: values.sectionName,
+        Description: values.description?.trim() || '',
         parts: {
           part1: { ...values.parts.part1, image: images.part1, sequence: 1 },
           part2: { ...values.parts.part2, image: images.part2, sequence: 2 },
@@ -34,7 +35,8 @@ const CreateSpeaking = () => {
       };
 
       createSpeaking(payload, {
-        onSuccess: () => navigate(-1),
+        onSuccess: () =>
+          navigate('/questions?skillName=SPEAKING', { replace: true }),
       });
     } catch (err) {
       console.error(err);
@@ -55,7 +57,7 @@ const CreateSpeaking = () => {
           validateTrigger={['onChange', 'onBlur']}
           required
         >
-          <Input placeholder='Enter part name' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter part name' />
         </Form.Item>
 
         {/* UPLOAD FIELD WITH VALIDATION */}
@@ -124,7 +126,7 @@ const CreateSpeaking = () => {
                     ]}
                     validateTrigger={['onChange', 'onBlur']}
                   >
-                    <Input placeholder='Enter question' />
+                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter question' />
                   </Form.Item>
 
                   {field.name >= 3 && (
@@ -158,6 +160,7 @@ const CreateSpeaking = () => {
       layout='vertical'
       onFinish={handleSubmit}
       initialValues={{
+        description: '',
         parts: {
           part1: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
           part2: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
@@ -172,7 +175,10 @@ const CreateSpeaking = () => {
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='Enter section name' />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
+        </Form.Item>
+        <Form.Item label='Description' name='description'>
+          <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
         </Form.Item>
       </Card>
 
