@@ -95,19 +95,19 @@ const SessionManager = ({ data, isLoading }) => {
       className: "!text-center",
       render: (_, record) => (
         <div className="flex justify-center items-center gap-4">
-          <span className="text-xl">
-            <EditOutlined
-              onClick={() => openModal("edit", record)}
-              className="hover:opacity-50"
-            />
-          </span>
+          <Button
+            type="link"
+            icon={<EditOutlined />}
+            onClick={() => openModal("edit", record)}
+            className="text-xl !text-primaryColor hover:opacity-70"
+          />
           {record.SessionParticipants.length === 0 && (
-            <span className="text-xl">
-              <DeleteOutlined
-                onClick={() => openModal("delete", record)}
-                className="hover:opacity-50"
-              />
-            </span>
+            <Button
+              type="link"
+              icon={<DeleteOutlined />}
+              onClick={() => openModal("delete", record)}
+              className="text-xl !text-red-500 hover:opacity-70"
+            />
           )}
         </div>
       ),
