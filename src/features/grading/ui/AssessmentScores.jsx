@@ -121,14 +121,25 @@ const AssessmentScores = ({
                   value={scores}
                   changeOnWheel={true}
                   onChange={(value) => {
-                    if (value > 50) {
+                    if (value === null || value === undefined || value === "") {
+                      setScores(null);
+                      return;
+                    }
+
+                    const numericValue = Number(value);
+
+                    if (Number.isNaN(numericValue)) {
+                      return;
+                    }
+
+                    if (numericValue > 50) {
                       message.warning("Score cannot exceed 50");
                       setScores(50);
-                    } else if (value === null || isNaN(value)) {
-                      message.warning("Please enter a valid number");
-                      setScores(null);
+                    } else if (numericValue < 0) {
+                      message.warning("Score cannot be less than 0");
+                      setScores(0);
                     } else {
-                      setScores(value);
+                      setScores(numericValue);
                     }
                   }}
                   onKeyDown={(e) => {
