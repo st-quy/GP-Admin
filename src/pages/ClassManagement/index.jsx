@@ -59,7 +59,7 @@ const ClassManagement = () => {
       align: 'center',
 
       render: (text, record) => (
-        <Link to={`${record.ID}`} className='underline'>
+        <Link to={`/class/${record.ID}`} className='underline'>
           {text}
         </Link>
       ), // Render class name as a link
