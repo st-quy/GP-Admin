@@ -472,7 +472,7 @@ const CreateListening = () => {
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
             placeholder='e.g., Fitness Club Listening Test'
             onChange={(e) => {
               const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
@@ -500,7 +500,7 @@ const CreateListening = () => {
           )}
         >
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 1 name...'
               value={part1Name}
               maxLength={255}
@@ -554,7 +554,7 @@ const CreateListening = () => {
                   <div key={o.id} className='flex items-center gap-2 mb-2'>
                     <div className='w-6 font-bold'>{o.label}</div>
 
-                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                    <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                       className='flex-1'
                       value={o.value}
                       onChange={(e) =>
@@ -600,7 +600,7 @@ const CreateListening = () => {
         {/* PART 2 */}
         <Card title={renderHeader('PART 2 — Matching', valid2)}>
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 2 name...'
               value={part2Name}
               onChange={(e) => setPart2Name(e.target.value)}
@@ -647,7 +647,7 @@ const CreateListening = () => {
         {/* PART 3 */}
         <Card title={renderHeader('PART 3 — Matching', valid3)}>
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 3 name...'
               value={part3Name}
               onChange={(e) => setPart3Name(e.target.value)}
@@ -694,7 +694,7 @@ const CreateListening = () => {
         {/* PART 4 */}
         <Card title={renderHeader('PART 4 — Listening Groups', valid4)}>
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 4 name...'
               value={part4Name}
               onChange={(e) => setPart4Name(e.target.value)}
@@ -737,7 +737,7 @@ const CreateListening = () => {
                   <div key={s.id} className='flex gap-4'>
                     <Card size='small' className='flex-1 mt-4'>
                       <Form.Item label={`Sub question ${s.id}`} required>
-                        <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                        <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                           value={s.content}
                           onChange={(e) =>
                             updateGroupSub(
@@ -757,7 +757,7 @@ const CreateListening = () => {
                         >
                           <div className='w-6 font-bold'>{o.label}</div>
 
-                          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                             className='flex-1'
                             value={o.value}
                             onChange={(e) =>
