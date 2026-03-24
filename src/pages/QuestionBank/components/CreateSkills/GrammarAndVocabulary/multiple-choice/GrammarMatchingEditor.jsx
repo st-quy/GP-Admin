@@ -106,7 +106,7 @@ const GrammarMatchingEditor = ({ group, updateGroup }) => {
                   {index + 1}
                 </div>
 
-                <Input
+                <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                   placeholder={`Content ${index + 1}`}
                   value={item.text}
                   onChange={(e) => updateLeft(index, e.target.value)}
@@ -165,7 +165,7 @@ const GrammarMatchingEditor = ({ group, updateGroup }) => {
                   {letterLabels[index]}
                 </div>
 
-                <Input
+                <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                   placeholder={`Option ${letterLabels[index]}`}
                   value={item.text}
                   onChange={(e) => updateRight(index, e.target.value)}

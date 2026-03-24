@@ -9,8 +9,6 @@ import {
   Button,
   Typography,
   message,
-  Tag,
-  Tooltip,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -30,18 +28,15 @@ import {
   useGetTopics,
   useDeleteTopic,
   useDeleteTopicSectionByTopicId,
+  useUpdateTopic,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
+import StatusTransitionDropdown from '@shared/components/StatusTransitionDropdown';
 
 const { Option } = Select;
 const { Text } = Typography;
 
-const statusTagConfig = {
-  submited: { bg: 'bg-amber-100', text: 'text-gray-700', label: 'Submited' },
-  approved: { bg: 'bg-emerald-100', text: 'text-gray-700', label: 'Approved' },
-  draft: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Draft' },
-  rejected: { bg: 'bg-rose-100', text: 'text-gray-700', label: 'Rejected' },
-};
+
 
 const TopicListPage = () => {
   const navigate = useNavigate();
@@ -66,6 +61,7 @@ const TopicListPage = () => {
 
   const deleteTopic = useDeleteTopic();
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
+  const { mutateAsync: updateTopic } = useUpdateTopic();
 
   const counts = {
     Submited: data?.statusCounts?.submited || 0,
@@ -128,6 +124,7 @@ const TopicListPage = () => {
       title: 'Topic Name',
       dataIndex: 'Name',
       key: 'Name',
+      ellipsis: true,
       render: (text) => (
         <span className='font-medium text-gray-800'>{text}</span>
       ),
@@ -136,42 +133,25 @@ const TopicListPage = () => {
       title: 'Status',
       dataIndex: 'Status',
       key: 'Status',
-      render: (_, record) => {
-        const cfg = statusTagConfig[record.Status] || {};
-
-        const tagElement = (
-          <Tag
-            className={`${cfg.bg} ${cfg.text} font-medium px-3 py-1 rounded-md`}
-          >
-            {cfg.label}
-          </Tag>
-        );
-
-        if (record.Status === 'rejected') {
-          return (
-            <Tooltip
-              title={
-                record.ReasonReject
-                  ? record.ReasonReject
-                  : 'No reject reason provided'
-              }
-            >
-              {tagElement}
-            </Tooltip>
-          );
-        }
-
-        return tagElement;
-      },
-    },
-    {
-      title: 'Creator',
-      dataIndex: 'createdBy',
-      key: 'createdBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
+      render: (_, record) => (
+        <StatusTransitionDropdown
+          currentStatus={record.Status}
+          rejectReason={record.ReasonReject}
+          onTransition={async (newStatus) => {
+            await updateTopic({ id: record.ID, data: { Status: newStatus } });
+            message.success(`Status changed to ${newStatus}`);
+          }}
+        />
       ),
     },
+    // {
+    //   title: 'Creator',
+    //   dataIndex: 'createdBy',
+    //   key: 'createdBy',
+    //   render: (text) => (
+    //     <span className='font-medium text-gray-800'>{text}</span>
+    //   ),
+    // },
     {
       title: 'Creation day',
       dataIndex: 'createdAt',
@@ -192,24 +172,26 @@ const TopicListPage = () => {
         </span>
       ),
     },
-    {
-      title: 'Updator',
-      dataIndex: 'updatedBy',
-      key: 'updatedBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
-      ),
-    },
+    // {
+    //   title: 'Updator',
+    //   dataIndex: 'updatedBy',
+    //   key: 'updatedBy',
+    //   render: (text) => (
+    //     <span className='font-medium text-gray-800'>{text}</span>
+    //   ),
+    // },
     {
       title: 'Action',
       key: 'action',
       align: 'center',
+      // ellipsis: true,
       render: (_, record) => {
         const canModify =
           record.Status === 'submited' || record.Status === 'approved';
         return (
           <Space size='middle'>
             <Button
+              title='Review Topic'
               type='text'
               icon={<EyeOutlined />}
               className='text-[#1890FF]'
@@ -221,6 +203,7 @@ const TopicListPage = () => {
             {!canModify && (
               <>
                 <Button
+                  title='Edit Topic'
                   type='text'
                   icon={<EditOutlined />}
                   className='text-[#1890FF]'
@@ -231,6 +214,7 @@ const TopicListPage = () => {
                 />
 
                 <Button
+                  title='Delete Topic'
                   type='text'
                   icon={<DeleteOutlined />}
                   className='text-[#FF4D4F]'
@@ -340,9 +324,12 @@ const TopicListPage = () => {
                 placeholder='Search topic name...'
                 prefix={<SearchOutlined />}
                 value={search}
+                maxLength={255}
                 onChange={(e) => {
+                  const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '');
+
                   setPage(1);
-                  setSearch(e.target.value);
+                  setSearch(sanitized);
                 }}
               />
 
@@ -376,9 +363,9 @@ const TopicListPage = () => {
                 {totalItems === 0
                   ? 'No data'
                   : `Showing ${(page - 1) * pageSize + 1}–${Math.min(
-                      page * pageSize,
-                      totalItems
-                    )} of ${totalItems}`}
+                    page * pageSize,
+                    totalItems
+                  )} of ${totalItems}`}
               </Text>
 
               <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600'>

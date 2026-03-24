@@ -71,6 +71,7 @@ const UpdateReading = () => {
 
     const transformed = {
       sectionName: apiData.SectionName || '',
+      description: apiData.Description || '',
     };
 
     /* ---------------- PART 1 ---------------- */
@@ -253,14 +254,17 @@ const UpdateReading = () => {
             name='sectionName'
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+          </Form.Item>
+          <Form.Item label='Description' name='description'>
+            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
         </Card>
 
         {/* PART 1 */}
         <Card title='Part 1 (Dropdown)'>
           <Form.Item name={['part1', 'id']} hidden>
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -268,7 +272,7 @@ const UpdateReading = () => {
             name={['part1', 'name']}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -327,7 +331,7 @@ const UpdateReading = () => {
         {/* PART 2A */}
         <Card title='Part 2 (Ordering)'>
           <Form.Item name={['part2A', 'id']} hidden>
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -335,7 +339,7 @@ const UpdateReading = () => {
             name={['part2A', 'name']}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -343,7 +347,7 @@ const UpdateReading = () => {
             name={['part2A', 'intro']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.List name={['part2A', 'items']}>
@@ -360,7 +364,7 @@ const UpdateReading = () => {
         {/* PART 2B */}
         <Card title='Part 3 (Ordering)'>
           <Form.Item name={['part2B', 'id']} hidden>
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -368,7 +372,7 @@ const UpdateReading = () => {
             name={['part2B', 'name']}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -376,7 +380,7 @@ const UpdateReading = () => {
             name={['part2B', 'intro']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.List name={['part2B', 'items']}>
@@ -393,7 +397,7 @@ const UpdateReading = () => {
         {/* PART 4 */}
         <Card title='Part 4 (Matching)'>
           <Form.Item name={['part3', 'id']} hidden>
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -401,7 +405,7 @@ const UpdateReading = () => {
             name={['part3', 'name']}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -409,7 +413,7 @@ const UpdateReading = () => {
             name={['part3', 'content']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part3']}>
@@ -454,7 +458,7 @@ const UpdateReading = () => {
         {/* PART 5 */}
         <Card title='Part 5 (Matching)'>
           <Form.Item name={['part4', 'id']} hidden>
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -462,7 +466,7 @@ const UpdateReading = () => {
             name={['part4', 'name']}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item
@@ -470,7 +474,7 @@ const UpdateReading = () => {
             name={['part4', 'content']}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <Form.Item name={['part4']}>

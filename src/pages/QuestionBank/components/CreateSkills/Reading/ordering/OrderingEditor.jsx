@@ -92,12 +92,13 @@ const OrderingEditor = ({ fields, helpers, listPath = [] }) => {
 
                       <Form.Item
                         name={[field.name, 'text']}
+                        getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
                         rules={[
                           { required: true, message: 'Sentence is required' },
                         ]}
                         style={{ flex: 1, margin: 0 }}
                       >
-                        <Input placeholder={`Enter sentence ${index + 1}`} />
+                        <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder={`Enter sentence ${index + 1}`} />
                       </Form.Item>
 
                       <DeleteOutlined
