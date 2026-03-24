@@ -16,6 +16,8 @@ const TeacherManagement = () => {
   const [pageSize, setPageSize] = useState(5);
   const navigate = useNavigate();
   const { id: editingTeacherId } = useParams();
+  const editingTeacherIdNumber =
+    typeof editingTeacherId === 'string' ? Number(editingTeacherId) : null;
   const { openConfirmModal, ModalComponent } = useConfirm();
   
   // Escape special SQL-like characters for search
@@ -165,7 +167,7 @@ const TeacherManagement = () => {
 
   const selectedTeacher =
     teachersData?.data?.teachers?.find(
-      (teacher) => teacher.ID === editingTeacherId
+      (teacher) => teacher.ID === editingTeacherIdNumber
     ) || null;
 
   const handleCloseEditModal = () => {
