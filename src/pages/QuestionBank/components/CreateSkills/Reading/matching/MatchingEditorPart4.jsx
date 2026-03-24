@@ -131,10 +131,14 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                     {idx + 1}
                   </Text>
 
-                  <Input
+                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                     placeholder={`Content ${idx + 1}`}
                     value={item.text}
-                    onChange={(e) => updateLeftItem(idx, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateLeftItem(idx, sanitized)
+                    }
+                    }
                   />
 
                   <Button
@@ -186,10 +190,14 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                     {letterLabels[idx]}
                   </div>
 
-                  <Input
+                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
-                    onChange={(e) => updateRightItem(item.id, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateRightItem(item.id, sanitized)
+                    }
+                    }
                   />
 
                   <Button

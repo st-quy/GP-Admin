@@ -19,7 +19,7 @@ import {
   DownOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import HeaderInfo from '@app/components/HeaderInfo';
 import useConfirm from '@shared/hook/useConfirm';
@@ -29,10 +29,23 @@ const { Text } = Typography;
 
 const QuestionBank = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openConfirmModal, ModalComponent } = useConfirm();
 
+  const queryParams = new URLSearchParams(location.search);
+  const skillFromQuery = queryParams.get('skillName')?.trim().toUpperCase();
+  const validSkills = new Set([
+    'SPEAKING',
+    'LISTENING',
+    'READING',
+    'WRITING',
+    'GRAMMAR AND VOCABULARY',
+  ]);
+
   // --- Filter & pagination state ---
-  const [selectedSkill, setSelectedSkill] = useState('SPEAKING');
+  const [selectedSkill, setSelectedSkill] = useState(
+    validSkills.has(skillFromQuery) ? skillFromQuery : 'SPEAKING'
+  );
   const [searchText, setSearchText] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,6 +55,12 @@ const QuestionBank = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSkill, searchText]);
+
+  useEffect(() => {
+    if (validSkills.has(skillFromQuery) && skillFromQuery !== selectedSkill) {
+      setSelectedSkill(skillFromQuery);
+    }
+  }, [skillFromQuery, selectedSkill]);
 
   /* =========================================================
       LOAD SECTION LIST TỪ API (CÓ PHÂN TRANG)
@@ -92,11 +111,15 @@ const QuestionBank = () => {
       dataIndex: 'Description',
       align: 'left',
       ellipsis: { showTitle: false },
-      render: (_, record) => (
-        <Tooltip title={record?.SubContent || '-'}>
-          <span className='text-gray-500'>{record?.SubContent || '—'}</span>
-        </Tooltip>
-      ),
+      render: (_, record) => {
+        const description = record?.Description ?? '—';
+
+        return (
+          <Tooltip title={description}>
+            <span className='text-gray-500'>{description}</span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Skill',
@@ -114,42 +137,51 @@ const QuestionBank = () => {
       align: 'center',
       render: (_, record) => (
         <Space size='middle'>
-          <Button
-            type='text'
-            className='text-green-600 hover:bg-blue-50 px-2'
-            icon={<EyeOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`${record.ID}?skillName=${record.Skill.Name}`);
-            }}
-          />
-          {record.Topics.length === 0 && (
+          <Tooltip title='Preview Questions'>
             <Button
               type='text'
-              className='text-blue-600 hover:bg-blue-50 px-2'
-              icon={<EditOutlined />}
+              className='text-green-600 hover:bg-blue-50 px-2'
+              icon={<EyeOutlined />}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+                navigate(`${record.ID}?skillName=${record.Skill.Name}`);
               }}
             />
+          </Tooltip>
+
+          {record.Topics.length === 0 && (
+            <Tooltip title='Edit Questions'>
+              <Button
+                type='text'
+                className='text-blue-600 hover:bg-blue-50 px-2'
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+                }}
+              />
+            </Tooltip>
           )}
+
           {record.Topics.length === 0 && (
-            <Button
-              type='text'
-              className='text-red-500 hover:bg-red-50 px-2'
-              icon={<DeleteOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                openConfirmModal({
-                  title: 'Confirm delete',
-                  message: 'Do you really want to delete this section?',
-                  okText: 'Delete',
-                  okButtonColor: '#FF4D4F',
-                  onConfirm: () => deleteSection(record.ID),
-                });
-              }}
-            />
+            <Tooltip title='Delete Questions'>
+              <Button
+                type='text'
+                className='text-red-500 hover:bg-red-50 px-2'
+                icon={<DeleteOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openConfirmModal({
+                    title: 'Confirm delete',
+                    message: 'Do you really want to delete this section?',
+                    okText: 'Delete',
+                    okButtonColor: '#FF4D4F',
+                    onConfirm: () => deleteSection(record.ID),
+                  });
+                }}
+              />
+            </Tooltip>
+
           )}
         </Space>
       ),
@@ -194,7 +226,12 @@ const QuestionBank = () => {
             type='card'
             tabBarGutter={32}
             activeKey={selectedSkill ?? ''}
-            onChange={(key) => setSelectedSkill(key)}
+            onChange={(key) => {
+              setSelectedSkill(key);
+              navigate(`/questions?skillName=${encodeURIComponent(key)}`, {
+                replace: true,
+              });
+            }}
             items={[
               { key: 'SPEAKING', label: 'Speaking' },
               { key: 'LISTENING', label: 'Listening' },
@@ -207,12 +244,16 @@ const QuestionBank = () => {
           {/* ==================== SEARCH BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
             <Input
+              maxLength={255}
               size='large'
               placeholder='Search section name...'
               prefix={<SearchOutlined className='text-gray-400' />}
               className='w-full sm:w-[260px] lg:w-[320px]'
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                setSearchText(sanitized)
+              }
             />
           </div>
 
@@ -253,10 +294,9 @@ const QuestionBank = () => {
                   return (
                     <button
                       className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-                        ${
-                          isActive
-                            ? 'bg-[#003087] text-white border-[#003087]'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
+                        ${isActive
+                          ? 'bg-[#003087] text-white border-[#003087]'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
                         }
                       `}
                     >
