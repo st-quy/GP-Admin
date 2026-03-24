@@ -199,7 +199,7 @@ const CreateExamPage = () => {
             if (topicId) {
                 topicResponse = await updateTopic({
                     id: topicId,
-                    data: { Name: values.name.trim(), Status: 'draft', ShuffleQuestions, ShuffleAnswers }
+                    data: { Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
                 });
                 await updateTopicSection({
                     topicId: topicResponse.ID || topicId,
@@ -207,7 +207,7 @@ const CreateExamPage = () => {
                 });
             } else {
                 topicResponse = await createExam({
-                    Name: values.name.trim(), Status: 'draft', ShuffleQuestions, ShuffleAnswers
+                    Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers
                 });
                 await updateTopicSection({
                     topicId: topicResponse.ID,
@@ -244,7 +244,7 @@ const CreateExamPage = () => {
 
             await updateTopic({
                 id: topicId,
-                data: { Name: values.name.trim(), Status: 'submited', ShuffleQuestions, ShuffleAnswers }
+                data: { Name: values.name.trim(), Status: 'submited', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
             });
             await updateTopicSection({
                 topicId,
@@ -341,7 +341,7 @@ const CreateExamPage = () => {
 
     useEffect(() => {
         if (!topicData) return;
-        form.setFieldsValue({ name: topicData.Name });
+        form.setFieldsValue({ name: topicData.Name, duration: topicData.Duration });
         setShuffleQuestions(!!topicData.ShuffleQuestions);
         setShuffleAnswers(!!topicData.ShuffleAnswers);
         
@@ -391,6 +391,11 @@ const CreateExamPage = () => {
                                 <Col span={12}>
                                     <Form.Item label="Exam Name" name="name" rules={[{ required: true }]}>
                                         <Input placeholder="Exam name..." size="large" disabled={isViewMode} />
+                                    </Form.Item>
+                                </Col>
+                                <Col span={6}>
+                                    <Form.Item label="Duration (minutes)" name="duration">
+                                        <InputNumber min={1} max={999} placeholder="e.g. 60" disabled={isViewMode} size="large" style={{ width: '100%' }} />
                                     </Form.Item>
                                 </Col>
                             </Row>
