@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Table, Input, Select, Space, Tag, message } from 'antd';
-import { SearchOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { SearchOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useFetchTeachers } from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
