@@ -43,10 +43,15 @@ const MatchingEditor = ({ errors = {} }) => {
   };
 
   const removeLeftItem = (idx) => {
-    const item = leftItems[idx];
-
     setLeftItems((prev) => prev.filter((_, i) => i !== idx));
-    setMapping((prev) => prev.filter((m) => m.leftIndex !== item.id));
+    setMapping((prev) =>
+      prev
+        .filter((m) => m.leftIndex !== idx)
+        .map((m) => {
+          if (m.leftIndex > idx) return { ...m, leftIndex: m.leftIndex - 1 };
+          return m;
+        })
+    );
   };
 
   /* ---------------- RIGHT ---------------- */
@@ -96,10 +101,14 @@ const MatchingEditor = ({ errors = {} }) => {
                 <div className='w-full flex items-center gap-2'>
                   <Text className='min-w-10'>{idx + 1}</Text>
 
-                  <Input
+                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                     placeholder={`Content ${idx + 1}`}
                     value={item.text}
-                    onChange={(e) => updateLeftItem(idx, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateLeftItem(idx, sanitized)
+                    }
+                    }
                   />
 
                   <Button
@@ -149,10 +158,14 @@ const MatchingEditor = ({ errors = {} }) => {
                   >
                     {letterLabels[idx]}
                   </div>
-                  <Input
+                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
-                    onChange={(e) => updateRightItem(idx, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateRightItem(idx, sanitized)
+                    }
+                    }
                   />
 
                   <Button

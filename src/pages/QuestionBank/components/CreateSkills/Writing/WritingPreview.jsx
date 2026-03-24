@@ -39,7 +39,7 @@ const WritingPreview = ({ partType, data }) => {
                   <span className='text-gray-400'>Question text...</span>
                 )}
               </p>
-              <Input placeholder='Enter your answer here' />
+              <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter your answer here' />
             </div>
           ))}
         </ol>
@@ -68,6 +68,7 @@ const WritingPreview = ({ partType, data }) => {
           showCount
           maxLength={wordLimit}
           placeholder='Enter your answer here'
+          onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
         />
 
         <div className='mt-4 space-y-3'>
@@ -120,6 +121,7 @@ const WritingPreview = ({ partType, data }) => {
                 showCount
                 maxLength={c?.wordLimit}
                 placeholder='Enter your answer here'
+                onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               />
             </div>
           ))}
@@ -151,6 +153,7 @@ const WritingPreview = ({ partType, data }) => {
               showCount
               maxLength={q1_wordLimit}
               placeholder='Enter your answer here'
+              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             />
             {/* {q1_wordLimit && (
               <Muted>Write about {q1_wordLimit} words. (Recommended)</Muted>
@@ -165,6 +168,7 @@ const WritingPreview = ({ partType, data }) => {
               showCount
               maxLength={q2_wordLimit}
               placeholder='Enter your answer here'
+              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
             />
             {/* {q2_wordLimit && (
               <Muted>Write about {q2_wordLimit} words. (Recommended)</Muted>
