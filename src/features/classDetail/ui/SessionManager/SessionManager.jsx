@@ -40,7 +40,7 @@ const SessionManager = ({ data, isLoading }) => {
       key: "sessionName",
       className: "!text-center",
       render: (text, record) => (
-        <Link to={`session/${record.ID}`} className="text-[#003087]">
+        <Link to={`/class/${classId}/session/${record.ID}`} className="text-[#003087]">
           {text}
         </Link>
       ),
