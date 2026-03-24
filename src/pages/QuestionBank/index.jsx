@@ -112,7 +112,7 @@ const QuestionBank = () => {
       align: 'left',
       ellipsis: { showTitle: false },
       render: (_, record) => {
-        const description = record?.Description ?? '—';
+        const description = record?.Description || record?.SubContent || '—';
 
         return (
           <Tooltip title={description}>
@@ -181,7 +181,6 @@ const QuestionBank = () => {
                 }}
               />
             </Tooltip>
-
           )}
         </Space>
       ),
@@ -254,6 +253,7 @@ const QuestionBank = () => {
                 const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
                 setSearchText(sanitized)
               }
+              }
             />
           </div>
 
@@ -271,42 +271,24 @@ const QuestionBank = () => {
           </div>
 
           {/* ==================== PAGINATION ==================== */}
-          <div className='flex flex-col md:flex-row justify-between items-center p-6 border-t border-gray-100 gap-4'>
-            <Text className='text-gray-500'>
+          <div className='flex flex-col md:flex-row justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm gap-4'>
+            <div className='text-gray-600 font-medium'>
               {totalItems === 0
-                ? 'No data found'
-                : `Showing ${startItem}–${endItem} of ${totalItems} items`}
-            </Text>
+                ? 'No entries found'
+                : `Showing ${startItem}-${endItem} of ${totalItems} entries`}
+            </div>
 
             <Pagination
               current={pagination.page}
               total={totalItems}
               pageSize={pagination.pageSize}
               showSizeChanger
+              pageSizeOptions={['5', '10', '15', '20']}
               onChange={(page, size) => {
                 setCurrentPage(page);
                 setPageSize(size);
               }}
-              itemRender={(page, type, original) => {
-                if (type === 'page') {
-                  const isActive = pagination.page === page;
-
-                  return (
-                    <button
-                      className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-                        ${isActive
-                          ? 'bg-[#003087] text-white border-[#003087]'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
-                        }
-                      `}
-                    >
-                      {page}
-                    </button>
-                  );
-                }
-
-                return original;
-              }}
+              className="ant-pagination-custom"
             />
           </div>
         </Card>
