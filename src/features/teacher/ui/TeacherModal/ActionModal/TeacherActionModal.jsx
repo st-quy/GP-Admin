@@ -112,7 +112,7 @@ const TeacherActionModal = ({
         password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
         role: 'teacher',
         status: values.status,
-        phone: values.phone ? values.phone.trim() : undefined,
+        phone: values.phone?.trim() || undefined,
       };
       // @ts-ignore
       teacherAction(data, {
