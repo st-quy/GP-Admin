@@ -1,170 +1,76 @@
-// QuestionBank.jsx
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Table,
-  Button,
-  Input,
-  Typography,
-  Space,
-  Pagination,
-  Card,
-  Dropdown,
-  Tooltip,
-  Tabs,
-} from 'antd';
-import {
-  SearchOutlined,
-  EditOutlined,
   DeleteOutlined,
-  DownOutlined,
-  EyeOutlined,
+  EditOutlined,
+  PlusOutlined,
+  SearchOutlined,
 } from '@ant-design/icons';
-import { useLocation, useNavigate } from 'react-router-dom';
-
-import HeaderInfo from '@app/components/HeaderInfo';
+import {
+  useGetSections,
+  useDeleteSection,
+} from '@features/questions/hooks';
+import CreateReading from './components/CreateSkills/CreateReading';
+import CreateListening from './components/CreateSkills/CreateListening';
+import CreateGrammarVocab from './components/CreateSkills/CreateGrammarVocab';
+import CreateWriting from './components/CreateSkills/CreateWriting';
+import CreateSpeaking from './components/CreateSkills/CreateSpeaking';
+import { Button, Input, Table, Tooltip, Card, Tabs, message, Modal } from 'antd';
+import UpdateReading from './components/UpdateSkills/UpdateReading';
+import UpdateListening from './components/UpdateSkills/UpdateListening';
+import UpdateGrammarVocab from './components/UpdateSkills/UpdateGrammarVocab';
+import UpdateWriting from './components/UpdateSkills/UpdateWriting';
+import UpdateSpeaking from './components/UpdateSkills/UpdateSpeaking';
 import useConfirm from '@shared/hook/useConfirm';
-import { useDeleteSection, useGetSections } from '@features/sections/hooks';
-
-const { Text } = Typography;
 
 const QuestionBank = () => {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const { openConfirmModal, ModalComponent } = useConfirm();
-
-  const queryParams = new URLSearchParams(location.search);
-  const skillFromQuery = queryParams.get('skillName')?.trim().toUpperCase();
-  const validSkills = new Set([
-    'SPEAKING',
-    'LISTENING',
-    'READING',
-    'WRITING',
-    'GRAMMAR AND VOCABULARY',
-  ]);
-
-  // --- Filter & pagination state ---
-  const [selectedSkill, setSelectedSkill] = useState(
-    validSkills.has(skillFromQuery) ? skillFromQuery : 'SPEAKING'
-  );
+  const [activeTab, setActiveTab] = useState('SPEAKING');
   const [searchText, setSearchText] = useState('');
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-
-  // Khi skill hoặc searchText đổi → reset page về 1
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedSkill, searchText]);
-
-  useEffect(() => {
-    if (validSkills.has(skillFromQuery) && skillFromQuery !== selectedSkill) {
-      setSelectedSkill(skillFromQuery);
-    }
-  }, [skillFromQuery, selectedSkill]);
-
-  /* =========================================================
-      LOAD SECTION LIST TỪ API (CÓ PHÂN TRANG)
-     ========================================================= */
-  const sectionParams = useMemo(
-    () => ({
-      skillName: selectedSkill || undefined,
-      searchName: searchText || undefined,
-      page: currentPage,
-      pageSize,
-    }),
-    [selectedSkill, searchText, currentPage, pageSize]
+  const [openCreateModal, setOpenCreateModal] = useState(false);
+  const [editingSection, setEditingSection] = useState(null);
+  
+  const { data: listPart, isLoading: loadingSections } = useGetSections(
+    activeTab,
+    searchText
   );
-
-  const { data: listSectionData, isLoading: loadingSections } =
-    useGetSections(sectionParams);
 
   const { mutate: deleteSection } = useDeleteSection();
+  const { openConfirmModal, ModalComponent } = useConfirm();
 
-  const listPart = listSectionData?.data ?? [];
-  const pagination = {
-    page: listSectionData?.page ?? currentPage,
-    pageSize: listSectionData?.pageSize ?? pageSize,
-    total: listSectionData?.total ?? 0,
+  const handleEdit = (record) => (e) => {
+    e.stopPropagation();
+    setEditingSection(record);
   };
 
-  const totalItems = pagination.total;
-  const startItem =
-    totalItems === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
-  const endItem = Math.min(pagination.page * pagination.pageSize, totalItems);
-
-  /* =========================================================
-      TABLE COLUMNS
-     ========================================================= */
   const columns = [
     {
       title: 'Section Name',
       dataIndex: 'Name',
-      ellipsis: { showTitle: false },
-      render: (text) => (
-        <Tooltip title={text}>
-          <span className='font-semibold text-[#1F2937]'>{text}</span>
-        </Tooltip>
-      ),
+      key: 'Name',
+      render: (text) => <span className='font-medium'>{text}</span>,
     },
     {
-      title: 'Description',
-      dataIndex: 'Description',
-      align: 'left',
-      ellipsis: { showTitle: false },
-      render: (_, record) => {
-        const description = record?.Description || record?.SubContent || '—';
-
-        return (
-          <Tooltip title={description}>
-            <span className='text-gray-500'>{description}</span>
-          </Tooltip>
-        );
-      },
-    },
-    {
-      title: 'Skill',
-      dataIndex: 'Skill',
+      title: 'Number of Parts',
+      dataIndex: 'Parts',
+      key: 'Parts',
       align: 'center',
-      render: (_, record) => (
-        <span className='text-gray-600 font-medium'>
-          {record?.Skill?.Name || '-'}
-        </span>
-      ),
+      render: (parts) => <span>{parts?.length || 0}</span>,
     },
     {
       title: 'Action',
       key: 'action',
       align: 'center',
       render: (_, record) => (
-        <Space size='middle'>
-          <Tooltip title='Preview Questions'>
+        <div className='flex gap-2 justify-center'>
+          <Tooltip title="Edit Section">
             <Button
               type='text'
-              className='text-green-600 hover:bg-blue-50 px-2'
-              icon={<EyeOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`${record.ID}?skillName=${record.Skill.Name}`);
-              }}
+              className='text-primaryColor hover:bg-blue-50 px-2'
+              icon={<EditOutlined />}
+              onClick={handleEdit(record)}
             />
           </Tooltip>
-
           {record.Topics.length === 0 && (
-            <Tooltip title='Edit Questions'>
-              <Button
-                type='text'
-                className='text-blue-600 hover:bg-blue-50 px-2'
-                icon={<EditOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
-                }}
-              />
-            </Tooltip>
-          )}
-
-          {record.Topics.length === 0 && (
-            <Tooltip title='Delete Questions'>
+            <Tooltip title="Delete Section">
               <Button
                 type='text'
                 className='text-red-500 hover:bg-red-50 px-2'
@@ -182,55 +88,130 @@ const QuestionBank = () => {
               />
             </Tooltip>
           )}
-        </Space>
+        </div>
       ),
     },
   ];
 
+  const renderCreateModal = () => {
+    switch (activeTab) {
+      case 'READING':
+        return (
+          <CreateReading
+            isOpen={openCreateModal}
+            onClose={() => setOpenCreateModal(false)}
+          />
+        );
+      case 'LISTENING':
+        return (
+          <CreateListening
+            isOpen={openCreateModal}
+            onClose={() => setOpenCreateModal(false)}
+          />
+        );
+      case 'GRAMMAR AND VOCABULARY':
+        return (
+          <CreateGrammarVocab
+            isOpen={openCreateModal}
+            onClose={() => setOpenCreateModal(false)}
+          />
+        );
+      case 'WRITING':
+        return (
+          <CreateWriting
+            isOpen={openCreateModal}
+            onClose={() => setOpenCreateModal(false)}
+          />
+        );
+      case 'SPEAKING':
+        return (
+          <CreateSpeaking
+            isOpen={openCreateModal}
+            onClose={() => setOpenCreateModal(false)}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  const renderUpdateModal = () => {
+    if (!editingSection) return null;
+    switch (activeTab) {
+      case 'READING':
+        return (
+          <UpdateReading
+            isOpen={!!editingSection}
+            onClose={() => setEditingSection(null)}
+            data={editingSection}
+          />
+        );
+      case 'LISTENING':
+        return (
+          <UpdateListening
+            isOpen={!!editingSection}
+            onClose={() => setEditingSection(null)}
+            data={editingSection}
+          />
+        );
+      case 'GRAMMAR AND VOCABULARY':
+        return (
+          <UpdateGrammarVocab
+            isOpen={!!editingSection}
+            onClose={() => setEditingSection(null)}
+            data={editingSection}
+          />
+        );
+      case 'WRITING':
+        return (
+          <UpdateWriting
+            isOpen={!!editingSection}
+            onClose={() => setEditingSection(null)}
+            data={editingSection}
+          />
+        );
+      case 'SPEAKING':
+        return (
+          <UpdateSpeaking
+            isOpen={!!editingSection}
+            onClose={() => setEditingSection(null)}
+            data={editingSection}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
-      <ModalComponent />
-
-      <HeaderInfo
-        title='Question List'
-        subtitle='Manage and filter all list section'
-        SubAction={
-          <Dropdown
-            menu={{
-              items: [
-                { label: 'Speaking', key: 'speaking' },
-                { label: 'Reading', key: 'reading' },
-                { label: 'Writing', key: 'writing' },
-                { label: 'Listening', key: 'listening' },
-                { label: 'Grammar And Vocabulary', key: 'grammar' },
-              ],
-              onClick: (e) => navigate(`create/${e.key}`),
-            }}
+      <div className='p-6 min-h-screen bg-gray-50'>
+        <div className='flex justify-between items-center mb-6'>
+          <div>
+            <h1 className='text-2xl font-bold text-gray-800'>Question Bank</h1>
+            <p className='text-gray-500'>Manage exam sections and questions by skill.</p>
+          </div>
+          <Button
+            type='primary'
+            size='large'
+            icon={<PlusOutlined />}
+            className='bg-primaryColor h-12 px-6'
+            onClick={() => setOpenCreateModal(true)}
           >
-            <Button
-              className='w-full p-5'
-              icon={<DownOutlined />}
-              iconPosition='end'
-            >
-              Create Questions
-            </Button>
-          </Dropdown>
-        }
-      />
+            Create Section
+          </Button>
+        </div>
 
-      <div className='p-4'>
-        <Card className='shadow-sm rounded-xl h-[calc(100vh-200px)]'>
-          {/* ==================== TABS FILTER ==================== */}
+        <Card className='shadow-sm rounded-xl'>
+          {/* ==================== SKILL TABS ==================== */}
           <Tabs
-            type='card'
-            tabBarGutter={32}
-            activeKey={selectedSkill ?? ''}
+            activeKey={activeTab}
             onChange={(key) => {
-              setSelectedSkill(key);
-              navigate(`/questions?skillName=${encodeURIComponent(key)}`, {
-                replace: true,
-              });
+              setActiveTab(key);
+              setSearchText('');
             }}
+            centered
+            size='large'
             items={[
               { key: 'SPEAKING', label: 'Speaking' },
               { key: 'LISTENING', label: 'Listening' },
@@ -252,8 +233,7 @@ const QuestionBank = () => {
               onChange={(e) => {
                 const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
                 setSearchText(sanitized)
-              }
-              }
+              }}
             />
           </div>
 
@@ -269,29 +249,11 @@ const QuestionBank = () => {
               scroll={{ y: 'calc(100vh - 500px)' }}
             />
           </div>
-
-          {/* ==================== PAGINATION ==================== */}
-          <div className='flex flex-col md:flex-row justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm gap-4'>
-            <div className='text-gray-600 font-medium'>
-              {totalItems === 0
-                ? 'No entries found'
-                : `Showing ${startItem}-${endItem} of ${totalItems} entries`}
-            </div>
-
-            <Pagination
-              current={pagination.page}
-              total={totalItems}
-              pageSize={pagination.pageSize}
-              showSizeChanger
-              pageSizeOptions={['5', '10', '15', '20']}
-              onChange={(page, size) => {
-                setCurrentPage(page);
-                setPageSize(size);
-              }}
-              className="ant-pagination-custom"
-            />
-          </div>
         </Card>
+
+        {renderCreateModal()}
+        {renderUpdateModal()}
+        <ModalComponent />
       </div>
     </>
   );

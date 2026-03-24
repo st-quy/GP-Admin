@@ -194,6 +194,9 @@ const CreateReading = () => {
             rules={[{ required: true, message: 'Content is required' }]}
           >
             <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+          </Form.Item>
+
+          <Form.List name={['part2A', 'items']}>
             {(fields, helpers) => (
               <OrderingEditor
                 fields={fields}
@@ -225,6 +228,9 @@ const CreateReading = () => {
             rules={[{ required: true, message: 'Content is required' }]}
           >
             <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+          </Form.Item>
+
+          <Form.List name={['part2B', 'items']}>
             {(fields, helpers) => (
               <OrderingEditor
                 fields={fields}
