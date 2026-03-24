@@ -40,7 +40,7 @@ const CreateGrammarVocab = () => {
   /* VALIDATE PART 1 */
   const validatePart1Question = (q) => {
     if (!q?.instruction?.trim()) return false;
-    if (!q.options || q.options.some((o) => !o.value?.trim())) return false;
+    if (!q.options || q.options.some((o) => !o?.value?.trim())) return false;
     if (q.correctOptionId === null || q.correctOptionId === undefined)
       return false;
     return true;
@@ -82,7 +82,7 @@ const CreateGrammarVocab = () => {
       await form.validateFields();
 
       const values = form.getFieldsValue(true);
-      const { sectionName, part1Name, part2Name, part1 } = values;
+      const { sectionName, description, part1Name, part2Name, part1 } = values;
 
       /* Part 1 build */
       const part1Questions = part1.map((q, idx) => {
@@ -127,6 +127,7 @@ const CreateGrammarVocab = () => {
       const payload = {
         SkillName: 'GRAMMAR AND VOCABULARY',
         SectionName: sectionName,
+        Description: description?.trim() || '',
         parts: {
           part1: {
             name: part1Name,
@@ -144,9 +145,14 @@ const CreateGrammarVocab = () => {
       createQuestion(payload, {
         onSuccess: () => {
           message.success('Created successfully!');
-          navigate(-1);
+          navigate('/questions?skillName=GRAMMAR%20AND%20VOCABULARY', {
+            replace: true,
+          });
         },
-        onError: () => message.error('Failed to create listening'),
+        onError: (err) =>
+          message.error(
+            err?.response?.data?.message || 'Failed to create section'
+          ),
       });
     } catch {
       message.error('Please fix errors in Part 1');
@@ -157,8 +163,12 @@ const CreateGrammarVocab = () => {
     <Form
       layout='vertical'
       form={form}
+      onSubmitCapture={(e) => {
+        e.preventDefault();
+      }}
       initialValues={{
         sectionName: '',
+        description: '',
         part1Name: '',
         part2Name: '',
         part1: Array.from({ length: 25 }, () => ({
@@ -170,8 +180,18 @@ const CreateGrammarVocab = () => {
     >
       {/* SECTION */}
       <Card title='Section Information' className='mb-5'>
-        <Form.Item label='Name' name='sectionName' rules={[{ required: true }]}>
-          <Input />
+        <Form.Item
+          label='Name'
+          name='sectionName'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+          rules={[{ required: true }]}>
+          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            maxLength={255}
+            placeholder="Section Name Here..."
+          />
+        </Form.Item>
+        <Form.Item label='Description' name='description'>
+          <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
         </Form.Item>
       </Card>
 
@@ -180,9 +200,10 @@ const CreateGrammarVocab = () => {
         <Form.Item
           label='Part Name'
           name='part1Name'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} maxLength={255} />
         </Form.Item>
 
         <Collapse accordion>
@@ -201,9 +222,10 @@ const CreateGrammarVocab = () => {
               <Form.Item
                 name={['part1', idx, 'instruction']}
                 label='Instruction'
+                getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
                 rules={[{ required: true }]}
               >
-                <Input.TextArea rows={2} />
+                <Input.TextArea rows={2} maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
               </Form.Item>
 
               {/* OPTIONS — 3 fixed + dynamic additional */}
@@ -234,11 +256,12 @@ const CreateGrammarVocab = () => {
                             {...field}
                             name={[field.name, 'value']}
                             style={{ flex: 1, marginBottom: 0 }}
+                            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
                             rules={[
                               { required: true, message: 'Option is required' },
                             ]}
                           >
-                            <Input placeholder={`Option ${LETTERS[optIdx]}`} />
+                            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} maxLength={255} placeholder={`Option ${LETTERS[optIdx]}`} />
                           </Form.Item>
 
                           {/* DELETE BUTTON (only delete from option #4 → index ≥ 3) */}
@@ -258,8 +281,9 @@ const CreateGrammarVocab = () => {
                       {/* ADD OPTION BUTTON */}
                       <Button
                         type='dashed'
+                        htmlType='button'
                         icon={<PlusOutlined />}
-                        onClick={() => add()}
+                        onClick={() => add({ value: '' })}
                         style={{ marginTop: 8 }}
                       >
                         Add option
@@ -296,9 +320,10 @@ const CreateGrammarVocab = () => {
         <Form.Item
           label='Part Name'
           name='part2Name'
+          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
           rules={[{ required: true }]}
         >
-          <Input />
+          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
         </Form.Item>
 
         <Collapse accordion>
@@ -317,10 +342,11 @@ const CreateGrammarVocab = () => {
               <Form.Item
                 label='Instruction Text'
                 required
-                rules={[{ required: true, message: 'Required' }]}
+                rules={[{ required: true, message: 'Instruction is Required' }]}
               >
                 <Input.TextArea
                   value={g.content}
+                  maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                   onChange={(e) =>
                     updateGroup(idx, { content: e.target.value })
                   }
@@ -386,7 +412,7 @@ const CreateGrammarVocab = () => {
       </Card>
 
       <div className='flex justify-end gap-4 mt-6'>
-        <Button onClick={() => navigate(-1)}>Cancel</Button>
+        <Button htmlType='button' onClick={() => navigate(-1)}>Cancel</Button>
         <Button type='primary' loading={isPending} onClick={handleSaveAll}>
           Save
         </Button>

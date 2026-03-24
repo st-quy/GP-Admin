@@ -25,7 +25,7 @@ const { Header, Content } = Layout;
 
 export const ProtectedRoute = () => {
   // @ts-ignore
-  const { isAuth, user } = useSelector((state) => state.auth);
+  const { isAuth, user, role } = useSelector((state) => state.auth);
 
   const [currentKey, setCurrentKey] = useState('dashboard');
   const location = useLocation();
@@ -65,10 +65,15 @@ export const ProtectedRoute = () => {
 
   const requiredRoles =
     routes.find((route) => route.route?.role)?.route?.role || [];
+  const currentRoles = Array.isArray(user?.role)
+    ? user.role
+    : Array.isArray(role)
+      ? role
+      : [];
 
   if (
     requiredRoles.length > 0 &&
-    !requiredRoles.some((item) => user?.role.includes(item))
+    !requiredRoles.some((item) => currentRoles.includes(item))
   ) {
     return <Navigate to='/unauthorized' replace />;
   }
@@ -107,7 +112,7 @@ export const ProtectedRoute = () => {
   ];
 
   const allowedOptions = items.filter((option) =>
-    option.roles.some((role) => user?.role.includes(role))
+    option.roles.some((menuRole) => currentRoles.includes(menuRole))
   );
 
   useEffect(() => {

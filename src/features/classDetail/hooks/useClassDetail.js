@@ -60,9 +60,6 @@ export const useCreateSession = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classDetail"] });
     },
-    onError: ({response}) => {
-      message.error(response.data.message || `Failed to create session.`);
-    },
   });
 };
 

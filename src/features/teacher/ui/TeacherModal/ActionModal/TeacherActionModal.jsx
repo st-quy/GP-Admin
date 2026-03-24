@@ -144,6 +144,7 @@ const TeacherActionModal = ({
     }
     onClose?.();
     form.resetFields();
+    setPasswordValue('');
   };
 
   // @ts-ignore
@@ -241,7 +242,10 @@ const TeacherActionModal = ({
         open={isModalOpen}
         okText={isEdit ? 'Update' : 'Create'}
         // onOk={onAction}
-        closable={false}
+        closable={true}
+        destroyOnClose
+        keyboard={true}
+        maskClosable={true}
         confirmLoading={isOnAction}
         width={{
           xs: '90%',

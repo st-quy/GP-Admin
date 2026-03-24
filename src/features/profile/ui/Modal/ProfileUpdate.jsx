@@ -11,7 +11,13 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
   const { user } = useSelector((state) => state.auth);
 
   const handleFinish = (values) => {
-    updateProfile(values, {
+    const trimmedValues = {
+      ...values,
+      firstName: values.firstName?.trim(),
+      lastName: values.lastName?.trim(),
+      address: values.address?.trim(),
+    };
+    updateProfile(trimmedValues, {
       onSuccess: () => {
         onClose();
       },
@@ -23,7 +29,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
   const initialValues = {
     firstName: user?.firstName,
     lastName: user?.lastName,
-    dob: dayjs(user?.dob),
+    dob: user?.dob ? dayjs(user.dob) : null,
     teacherCode: user?.teacherCode,
     email: user?.email,
     phone: user?.phone,
@@ -71,7 +77,11 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input
+              placeholder={"Test..."}
+              className="h-[46px] w-full max-w-[458px] rounded-lg"
+              maxLength={50}
+            />
           </Form.Item>
           <Form.Item
             label={
@@ -85,7 +95,7 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" maxLength={50} />
           </Form.Item>
           <Form.Item
             label={
@@ -113,7 +123,6 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             }
             name="dob"
             required={false}
-            rules={[yupSync(UpdateProfileSchema)]}
             className="w-full"
           >
             <DatePicker
@@ -147,13 +156,15 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             label={
               <div className="flex font-medium">
                 <span>Phone number</span>
+                <span className="text-red-500 ml-1">*</span>
               </div>
             }
+            getValueFromEvent={(e) => e.target.value.replace(/[^0-9]/g, '')}
             name="phone"
             rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input maxLength= {20} className="h-[46px] w-full max-w-[458px] rounded-lg" />
           </Form.Item>
 
           <Form.Item
@@ -163,9 +174,10 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
               </div>
             }
             name="address"
+            rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
           >
-            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />
+            <Input className="h-[46px] w-full max-w-[458px] rounded-lg" maxLength={255} />
           </Form.Item>
 
           <div className="md:col-span-2 flex justify-end gap-3 mt-2">
