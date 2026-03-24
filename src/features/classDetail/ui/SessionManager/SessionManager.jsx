@@ -2,28 +2,26 @@ import React, { useState } from "react";
 import ActionModal from "../SessionModal/ActionModal/ActionModal";
 import DeleteModal from "../SessionModal/DeleteModal/DeleteModal";
 import { Link } from "react-router-dom";
-import { formatDateTime } from "@shared/lib/utils/formatString";
+import { useClassDetailQuery } from "../../hooks/useClassDetail";
+import { useParams } from "react-router-dom";
+import { Button, Tooltip } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
-import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import SessionTable from "./SessionTable/SessionTable";
-import { Button, message } from "antd";
+import { formatDateTime } from "@shared/lib/utils/formatString";
+import { statusOptions } from "@features/classDetail/constant/statusEnum";
 
-const SessionManager = ({ data, isLoading }) => {
+const SessionManager = () => {
+  const { classId } = useParams();
+  const { data, isLoading } = useClassDetailQuery(classId);
+
   const [modalState, setModalState] = useState({
     create: false,
     edit: false,
     delete: false,
   });
-
   const [selectedSession, setSelectedSession] = useState(null);
 
   const openModal = (type, session = null) => {
-    if (type === "edit" && session?.status === "ON_GOING") {
-      message.warning(
-        "You cannot edit an ongoing session until the exam is completed."
-      );
-      return;
-    }
     setSelectedSession(session);
     setModalState((prev) => ({ ...prev, [type]: true }));
   };
@@ -40,37 +38,31 @@ const SessionManager = ({ data, isLoading }) => {
       key: "sessionName",
       className: "!text-center",
       render: (text, record) => (
-        <Link to={`session/${record.ID}`} className="text-[#003087]">
+        <Link to={`/class/${classId}/session/${record.ID}`} className="text-primaryColor font-medium hover:underline">
           {text}
         </Link>
       ),
-    },
-    {
-      title: "SESSION KEY",
-      dataIndex: "sessionKey",
-      key: "sessionKey",
-      className: "!text-center",
     },
     {
       title: "START TIME",
       dataIndex: "startTime",
       key: "startTime",
       className: "!text-center",
-      render: (text) => formatDateTime(text),
+      render: (text) => <span>{formatDateTime(text)}</span>,
     },
     {
       title: "END TIME",
       dataIndex: "endTime",
       key: "endTime",
       className: "!text-center",
-      render: (text) => formatDateTime(text),
+      render: (text) => <span>{formatDateTime(text)}</span>,
     },
     {
       title: "NUMBER OF PARTICIPANTS",
-      dataIndex: "SessionParticipants",
-      key: "SessionParticipants",
+      dataIndex: "participantCount",
+      key: "participantCount",
       className: "!text-center",
-      render: (participants) => <span>{participants.length}</span>,
+      render: (count) => <span>{count || 0}</span>,
     },
     {
       title: "STATUS",
@@ -95,19 +87,24 @@ const SessionManager = ({ data, isLoading }) => {
       className: "!text-center",
       render: (_, record) => (
         <div className="flex justify-center items-center gap-4">
-          <span className="text-xl">
-            <EditOutlined
+          <Tooltip title={record.status === "ON_GOING" ? "Cannot edit ongoing session" : "Edit Session"}>
+            <Button
+              type="link"
+              icon={<EditOutlined />}
               onClick={() => openModal("edit", record)}
-              className="hover:opacity-50"
+              disabled={record.status === "ON_GOING"}
+              className="text-xl !text-primaryColor hover:opacity-70 disabled:opacity-30"
             />
-          </span>
-          {record.SessionParticipants.length === 0 && (
-            <span className="text-xl">
-              <DeleteOutlined
+          </Tooltip>
+          {(record.participantCount === 0 || !record.participantCount) && (
+            <Tooltip title="Delete Session">
+              <Button
+                type="link"
+                icon={<DeleteOutlined />}
                 onClick={() => openModal("delete", record)}
-                className="hover:opacity-50"
+                className="text-xl !text-red-500 hover:opacity-70"
               />
-            </span>
+            </Tooltip>
           )}
         </div>
       ),
@@ -134,11 +131,13 @@ const SessionManager = ({ data, isLoading }) => {
       </div>
 
       <div className="mt-8">
-        <SessionTable
-          data={data.Sessions}
-          columns={sessionColumns}
-          isLoading={isLoading}
-        />
+        {data?.Sessions && (
+          <SessionTable
+            data={data.Sessions}
+            columns={sessionColumns}
+            isLoading={isLoading}
+          />
+        )}
       </div>
 
       {/* Create & Edit Modal */}
