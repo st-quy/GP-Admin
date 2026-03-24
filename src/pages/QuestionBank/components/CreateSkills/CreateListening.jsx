@@ -500,7 +500,8 @@ const CreateListening = () => {
           )}
         >
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input 
+              onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
               placeholder='Enter Part 1 name...'
               value={part1Name}
               maxLength={255}

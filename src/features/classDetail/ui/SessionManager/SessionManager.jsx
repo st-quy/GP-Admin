@@ -40,7 +40,7 @@ const SessionManager = ({ data, isLoading }) => {
       key: "sessionName",
       className: "!text-center",
       render: (text, record) => (
-        <Link to={`session/${record.ID}`} className="text-[#003087]">
+        <Link to={`/class/${classId}/session/${record.ID}`} className="text-[#003087]">
           {text}
         </Link>
       ),
@@ -67,10 +67,10 @@ const SessionManager = ({ data, isLoading }) => {
     },
     {
       title: "NUMBER OF PARTICIPANTS",
-      dataIndex: "SessionParticipants",
-      key: "SessionParticipants",
+      dataIndex: "participantCount",
+      key: "participantCount",
       className: "!text-center",
-      render: (participants) => <span>{participants.length}</span>,
+      render: (count) => <span>{count || 0}</span>,
     },
     {
       title: "STATUS",
