@@ -12,6 +12,7 @@ import {
     Card,
     Form,
     Input,
+    InputNumber,
     Button,
     Space,
     Typography,
@@ -159,12 +160,12 @@ const CreateExamPage = () => {
 
             let topicResponse;
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'draft' } });
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'draft', Duration: values.duration || null } });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
                 await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
 
             } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'draft' });
+                topicResponse = await createExam({ Name: values.name, Status: 'draft', Duration: values.duration || null });
                 const savedTopicId = topicResponse.ID || topicResponse._ID;
 
                 if (!savedTopicId) return message.error("Cannot get topic ID");
@@ -193,12 +194,12 @@ const CreateExamPage = () => {
 
             let topicResponse;
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'submited' } });
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name, Status: 'submited', Duration: values.duration || null } });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
                 await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
 
             } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'submited' });
+                topicResponse = await createExam({ Name: values.name, Status: 'submited', Duration: values.duration || null });
                 const savedTopicId = topicResponse.ID || topicResponse._ID;
 
                 if (!savedTopicId) return message.error("Cannot get topic ID");
@@ -365,7 +366,7 @@ const CreateExamPage = () => {
 
     useEffect(() => {
         if (!topicData) return;
-        form.setFieldsValue({ name: topicData.Name });
+        form.setFieldsValue({ name: topicData.Name, duration: topicData.Duration });
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
@@ -430,6 +431,19 @@ const CreateExamPage = () => {
                             rules={[{ required: true }]}
                         >
                             <Input placeholder="Enter exam name" disabled={isViewMode} />
+                        </Form.Item>
+                        <Form.Item
+                            label="Duration (minutes)"
+                            name="duration"
+                            style={{ marginBottom: 0, maxWidth: 240 }}
+                        >
+                            <InputNumber
+                                min={1}
+                                max={999}
+                                placeholder="e.g. 60"
+                                disabled={isViewMode}
+                                style={{ width: '100%' }}
+                            />
                         </Form.Item>
                     </Card>
 
