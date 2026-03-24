@@ -32,6 +32,12 @@ const TeacherManagement = () => {
   });
 
   const handleStatusFilter = (value) => {
+    // When Select is cleared (allowClear), AntD passes undefined/null -> reset filter
+    if (value == null) {
+      setStatusFilter(null);
+      return;
+    }
+
     if (value === 'All') {
       setStatusFilter(null);
     } else {
