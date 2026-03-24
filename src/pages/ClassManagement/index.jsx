@@ -15,7 +15,7 @@ import UpdateClassModal from '@features/classManagement/ui/Modal/UpdateClass';
 import DeleteClassModal from '@features/classManagement/ui/Modal/DeleteClass';
 import { useSelector } from 'react-redux';
 import PreviewExam from '@shared/ui/PreviewExam';
-import '../../figma-redesign.css';
+import '@shared/assets/styles/figma-redesign.css';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
@@ -26,25 +26,12 @@ const ClassManagement = () => {
   const [isOpen, setIsOpen] = useState('');
   const [dataClass, setClassData] = useState(null);
   
-  // Pagination & Search state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [searchName, setSearchName] = useState('');
-
   // @ts-ignore
   const { userId, user } = useSelector((state) => state.auth);
 
   const teacherId = user?.role.includes('admin') ? null : userId;
   
-  const { data: response, isLoading } = useGetAllClass({
-    teacherId,
-    page: currentPage,
-    limit: pageSize,
-    searchName
-  });
-
-  const classList = response?.data || [];
-  const totalItems = response?.total || 0;
+  const { data: classList, isLoading } = useGetAllClass(teacherId);
 
   const handleExport = async () => {
     setExportLoading(true);
@@ -60,15 +47,6 @@ const ClassManagement = () => {
   const handleDeleteClass = (record) => () => {
     setIsOpen('Delete');
     setClassData(record);
-  };
-
-  const onParamsChange = (params) => {
-    if (params.page !== undefined) setCurrentPage(params.page);
-    if (params.pageSize !== undefined) setPageSize(params.pageSize);
-    if (params.search !== undefined) {
-      setSearchName(params.search);
-      setCurrentPage(1);
-    }
   };
 
   const columns = [
@@ -124,7 +102,6 @@ const ClassManagement = () => {
 
   return (
     <div className='figma-page-container'>
-      {/* Centered Breadcrumbs Wrapper */}
       <div className='figma-content-wrapper pt-6 pb-2'>
         <Breadcrumb 
           className='mb-4 text-[14px] font-medium'
@@ -135,7 +112,6 @@ const ClassManagement = () => {
         />
       </div>
 
-      {/* Floating Breadcrumbs Card - Now Centered via wrapper */}
       <div className='figma-content-wrapper'>
         <div className='figma-breadcrumb-card'>
           <div className='flex items-center gap-2'>
@@ -147,7 +123,6 @@ const ClassManagement = () => {
         </div>
       </div>
 
-      {/* Header Section - Now Centered via wrapper */}
       <div className='figma-content-wrapper'>
         <div className='figma-header-section'>
           <div>
@@ -200,19 +175,13 @@ const ClassManagement = () => {
         </div>
       </div>
       
-      {/* Table & Pagination Wrapper - Now Centered via wrapper */}
       <div className='figma-content-wrapper'>
         <TableSearch
-          data={classList}
-          total={totalItems}
+          data={classList || []}
           columns={columns}
           isLoading={isLoading}
           placeholder="Search by class name"
           isFigmaRedesign={true}
-          serverSide={true}
-          onParamsChange={onParamsChange}
-          currentPage={currentPage}
-          pageSize={pageSize}
         />
       </div>
         

@@ -59,10 +59,10 @@ const SessionManager = () => {
     },
     {
       title: "NUMBER OF PARTICIPANTS",
-      dataIndex: "participantCount",
-      key: "participantCount",
+      dataIndex: "SessionParticipants",
+      key: "SessionParticipants",
       className: "!text-center",
-      render: (count) => <span>{count || 0}</span>,
+      render: (participants) => <span>{participants?.length || 0}</span>,
     },
     {
       title: "STATUS",

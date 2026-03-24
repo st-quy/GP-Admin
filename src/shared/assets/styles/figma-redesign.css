@@ -1,0 +1,216 @@
+/* APTIS-214: Figma Redesign Overrides */
+
+.figma-page-container {
+  background: #f9f9f9;
+  min-height: 100vh;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  padding-bottom: 100px;
+}
+
+/* Common Centered Wrapper for 90% Width / 1476px Max */
+.figma-content-wrapper {
+  width: 90%;
+  max-width: 1476px;
+  margin: 0 auto;
+}
+
+/* Floating Breadcrumbs Card */
+.figma-breadcrumb-card {
+  background: #ffffff;
+  border: 0.5px solid #003087;
+  box-shadow: 0px 1px 3px rgba(166, 175, 195, 0.4);
+  border-radius: 8px;
+  padding: 22px 30px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 40px auto 30px auto;
+}
+
+.figma-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.figma-title {
+  font-weight: 700;
+  font-size: 30px;
+  line-height: 38px;
+  color: #000000;
+  margin: 0;
+}
+
+.figma-subtitle {
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 26px;
+  color: #637381;
+  margin-top: 8px;
+}
+
+.figma-primary-btn {
+  background: #003087 !important;
+  border-radius: 50px !important;
+  height: 50px !important;
+  padding: 13px 28px !important;
+  font-weight: 500 !important;
+  font-size: 16px !important;
+  color: #ffffff !important;
+  border: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.figma-outline-btn {
+  background: #ffffff !important;
+  border: 1px solid #003087 !important;
+  border-radius: 50px !important;
+  height: 50px !important;
+  padding: 13px 28px !important;
+  font-weight: 500 !important;
+  font-size: 16px !important;
+  color: #003087 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Table Container */
+.figma-table-card {
+  background: #ffffff;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1);
+  border-radius: 10px 10px 0px 0px;
+  margin: 20px 0;
+  padding: 0 !important;
+  width: 100%;
+}
+
+.figma-table-overrides .ant-table-thead > tr > th {
+  background-color: #e6f0fa !important;
+  border-bottom: 1px solid #eeeeee !important;
+  color: #000000 !important;
+  font-weight: 500 !important;
+  font-size: 16px !important;
+  height: 91px !important;
+  text-transform: uppercase;
+  font-family: 'Inter', sans-serif;
+}
+
+.figma-table-overrides .ant-table-tbody > tr > td {
+  border-bottom: 1px solid #eeeeee !important;
+  padding: 24px 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  font-family: 'Inter', sans-serif;
+  color: #111827 !important;
+}
+
+.figma-class-link {
+  color: #003087 !important;
+  text-decoration: underline !important;
+}
+
+.figma-search-input {
+  width: 250px !important;
+  height: 48px !important;
+  background: #ffffff !important;
+  border: 1px solid #dfe4ea !important;
+  border-radius: 6px !important;
+  box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* --- PAGINATION REDESIGN --- */
+
+.figma-pagination-wrapper {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin: 32px 0 0 0;
+}
+
+.figma-pagination-box {
+  min-width: 550px;
+  height: 49px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.figma-pagination-text {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 1;
+  color: #202224;
+  opacity: 0.6;
+}
+
+.figma-pagination-nav-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: nowrap;
+}
+
+.figma-page-size-container {
+  box-sizing: border-box;
+  background: #FFFFFF;
+  border: 1px solid #CED4DA;
+  border-radius: 8px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  margin-left: 12px;
+}
+
+.figma-page-size-select .ant-select-selection-item {
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  color: #637381;
+}
+
+.figma-symbol-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #637381 !important;
+  font-size: 24px !important;
+  font-weight: 200 !important;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  height: 32px;
+  line-height: 1;
+  transform: scaleY(1.3);
+  margin-top: -1px;
+}
+
+.figma-page-btn {
+  cursor: pointer;
+  min-width: 25px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: #637381;
+  font-family: 'Inter', sans-serif;
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
+}
+
+.figma-page-btn.active {
+  color: #1677FF;
+  border: 1px solid #1677FF;
+  border-radius: 8px;
+}

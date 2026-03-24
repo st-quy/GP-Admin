@@ -94,12 +94,12 @@ export const handleExportExcel = async (setExportLoading) => {
   }
 };
 
-export const useGetAllClass = (params) => {
+export const useGetAllClass = (teacherId = null) => {
   return useQuery({
-    queryKey: ["classes", params],
+    queryKey: ["classes"],
     queryFn: async () => {
-      const { data } = await ClassApi.getAll(params.teacherId, params.page, params.limit, params.searchName);
-      return data; // Return full response with data and total
+      const { data } = await ClassApi.getAll(teacherId);
+      return data.data;
     },
   });
 };

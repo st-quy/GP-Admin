@@ -1,13 +1,10 @@
 import axiosInstance from "@shared/config/axios";
 
 export const ClassApi = {
-  getAll: (teacherId = null, page = 1, limit = 10, searchName = '') => {
+  getAll: (teacherId = null) => {
     return axiosInstance.get("/classes", {
       params: {
         teacherId,
-        page,
-        limit,
-        searchName,
       },
     });
   },
