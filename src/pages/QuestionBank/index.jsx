@@ -8,7 +8,7 @@ import {
 import {
   useGetSections,
   useDeleteSection,
-} from '@features/questions/hooks';
+} from '@features/sections/hooks';
 import CreateReading from './components/CreateSkills/CreateReading';
 import CreateListening from './components/CreateSkills/CreateListening';
 import CreateGrammarVocab from './components/CreateSkills/CreateGrammarVocab';
