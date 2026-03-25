@@ -117,6 +117,50 @@ const CreateExamPage = () => {
     const { mutateAsync: updateTopic } = useUpdateTopic();
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
     const { role, user } = useSelector((state) => state.auth);
+    
+    // Robust check for admin role
+    const isAdmin = Array.isArray(role) 
+      ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
+      : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
+
+    const handleApprove = async () => {
+        openConfirmModal({
+            title: 'Approve Exam',
+            message: `Are you sure you want to approve this exam? This will make it available for students.`,
+            okText: 'Approve',
+            okButtonColor: '#52c41a',
+            onConfirm: async () => {
+                try {
+                    await updateTopic({ id: topicId, data: { Status: 'approved' } });
+                    message.success("Exam approved successfully!");
+                    navigate("/exam");
+                } catch (error) {
+                    message.error("Failed to approve exam");
+                }
+            },
+        });
+    };
+
+    const handleReject = async () => {
+        openConfirmModal({
+            title: 'Reject Exam',
+            message: `Are you sure you want to reject this exam? The teacher will need to review and submit it again.`,
+            okText: 'Reject',
+            okButtonColor: '#FF4D4F',
+            onConfirm: async () => {
+                try {
+                    await updateTopic({
+                        id: topicId,
+                        data: { Status: 'rejected', ReasonReject: null }
+                    });
+                    message.success("Exam rejected successfully!");
+                    navigate("/exam");
+                } catch (error) {
+                    message.error("Failed to reject exam");
+                }
+            },
+        });
+    };
 
     const handlePartSelect = (sections) => {
         const oldSectionId = selectedSectionBySkill[selectedSkill];
@@ -195,29 +239,31 @@ const CreateExamPage = () => {
                 }
             });
 
-            let topicResponse;
-            if (topicId) {
-                topicResponse = await updateTopic({
-                    id: topicId,
-                    data: { Name: values.name.trim(), Status: 'draft', ShuffleQuestions, ShuffleAnswers }
-                });
-                await updateTopicSection({
-                    topicId: topicResponse.ID || topicId,
-                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
+            let currentTopicId = topicId;
+            if (currentTopicId) {
+                await updateTopic({
+                    id: currentTopicId,
+                    data: { Name: values.name.trim(), Status: 'draft', shuffleQuestions, shuffleAnswers }
                 });
             } else {
-                topicResponse = await createExam({
-                    Name: values.name.trim(), Status: 'draft', ShuffleQuestions, ShuffleAnswers
+                const topicResponse = await createExam({
+                    Name: values.name.trim(), Status: 'draft', shuffleQuestions, shuffleAnswers
                 });
+                currentTopicId = topicResponse.ID || topicResponse.data?.ID;
+            }
+
+            if (currentTopicId) {
                 await updateTopicSection({
-                    topicId: topicResponse.ID,
+                    topicId: currentTopicId,
                     data: { sectionIds: selectedParts, scoreConfig: finalScores }
                 });
             }
+            
             setIsDirty(false);
             message.success("Topic saved successfully!");
             navigate("/exam");
         } catch (error) {
+            console.error("Error saving topic:", error);
             message.error("Failed to save topic");
         }
     };
@@ -242,18 +288,31 @@ const CreateExamPage = () => {
                 }
             });
 
-            await updateTopic({
-                id: topicId,
-                data: { Name: values.name.trim(), Status: 'submited', ShuffleQuestions, ShuffleAnswers }
-            });
-            await updateTopicSection({
-                topicId,
-                data: { sectionIds: selectedParts, scoreConfig: finalScores }
-            });
+            let currentTopicId = topicId;
+            if (currentTopicId) {
+                await updateTopic({
+                    id: currentTopicId,
+                    data: { Name: values.name.trim(), Status: 'submited', shuffleQuestions, shuffleAnswers }
+                });
+            } else {
+                const topicResponse = await createExam({
+                    Name: values.name.trim(), Status: 'submited', shuffleQuestions, shuffleAnswers
+                });
+                currentTopicId = topicResponse.ID || topicResponse.data?.ID;
+            }
+
+            if (currentTopicId) {
+                await updateTopicSection({
+                    topicId: currentTopicId,
+                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
+                });
+            }
+
             setIsDirty(false);
             message.success("Topic submitted successfully!");
             navigate("/exam");
         } catch (error) {
+            console.error("Error submitting topic:", error);
             message.error("Failed to submit topic");
         }
     };
@@ -368,12 +427,31 @@ const CreateExamPage = () => {
 
     return (
         <>
+            <ModalComponent />
             <HeaderInfo
                 title={isViewMode ? "View Exam" : topicId ? "Edit Exam" : "Create Exam"}
                 actions={
                     <div style={{ display: "flex", gap: "12px" }}>
                         <Button icon={<LeftOutlined />} onClick={() => navigate("/exam")}>Back</Button>
                         <Button icon={<EyeOutlined />} onClick={handlePreview}>Preview</Button>
+                        {isViewMode && topicData?.Status === 'submited' && isAdmin && (
+                            <>
+                                <Button 
+                                    type="primary" 
+                                    style={{ background: "#52c41a", borderColor: "#52c41a" }}
+                                    onClick={handleApprove}
+                                >
+                                    Approve
+                                </Button>
+                                <Button 
+                                    danger 
+                                    type="primary"
+                                    onClick={handleReject}
+                                >
+                                    Reject
+                                </Button>
+                            </>
+                        )}
                         {!isViewMode && (
                             <>
                                 <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveExam} style={{ background: "#52c41a", borderColor: "#52c41a" }}>Save Draft</Button>
@@ -428,18 +506,36 @@ const CreateExamPage = () => {
                                 <Button size="large" type="primary" icon={<SendOutlined />} onClick={handleSubmitExam}>Submit Exam</Button>
                             </div>
                         )}
+                        {isViewMode && topicData?.Status === 'submited' && isAdmin && (
+                            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
+                                <Button 
+                                    size="large" 
+                                    type="primary" 
+                                    style={{ background: "#52c41a" }}
+                                    onClick={handleApprove}
+                                >
+                                    Approve Exam
+                                </Button>
+                                <Button 
+                                    size="large" 
+                                    danger 
+                                    type="primary"
+                                    onClick={handleReject}
+                                >
+                                    Reject Exam
+                                </Button>
+                            </div>
+                        )}
                     </Form>
                 </Spin>
             </Content>
             <SectionSelectModal open={openModal} onCancel={() => setOpenModal(false)} onSelect={handlePartSelect} selectedSkill={selectedSkill} initialSelectedIds={selectedSectionBySkill[selectedSkill] ? [selectedSectionBySkill[selectedSkill]] : []} />
             <PreviewExamModal open={previewOpen} onCancel={() => setPreviewOpen(false)} data={previewData} />
-            <RejectExamModal open={rejectOpen} onCancel={() => setRejectOpen(false)} topicId={topicId} />
             <Modal title="Unsaved Changes" open={leaveConfirmOpen} onCancel={() => setLeaveConfirmOpen(false)} footer={[
                 <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
                 <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save & Leave</Button>,
                 <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay</Button>
             ]}><p>Save your work before leaving?</p></Modal>
-            <ModalComponent />
         </>
     );
 };
