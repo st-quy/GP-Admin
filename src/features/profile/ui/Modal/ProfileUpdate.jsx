@@ -160,9 +160,11 @@ const ProfileUpdate = ({ isOpen, onClose }) => {
             label={
               <div className="flex font-medium">
                 <span>Address</span>
+                <span className="text-red-500 ml-1">*</span>
               </div>
             }
             name="address"
+            rules={[yupSync(UpdateProfileSchema)]}
             className="w-full md:max-w-[458px]"
           >
             <Input className="h-[46px] w-full max-w-[458px] rounded-lg" />

@@ -21,5 +21,5 @@ export const UpdateProfileSchema = Yup.object().shape({
   phone: Yup.string()
     .matches(/^\d{9,10}$/, "Phone number must be 9-10 digits")
     .nullable(),
-  address: Yup.string().nullable(),
+  address: Yup.string().required("Address is required"),
 });
