@@ -92,9 +92,9 @@ const QuestionBank = () => {
       dataIndex: 'Description',
       align: 'left',
       ellipsis: { showTitle: false },
-      render: (_, record) => (
-        <Tooltip title={record?.SubContent || '-'}>
-          <span className='text-gray-500'>{record?.SubContent || '—'}</span>
+      render: (text, record) => (
+        <Tooltip title={record?.Description || record?.SubContent || '-'}>
+          <span className='text-gray-500'>{record?.Description || record?.SubContent || '—'}</span>
         </Tooltip>
       ),
     },
@@ -114,42 +114,48 @@ const QuestionBank = () => {
       align: 'center',
       render: (_, record) => (
         <Space size='middle'>
-          <Button
-            type='text'
-            className='text-green-600 hover:bg-blue-50 px-2'
-            icon={<EyeOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`${record.ID}?skillName=${record.Skill.Name}`);
-            }}
-          />
-          {record.Topics.length === 0 && (
+          <Tooltip title="View Detail">
             <Button
               type='text'
-              className='text-blue-600 hover:bg-blue-50 px-2'
-              icon={<EditOutlined />}
+              className='text-green-600 hover:bg-blue-50 px-2'
+              icon={<EyeOutlined />}
               onClick={(e) => {
                 e.stopPropagation();
-                navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+                navigate(`${record.ID}?skillName=${record.Skill.Name}`);
               }}
             />
+          </Tooltip>
+          {record.Topics.length === 0 && (
+            <Tooltip title="Edit Section">
+              <Button
+                type='text'
+                className='text-blue-600 hover:bg-blue-50 px-2'
+                icon={<EditOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+                }}
+              />
+            </Tooltip>
           )}
           {record.Topics.length === 0 && (
-            <Button
-              type='text'
-              className='text-red-500 hover:bg-red-50 px-2'
-              icon={<DeleteOutlined />}
-              onClick={(e) => {
-                e.stopPropagation();
-                openConfirmModal({
-                  title: 'Confirm delete',
-                  message: 'Do you really want to delete this section?',
-                  okText: 'Delete',
-                  okButtonColor: '#FF4D4F',
-                  onConfirm: () => deleteSection(record.ID),
-                });
-              }}
-            />
+            <Tooltip title="Delete Section">
+              <Button
+                type='text'
+                className='text-red-500 hover:bg-red-50 px-2'
+                icon={<DeleteOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openConfirmModal({
+                    title: 'Confirm delete',
+                    message: 'Do you really want to delete this section?',
+                    okText: 'Delete',
+                    okButtonColor: '#FF4D4F',
+                    onConfirm: () => deleteSection(record.ID),
+                  });
+                }}
+              />
+            </Tooltip>
           )}
         </Space>
       ),
@@ -207,12 +213,17 @@ const QuestionBank = () => {
           {/* ==================== SEARCH BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
             <Input
+              maxLength={255}
               size='large'
               placeholder='Search section name...'
               prefix={<SearchOutlined className='text-gray-400' />}
               className='w-full sm:w-[260px] lg:w-[320px]'
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                setSearchText(sanitized)
+              }
+              }
             />
           </div>
 
@@ -230,43 +241,24 @@ const QuestionBank = () => {
           </div>
 
           {/* ==================== PAGINATION ==================== */}
-          <div className='flex flex-col md:flex-row justify-between items-center p-6 border-t border-gray-100 gap-4'>
-            <Text className='text-gray-500'>
+          <div className='flex flex-col md:flex-row justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm gap-4'>
+            <div className='text-gray-600 font-medium'>
               {totalItems === 0
-                ? 'No data found'
-                : `Showing ${startItem}–${endItem} of ${totalItems} items`}
-            </Text>
+                ? 'No entries found'
+                : `Showing ${startItem}-${endItem} of ${totalItems} entries`}
+            </div>
 
             <Pagination
               current={pagination.page}
               total={totalItems}
               pageSize={pagination.pageSize}
               showSizeChanger
+              pageSizeOptions={['5', '10', '15', '20']}
               onChange={(page, size) => {
                 setCurrentPage(page);
                 setPageSize(size);
               }}
-              itemRender={(page, type, original) => {
-                if (type === 'page') {
-                  const isActive = pagination.page === page;
-
-                  return (
-                    <button
-                      className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-                        ${
-                          isActive
-                            ? 'bg-[#003087] text-white border-[#003087]'
-                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
-                        }
-                      `}
-                    >
-                      {page}
-                    </button>
-                  );
-                }
-
-                return original;
-              }}
+              className="ant-pagination-custom"
             />
           </div>
         </Card>

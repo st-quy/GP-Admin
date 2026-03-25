@@ -134,7 +134,11 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                   <Input
                     placeholder={`Content ${idx + 1}`}
                     value={item.text}
-                    onChange={(e) => updateLeftItem(idx, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateLeftItem(idx, sanitized)
+                    }
+                    }
                   />
 
                   <Button
@@ -189,7 +193,11 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                   <Input
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
-                    onChange={(e) => updateRightItem(item.id, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateRightItem(item.id, sanitized)
+                    }
+                    }
                   />
 
                   <Button
