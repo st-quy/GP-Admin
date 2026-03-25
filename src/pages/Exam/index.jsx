@@ -381,13 +381,19 @@ const TopicListPage = () => {
                     )} of ${totalItems}`}
               </Text>
 
-              <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600'>
+              <div className='flex items-center gap-4'>
                 <Pagination
                   current={page}
                   total={totalItems}
                   pageSize={pageSize}
                   showSizeChanger={false}
                   onChange={(p) => setPage(p)}
+                  itemRender={(page, type, originalElement) => {
+                    if (type === 'page') {
+                      return <a style={{ color: 'inherit' }}>{page}</a>;
+                    }
+                    return originalElement;
+                  }}
                 />
 
                 <Select
