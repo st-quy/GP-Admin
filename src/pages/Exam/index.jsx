@@ -32,6 +32,8 @@ import {
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
+import { STATUS_CONFIG } from '@shared/lib/constants/examStatus';
+import { Tag, Tooltip as AntTooltip } from 'antd';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -135,19 +137,20 @@ const TopicListPage = () => {
       dataIndex: 'Status',
       key: 'Status',
       render: (_, record) => {
-        const cfg = statusTagConfig[record.Status] || {};
+        const cfg = STATUS_CONFIG[record.Status] || {};
 
         const tagElement = (
           <Tag
-            className={`${cfg.bg} ${cfg.text} font-medium px-3 py-1 rounded-md`}
+            color={cfg.antColor}
+            className='font-medium px-3 py-1 rounded-md'
           >
-            {cfg.label}
+            {cfg.label || record.Status}
           </Tag>
         );
 
         if (record.Status === 'rejected') {
           return (
-            <Tooltip
+            <AntTooltip
               title={
                 record.ReasonReject
                   ? record.ReasonReject
@@ -155,13 +158,14 @@ const TopicListPage = () => {
               }
             >
               {tagElement}
-            </Tooltip>
+            </AntTooltip>
           );
         }
 
         return tagElement;
       },
     },
+
     {
       title: 'Creation day',
       dataIndex: 'createdAt',
