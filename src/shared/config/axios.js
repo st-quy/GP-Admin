@@ -5,7 +5,7 @@ import { clearAuthState } from '@shared/lib/auth/clearAuthState';
 
 const axiosInstance = axios.create({
   baseURL: import.meta.env.VITE_BASE_URL,
-  withCredentials: true,
+  withCredentials: false,
   headers: {
     'Content-Type': 'application/json',
   },
