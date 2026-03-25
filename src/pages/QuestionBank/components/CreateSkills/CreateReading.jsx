@@ -28,20 +28,16 @@ const CreateReading = () => {
       createQuestion(payload, {
         onSuccess: () => {
           message.success('Created successfully!');
-          navigate('/questions?skillName=READING', { replace: true });
+          navigate(-1);
         },
         onError: (err) => {
           message.error(err?.response?.data?.message || 'Failed to create');
         },
       });
+      message.success('Created reading successfully!');
     } catch (err) {
-      if (err?.errorFields) {
-        const fieldNames = err.errorFields.map(f => f.errors?.[0] || f.name?.join('.')).join('; ');
-        message.error(`Validation failed: ${fieldNames}`);
-      } else {
-        console.error(err);
-        message.error('Form error — check again!');
-      }
+      console.error(err);
+      message.error('Form error — check again!');
     }
   };
 
@@ -88,13 +84,9 @@ const CreateReading = () => {
             className='w-full'
             name={'sectionName'}
             required
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
-          </Form.Item>
-          <Form.Item label='Description' name='description'>
-            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input placeholder='Enter section name' />
           </Form.Item>
         </Card>
 
@@ -105,15 +97,15 @@ const CreateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part1', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 1 Name' />
+            <Input placeholder='Enter Part 1 Name' />
           </Form.Item>
 
           <Form.Item
             label='Content'
-            required
+            name={['part1', 'content']}
+            rules={[{ required: true, message: 'Content is required' }]}
           >
             <DropdownEditor />
           </Form.Item>
@@ -122,6 +114,9 @@ const CreateReading = () => {
 
           <Form.Item shouldUpdate noStyle>
             {({ getFieldValue }) => {
+              const part1 = getFieldValue(['part1']) || {};
+              const blanks = Array.isArray(part1.blanks) ? part1.blanks : [];
+
               return (
                 <Form.Item
                   name={['part1', '_minBlanks']}
@@ -129,8 +124,6 @@ const CreateReading = () => {
                   rules={[
                     {
                       validator: () => {
-                        const part1 = getFieldValue(['part1']) || {};
-                        const blanks = Array.isArray(part1.blanks) ? part1.blanks : [];
                         if (blanks.length < 1) {
                           return Promise.reject(
                             new Error('Must have at least 1 blank')
@@ -181,19 +174,17 @@ const CreateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part2A', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2A Name' />
+            <Input placeholder='Enter Part 2A Name' />
           </Form.Item>
 
           <Form.Item
             label='Content'
             name={['part2A', 'intro']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+            <Input />
           </Form.Item>
 
           <Form.List name={['part2A', 'items']}>
@@ -215,19 +206,17 @@ const CreateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part2B', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2B Name' />
+            <Input placeholder='Enter Part 2B Name' />
           </Form.Item>
 
           <Form.Item
             label='Content'
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             name={['part2B', 'intro']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+            <Input />
           </Form.Item>
 
           <Form.List name={['part2B', 'items']}>
@@ -248,37 +237,38 @@ const CreateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part3', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 3 Name' />
+            <Input placeholder='Enter Part 3 Name' />
           </Form.Item>
           {/* CONTENT */}
           <Form.Item
             label='Content'
             name={['part3', 'content']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter content...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='Enter content...' />
           </Form.Item>
 
-          <MatchingEditor />
+          <Form.Item name={['part3']}>
+            <MatchingEditor />
+          </Form.Item>
           <Form.Item noStyle shouldUpdate>
             {({ getFieldValue }) => {
+              const part3 = getFieldValue(['part3']) || {};
+              const left = Array.isArray(part3.leftItems)
+                ? part3.leftItems
+                : [];
+              const right = Array.isArray(part3.rightItems)
+                ? part3.rightItems
+                : [];
+
               return (
                 <Form.Item
                   name={['part3', '_minItems']}
                   rules={[
                     {
                       validator: () => {
-                        const part3 = getFieldValue(['part3']) || {};
-                        const left = Array.isArray(part3.leftItems)
-                          ? part3.leftItems
-                          : [];
-                        const right = Array.isArray(part3.rightItems)
-                          ? part3.rightItems
-                          : [];
                         if (left.length < 1)
                           return Promise.reject(
                             new Error(
@@ -310,37 +300,38 @@ const CreateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part4', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 4 Name' />
+            <Input placeholder='Enter Part 4 Name' />
           </Form.Item>
           {/* CONTENT */}
           <Form.Item
             label='Content'
             name={['part4', 'content']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' />
           </Form.Item>
 
-          <MatchingEditorPart4 />
+          <Form.Item name={['part4']}>
+            <MatchingEditorPart4 />
+          </Form.Item>
           <Form.Item noStyle shouldUpdate>
             {({ getFieldValue }) => {
+              const part4 = getFieldValue(['part4']) || {};
+              const left = Array.isArray(part4.leftItems)
+                ? part4.leftItems
+                : [];
+              const right = Array.isArray(part4.rightItems)
+                ? part4.rightItems
+                : [];
+
               return (
                 <Form.Item
                   name={['part4', '_minItems']}
                   rules={[
                     {
                       validator: () => {
-                        const part4 = getFieldValue(['part4']) || {};
-                        const left = Array.isArray(part4.leftItems)
-                          ? part4.leftItems
-                          : [];
-                        const right = Array.isArray(part4.rightItems)
-                          ? part4.rightItems
-                          : [];
                         if (left.length < 1)
                           return Promise.reject(
                             new Error('Must have at least 1 content')

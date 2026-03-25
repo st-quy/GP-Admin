@@ -1,28 +1,84 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import { Input, Button, Form, Card, Spin, message } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Input, Button, Upload, Form, Card, Spin, message } from 'antd';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  CloudUploadOutlined,
+} from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 
+import axiosInstance from '@shared/config/axios';
 import {
   useGetQuestionGroupDetail,
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
-import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
 import { yupSync } from '@shared/lib/utils';
 
 const UpdateSpeaking = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { id: sectionId } = useParams();
   const [form] = Form.useForm();
 
   const [images, setImages] = useState({});
   const { data, isFetching } = useGetQuestionGroupDetail('SPEAKING', sectionId);
   const { mutate: updateSpeaking, isPending } = useUpdateQuestionGroup();
+  const [fileLists, setFileLists] = useState({
+    part1: [],
+    part2: [],
+    part3: [],
+    part4: [],
+  });
+
+  /** Khi load data → fill cả fileList */
+  useEffect(() => {
+    if (!data) return;
+
+    setFileLists({
+      part1: data.part1?.image
+        ? [
+            {
+              uid: Date.now() + '_1',
+              name: 'Image',
+              status: 'done',
+              url: data.part1.image,
+            },
+          ]
+        : [],
+      part2: data.part2?.image
+        ? [
+            {
+              uid: Date.now() + '_2',
+              name: 'Image',
+              status: 'done',
+              url: data.part2.image,
+            },
+          ]
+        : [],
+      part3: data.part3?.image
+        ? [
+            {
+              uid: Date.now() + '_3',
+              name: 'Image',
+              status: 'done',
+              url: data.part3.image,
+            },
+          ]
+        : [],
+      part4: data.part4?.image
+        ? [
+            {
+              uid: Date.now() + '_4',
+              name: 'Image',
+              status: 'done',
+              url: data.part4.image,
+            },
+          ]
+        : [],
+    });
+  }, [data]);
 
   /** ================================================================
    * 1. Fill form khi fetch xong
@@ -41,7 +97,6 @@ const UpdateSpeaking = () => {
 
     form.setFieldsValue({
       sectionName: data.SectionName,
-      description: data.Description || '',
       parts: {
         part1: {
           ...data.part1,
@@ -75,59 +130,175 @@ const UpdateSpeaking = () => {
   }, [data]);
 
   /** ================================================================
-   * 4. Submit → gửi format chuẩn BE cần
+   * 2. Validate file upload
    * ================================================================ */
-  const mapPartPayload = (partKey, part, index, imageUrl) => {
-    const partId = part?.id || data?.[partKey]?.id || null;
+  const beforeUpload = (file) => {
+    const isValid =
+      (file.type === 'image/jpeg' || file.type === 'image/png') &&
+      file.size / 1024 / 1024 < 10;
 
-    if (!partId) {
-      throw new Error(`Missing part id for ${partKey}`);
-    }
-
-    return {
-      id: partId,
-      name: part?.name || data?.[partKey]?.name || '',
-      image: imageUrl,
-      sequence: part?.sequence || index + 1,
-      questions: (part?.questions || []).map((q, idx) => ({
-        id: q?.id || null,
-        type: q?.type || 'speaking',
-        sequence: q?.sequence || idx + 1,
-        content: q?.value || q?.content || '',
-      })),
-    };
+    return isValid || Upload.LIST_IGNORE;
   };
 
-  const handleSubmit = (values) => {
-    try {
-      const payload = {
-        SkillName: 'SPEAKING',
-        SectionName: values.sectionName,
-        Description: values.description?.trim() || '',
-        parts: {
-          part1: mapPartPayload('part1', values.parts.part1, 0, images.part1),
-          part2: mapPartPayload('part2', values.parts.part2, 1, images.part2),
-          part3: mapPartPayload('part3', values.parts.part3, 2, images.part3),
-          part4: mapPartPayload('part4', values.parts.part4, 3, images.part4),
-        },
-      };
+  /** ================================================================
+   * 3. Upload Presigned URL
+   * ================================================================ */
+  /** Upload logic giống Create */
+  const uploadProps = (partKey) => ({
+    maxCount: 1,
+    listType: 'picture-card',
+    beforeUpload,
 
-      updateSpeaking(
-        { sectionId, payload },
-        {
-          onSuccess: async () => {
-            await Promise.all([
-              queryClient.invalidateQueries({ queryKey: ['sections'] }),
-              queryClient.refetchQueries({ queryKey: ['sections'] }),
-            ]);
-            message.success('Update speaking section successfully!');
-            navigate('/questions', { replace: true });
+    onChange(info) {
+      if (info.file.status === 'uploading') {
+        setFileLists((prev) => ({
+          ...prev,
+          [partKey]: [
+            {
+              uid: info.file.uid,
+              name: info.file.name,
+              status: 'uploading',
+              percent: 0,
+            },
+          ],
+        }));
+      }
+    },
+
+    customRequest: async ({ file, onSuccess, onError, onProgress }) => {
+      try {
+        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
+          fileName: file.name,
+          type: 'images',
+        });
+
+        const { uploadUrl, fileUrl } = data;
+
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.onprogress = (event) => {
+          const total = event.total || file.size;
+          const percent = Math.round((event.loaded / total) * 100);
+
+          setFileLists((prev) => ({
+            ...prev,
+            [partKey]: prev[partKey].map((f) =>
+              f.uid === file.uid ? { ...f, status: 'uploading', percent } : f
+            ),
+          }));
+
+          onProgress({ percent });
+        };
+
+        xhr.onload = function () {
+          if (xhr.status === 200) {
+            setFileLists((prev) => ({
+              ...prev,
+              [partKey]: [
+                {
+                  uid: file.uid,
+                  name: file.name,
+                  status: 'done',
+                  url: fileUrl,
+                },
+              ],
+            }));
+
+            setImages((prev) => ({ ...prev, [partKey]: fileUrl }));
+
+            form.setFieldsValue({
+              parts: {
+                ...form.getFieldValue('parts'),
+                [partKey]: {
+                  ...form.getFieldValue(['parts', partKey]),
+                  image: fileUrl,
+                },
+              },
+            });
+
+            form.validateFields([['parts', partKey, 'image']]);
+
+            onSuccess({ fileUrl });
+          } else {
+            onError(new Error('Upload failed'));
+          }
+        };
+
+        xhr.onerror = function () {
+          onError(new Error('Upload error'));
+        };
+
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
+      } catch (err) {
+        onError(err);
+      }
+    },
+
+    /** Remove */
+    onRemove: () => {
+      setImages((prev) => ({ ...prev, [partKey]: null }));
+      setFileLists((prev) => ({ ...prev, [partKey]: [] }));
+
+      form.setFieldsValue({
+        parts: {
+          ...form.getFieldValue('parts'),
+          [partKey]: {
+            ...form.getFieldValue(['parts', partKey]),
+            image: null,
           },
-        }
-      );
-    } catch (error) {
-      message.error(error?.message || 'Invalid speaking payload');
-    }
+        },
+      });
+
+      return true;
+    },
+
+    onPreview: (file) => {
+      const src = file.url || file.response?.fileUrl;
+      if (src) window.open(src);
+    },
+
+    fileList: fileLists[partKey],
+  });
+
+  /** ================================================================
+   * 4. Submit → gửi format chuẩn BE cần
+   * ================================================================ */
+  const mapPartPayload = (part, index, imageUrl) => ({
+    id: part.id,
+    name: part.name,
+    image: imageUrl,
+    sequence: index + 1,
+    questions: part.questions?.map((q, idx) => ({
+      id: q.id || null,
+      type: q.type || 'speaking',
+      sequence: idx + 1,
+      content: q.value || '',
+    })),
+  });
+
+  const handleSubmit = (values) => {
+    const payload = {
+      SkillName: 'SPEAKING',
+      SectionName: values.sectionName,
+      parts: {
+        part1: mapPartPayload(values.parts.part1, 0, images.part1),
+        part2: mapPartPayload(values.parts.part2, 1, images.part2),
+        part3: mapPartPayload(values.parts.part3, 2, images.part3),
+        part4: mapPartPayload(values.parts.part4, 3, images.part4),
+      },
+    };
+
+    updateSpeaking(
+      { sectionId, payload },
+      {
+        onSuccess: () => {
+          message.success('Update speaking section successfully!');
+          navigate(-1);
+        },
+      }
+    );
   };
 
   /** ================================================================
@@ -150,10 +321,6 @@ const UpdateSpeaking = () => {
 
     return (
       <Card title={title} className='mb-6 border rounded-lg shadow-sm'>
-        <Form.Item name={['parts', key, 'id']} hidden>
-          <Input />
-        </Form.Item>
-
         {/* Part Name */}
         <Form.Item
           label='Part Name'
@@ -163,7 +330,7 @@ const UpdateSpeaking = () => {
             yupSync(createSpeakingSchema, ['parts', key, 'name']),
           ]}
         >
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter part name' />
+          <Input placeholder='Enter part name' />
         </Form.Item>
 
         {/* Upload with VALIDATION */}
@@ -181,28 +348,14 @@ const UpdateSpeaking = () => {
             },
           ]}
         >
-          <MinioUploadDragger
-            accept='.jpg,.jpeg,.png'
-            allowedMimeTypes={['image/jpeg', 'image/png']}
-            bucketType='images'
-            hint='Drop a JPG or PNG image here or click to browse'
-            listType='picture'
-            onChange={(url) => {
-              setImages((prev) => ({ ...prev, [key]: url }));
-              form.setFieldsValue({
-                parts: {
-                  ...form.getFieldValue('parts'),
-                  [key]: {
-                    ...form.getFieldValue(['parts', key]),
-                    image: url,
-                  },
-                },
-              });
-              form.validateFields([['parts', key, 'image']]);
-            }}
-            title='Upload instruction image'
-            value={images[key]}
-          />
+          <Upload {...uploadProps(key)}>
+            {fileLists[key].length === 0 ? (
+              <div style={{ textAlign: 'center' }}>
+                <CloudUploadOutlined style={{ fontSize: 40 }} />
+                <div>Upload</div>
+              </div>
+            ) : null}
+          </Upload>
         </Form.Item>
 
         {/* QUESTIONS */}
@@ -222,7 +375,7 @@ const UpdateSpeaking = () => {
                       { required: true, message: 'Question cannot be empty' },
                     ]}
                   >
-                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter question' />
+                    <Input placeholder='Enter question' />
                   </Form.Item>
 
                   {f.name >= 3 && (
@@ -261,10 +414,7 @@ const UpdateSpeaking = () => {
             name='sectionName'
             rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
-          </Form.Item>
-          <Form.Item label='Description' name='description'>
-            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input placeholder='Enter section name' />
           </Form.Item>
         </Card>
 

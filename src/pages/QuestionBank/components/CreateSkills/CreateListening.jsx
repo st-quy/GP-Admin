@@ -4,20 +4,21 @@ import {
   Input,
   Select,
   Button,
+  Upload,
   message,
   Form,
   Card,
   Space,
   Collapse,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, AudioOutlined } from '@ant-design/icons';
 
 import { useNavigate } from 'react-router-dom';
 import { useCreateQuestion } from '@features/questions/hooks';
 
 import ListeningMatchingEditor from './Listening/ListeningMatchingEditor';
+import axiosInstance from '@shared/config/axios';
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
-import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
@@ -35,7 +36,6 @@ const CreateListening = () => {
   const [part3Name, setPart3Name] = useState('');
   const [part4Name, setPart4Name] = useState('');
   const [sectionName, setSectionName] = useState('');
-  const [description, setDescription] = useState('');
 
   // ================================
   // PART 1 — 13 Multiple Choice
@@ -65,11 +65,11 @@ const CreateListening = () => {
       prev.map((q) =>
         q.id === qId
           ? {
-            ...q,
-            options: q.options.map((o) =>
-              o.id === optId ? { ...o, value } : o
-            ),
-          }
+              ...q,
+              options: q.options.map((o) =>
+                o.id === optId ? { ...o, value } : o
+              ),
+            }
           : q
       )
     );
@@ -148,11 +148,11 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-            ...g,
-            subQuestions: g.subQuestions.map((s) =>
-              s.id === sId ? { ...s, [key]: value } : s
-            ),
-          }
+              ...g,
+              subQuestions: g.subQuestions.map((s) =>
+                s.id === sId ? { ...s, [key]: value } : s
+              ),
+            }
           : g
       )
     );
@@ -163,18 +163,18 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-            ...g,
-            subQuestions: g.subQuestions.map((s) =>
-              s.id === sId
-                ? {
-                  ...s,
-                  options: s.options.map((o) =>
-                    o.id === oId ? { ...o, value } : o
-                  ),
-                }
-                : s
-            ),
-          }
+              ...g,
+              subQuestions: g.subQuestions.map((s) =>
+                s.id === sId
+                  ? {
+                      ...s,
+                      options: s.options.map((o) =>
+                        o.id === oId ? { ...o, value } : o
+                      ),
+                    }
+                  : s
+              ),
+            }
           : g
       )
     );
@@ -185,21 +185,21 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-            ...g,
-            subQuestions: [
-              ...g.subQuestions,
-              {
-                id: g.subQuestions.length + 1,
-                content: '',
-                options: [
-                  { id: 1, label: 'A', value: '' },
-                  { id: 2, label: 'B', value: '' },
-                  { id: 3, label: 'C', value: '' },
-                ],
-                correctId: null,
-              },
-            ],
-          }
+              ...g,
+              subQuestions: [
+                ...g.subQuestions,
+                {
+                  id: g.subQuestions.length + 1,
+                  content: '',
+                  options: [
+                    { id: 1, label: 'A', value: '' },
+                    { id: 2, label: 'B', value: '' },
+                    { id: 3, label: 'C', value: '' },
+                  ],
+                  correctId: null,
+                },
+              ],
+            }
           : g
       )
     );
@@ -210,13 +210,54 @@ const CreateListening = () => {
       prev.map((g) =>
         g.id === gId
           ? {
-            ...g,
-            subQuestions: g.subQuestions.filter((s) => s.id !== sId),
-          }
+              ...g,
+              subQuestions: g.subQuestions.filter((s) => s.id !== sId),
+            }
           : g
       )
     );
   };
+
+  // =====================================
+  // UPLOAD AUDIO (only accept mp3)
+  // =====================================
+  const uploadAudio = async (file, onSuccess, onError, setUrl) => {
+    if (file.type !== 'audio/mpeg') {
+      message.error('Only MP3 files are allowed!');
+      onError('Invalid file type');
+      return;
+    }
+
+    try {
+      const { data } = await axiosInstance.post('/presigned-url/upload-url', {
+        fileName: file.name,
+        type: 'audios',
+      });
+
+      const res = await fetch(data.uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+
+      setUrl(data.fileUrl);
+      onSuccess({ url: data.fileUrl });
+      message.success('Uploaded!');
+    } catch (err) {
+      console.error(err);
+      onError(err);
+      message.error('Upload failed');
+    }
+  };
+
+  const uploadProps = (setter) => ({
+    accept: '.mp3',
+    maxCount: 1,
+    customRequest: ({ file, onSuccess, onError }) =>
+      uploadAudio(file, onSuccess, onError, setter),
+  });
 
   // =====================================
   // VALIDATION ICONS
@@ -306,7 +347,6 @@ const CreateListening = () => {
 
     const values = {
       sectionName,
-      description,
       part1Name,
       part1,
       part2Name,
@@ -322,12 +362,9 @@ const CreateListening = () => {
     createQuestion(payload, {
       onSuccess: () => {
         message.success('Created Listening successfully!');
-        navigate('/questions?skillName=LISTENING', { replace: true });
+        navigate(-1);
       },
-      onError: (err) =>
-        message.error(
-          err?.response?.data?.message || 'Failed to create listening'
-        ),
+      onError: () => message.error('Failed to create listening'),
     });
   };
   // Generate Excel-like labels: A, B, ..., Z, AA, AB, ...
@@ -472,21 +509,9 @@ const CreateListening = () => {
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+          <Input
             placeholder='e.g., Fitness Club Listening Test'
-            onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
-            }}
-          />
-        </Form.Item>
-        <Form.Item label='Description' name='description'>
-          <TextArea
-            rows={3}
-            placeholder='-'
-            value={description}
-            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
-            onChange={(e) => setDescription(e.target.value)}
+            onChange={(e) => setSectionName(e.target.value)}
           />
         </Form.Item>
       </Card>
@@ -500,14 +525,10 @@ const CreateListening = () => {
           )}
         >
           <Form.Item label='Part Name' required>
-            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Enter Part 1 name...'
               value={part1Name}
-              maxLength={255}
-              onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                setPart1Name(sanitized)
-              }}
+              onChange={(e) => setPart1Name(e.target.value)}
             />
           </Form.Item>
 
@@ -519,9 +540,9 @@ const CreateListening = () => {
                   `Question ${q.id}`,
                   Boolean(
                     q.instruction.trim() &&
-                    q.audioUrl &&
-                    q.options.filter((o) => o.value.trim()).length >= 2 &&
-                    q.options.find((o) => o.id === q.correctId)
+                      q.audioUrl &&
+                      q.options.filter((o) => o.value.trim()).length >= 2 &&
+                      q.options.find((o) => o.id === q.correctId)
                   )
                 )}
               >
@@ -529,22 +550,22 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={q.instruction}
-                    maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                     onChange={(e) =>
                       updatePart1Field(q.id, 'instruction', e.target.value)
                     }
                   />
                 </Form.Item>
 
-                <MinioUploadDragger
+                <Upload
                   accept='.mp3'
-                  allowedMimeTypes={['audio/mpeg']}
-                  bucketType='audios'
-                  hint='Drop an MP3 file here or click to browse'
-                  onChange={(url) => updatePart1Field(q.id, 'audioUrl', url)}
-                  title='Upload question audio'
-                  value={q.audioUrl}
-                />
+                  {...uploadProps((url) =>
+                    updatePart1Field(q.id, 'audioUrl', url)
+                  )}
+                >
+                  <Button icon={<AudioOutlined />} className='mb-6'>
+                    Upload audio (MP3)
+                  </Button>
+                </Upload>
 
                 {q.audioUrl && (
                   <audio src={q.audioUrl} controls style={{ marginTop: 10 }} />
@@ -554,7 +575,7 @@ const CreateListening = () => {
                   <div key={o.id} className='flex items-center gap-2 mb-2'>
                     <div className='w-6 font-bold'>{o.label}</div>
 
-                    <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                    <Input
                       className='flex-1'
                       value={o.value}
                       onChange={(e) =>
@@ -564,10 +585,11 @@ const CreateListening = () => {
 
                     {/* DELETE BUTTON */}
                     <DeleteOutlined
-                      className={`cursor-pointer text-red-500 ${q.options.length <= 3
-                        ? 'opacity-30 pointer-events-none'
-                        : ''
-                        }`}
+                      className={`cursor-pointer text-red-500 ${
+                        q.options.length <= 3
+                          ? 'opacity-30 pointer-events-none'
+                          : ''
+                      }`}
                       onClick={() => deletePart1Option(q.id, o.id)}
                     />
                   </div>
@@ -600,7 +622,7 @@ const CreateListening = () => {
         {/* PART 2 */}
         <Card title={renderHeader('PART 2 — Matching', valid2)}>
           <Form.Item label='Part Name' required>
-            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Enter Part 2 name...'
               value={part2Name}
               onChange={(e) => setPart2Name(e.target.value)}
@@ -611,22 +633,18 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part2.instruction}
-              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart2({ ...part2, instruction: e.target.value })
               }
             />
           </Form.Item>
 
-          <MinioUploadDragger
+          <Upload
             accept='.mp3'
-            allowedMimeTypes={['audio/mpeg']}
-            bucketType='audios'
-            hint='Drop an MP3 file here or click to browse'
-            onChange={(url) => setPart2((prev) => ({ ...prev, audioUrl: url }))}
-            title='Upload Part 2 audio'
-            value={part2.audioUrl}
-          />
+            {...uploadProps((url) => setPart2({ ...part2, audioUrl: url }))}
+          >
+            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
+          </Upload>
 
           {part2.audioUrl && <audio src={part2.audioUrl} controls />}
 
@@ -647,7 +665,7 @@ const CreateListening = () => {
         {/* PART 3 */}
         <Card title={renderHeader('PART 3 — Matching', valid3)}>
           <Form.Item label='Part Name' required>
-            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Enter Part 3 name...'
               value={part3Name}
               onChange={(e) => setPart3Name(e.target.value)}
@@ -658,22 +676,18 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part3.instruction}
-              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart3({ ...part3, instruction: e.target.value })
               }
             />
           </Form.Item>
 
-          <MinioUploadDragger
+          <Upload
             accept='.mp3'
-            allowedMimeTypes={['audio/mpeg']}
-            bucketType='audios'
-            hint='Drop an MP3 file here or click to browse'
-            onChange={(url) => setPart3((prev) => ({ ...prev, audioUrl: url }))}
-            title='Upload Part 3 audio'
-            value={part3.audioUrl}
-          />
+            {...uploadProps((url) => setPart3({ ...part3, audioUrl: url }))}
+          >
+            <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
+          </Upload>
 
           {part3.audioUrl && <audio src={part3.audioUrl} controls />}
 
@@ -694,7 +708,7 @@ const CreateListening = () => {
         {/* PART 4 */}
         <Card title={renderHeader('PART 4 — Listening Groups', valid4)}>
           <Form.Item label='Part Name' required>
-            <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Enter Part 4 name...'
               value={part4Name}
               onChange={(e) => setPart4Name(e.target.value)}
@@ -714,22 +728,20 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={g.instruction}
-                    maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                     onChange={(e) =>
                       updateGroupField(g.id, 'instruction', e.target.value)
                     }
                   />
                 </Form.Item>
 
-                <MinioUploadDragger
+                <Upload
                   accept='.mp3'
-                  allowedMimeTypes={['audio/mpeg']}
-                  bucketType='audios'
-                  hint='Drop an MP3 file here or click to browse'
-                  onChange={(url) => updateGroupField(g.id, 'audioUrl', url)}
-                  title='Upload group audio'
-                  value={g.audioUrl}
-                />
+                  {...uploadProps((url) =>
+                    updateGroupField(g.id, 'audioUrl', url)
+                  )}
+                >
+                  <Button icon={<AudioOutlined />}>Upload audio (MP3)</Button>
+                </Upload>
 
                 {g.audioUrl && <audio src={g.audioUrl} controls />}
 
@@ -737,7 +749,7 @@ const CreateListening = () => {
                   <div key={s.id} className='flex gap-4'>
                     <Card size='small' className='flex-1 mt-4'>
                       <Form.Item label={`Sub question ${s.id}`} required>
-                        <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                        <Input
                           value={s.content}
                           onChange={(e) =>
                             updateGroupSub(
@@ -757,7 +769,7 @@ const CreateListening = () => {
                         >
                           <div className='w-6 font-bold'>{o.label}</div>
 
-                          <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                          <Input
                             className='flex-1'
                             value={o.value}
                             onChange={(e) =>
@@ -771,10 +783,11 @@ const CreateListening = () => {
                           />
 
                           <DeleteOutlined
-                            className={`cursor-pointer text-red-500 ${s.options.length <= 3
-                              ? 'opacity-30 pointer-events-none'
-                              : ''
-                              }`}
+                            className={`cursor-pointer text-red-500 ${
+                              s.options.length <= 3
+                                ? 'opacity-30 pointer-events-none'
+                                : ''
+                            }`}
                             onClick={() => deletePart4Option(g.id, s.id, o.id)}
                           />
                         </div>

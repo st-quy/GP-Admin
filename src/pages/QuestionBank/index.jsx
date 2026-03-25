@@ -1,217 +1,200 @@
-import React, { useEffect, useState } from 'react';
+// QuestionBank.jsx
+import React, { useState, useMemo, useEffect } from 'react';
 import {
-  DeleteOutlined,
-  EditOutlined,
-  PlusOutlined,
+  Table,
+  Button,
+  Input,
+  Typography,
+  Space,
+  Pagination,
+  Card,
+  Dropdown,
+  Tooltip,
+  Tabs,
+} from 'antd';
+import {
   SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  DownOutlined,
+  EyeOutlined,
 } from '@ant-design/icons';
-import {
-  useGetSections,
-  useDeleteSection,
-} from '@features/sections/hooks';
-import CreateReading from './components/CreateSkills/CreateReading';
-import CreateListening from './components/CreateSkills/CreateListening';
-import CreateGrammarVocab from './components/CreateSkills/CreateGrammarVocab';
-import CreateWriting from './components/CreateSkills/CreateWriting';
-import CreateSpeaking from './components/CreateSkills/CreateSpeaking';
-import { Button, Input, Table, Tooltip, Card, Tabs, message, Modal } from 'antd';
-import UpdateReading from './components/UpdateSkills/UpdateReading';
-import UpdateListening from './components/UpdateSkills/UpdateListening';
-import UpdateGrammarVocab from './components/UpdateSkills/UpdateGrammarVocab';
-import UpdateWriting from './components/UpdateSkills/UpdateWriting';
-import UpdateSpeaking from './components/UpdateSkills/UpdateSpeaking';
+import { useNavigate } from 'react-router-dom';
+
+import HeaderInfo from '@app/components/HeaderInfo';
 import useConfirm from '@shared/hook/useConfirm';
+import { useDeleteSection, useGetSections } from '@features/sections/hooks';
+
+const { Text } = Typography;
 
 const QuestionBank = () => {
-  const [activeTab, setActiveTab] = useState('SPEAKING');
-  const [searchText, setSearchText] = useState('');
-  const [openCreateModal, setOpenCreateModal] = useState(false);
-  const [editingSection, setEditingSection] = useState(null);
-  
-  const { data: listPart, isLoading: loadingSections } = useGetSections(
-    activeTab,
-    searchText
-  );
-
-  const { mutate: deleteSection } = useDeleteSection();
+  const navigate = useNavigate();
   const { openConfirmModal, ModalComponent } = useConfirm();
 
-  const handleEdit = (record) => (e) => {
-    e.stopPropagation();
-    setEditingSection(record);
+  // --- Filter & pagination state ---
+  const [selectedSkill, setSelectedSkill] = useState('SPEAKING');
+  const [searchText, setSearchText] = useState('');
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
+  // Khi skill hoặc searchText đổi → reset page về 1
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedSkill, searchText]);
+
+  /* =========================================================
+      LOAD SECTION LIST TỪ API (CÓ PHÂN TRANG)
+     ========================================================= */
+  const sectionParams = useMemo(
+    () => ({
+      skillName: selectedSkill || undefined,
+      searchName: searchText || undefined,
+      page: currentPage,
+      pageSize,
+    }),
+    [selectedSkill, searchText, currentPage, pageSize]
+  );
+
+  const { data: listSectionData, isLoading: loadingSections } =
+    useGetSections(sectionParams);
+
+  const { mutate: deleteSection } = useDeleteSection();
+
+  const listPart = listSectionData?.data ?? [];
+  const pagination = {
+    page: listSectionData?.page ?? currentPage,
+    pageSize: listSectionData?.pageSize ?? pageSize,
+    total: listSectionData?.total ?? 0,
   };
 
+  const totalItems = pagination.total;
+  const startItem =
+    totalItems === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
+  const endItem = Math.min(pagination.page * pagination.pageSize, totalItems);
+
+  /* =========================================================
+      TABLE COLUMNS
+     ========================================================= */
   const columns = [
     {
       title: 'Section Name',
       dataIndex: 'Name',
-      key: 'Name',
-      render: (text) => <span className='font-medium'>{text}</span>,
+      ellipsis: { showTitle: false },
+      render: (text) => (
+        <Tooltip title={text}>
+          <span className='font-semibold text-[#1F2937]'>{text}</span>
+        </Tooltip>
+      ),
     },
     {
-      title: 'Number of Parts',
-      dataIndex: 'Parts',
-      key: 'Parts',
+      title: 'Description',
+      dataIndex: 'Description',
+      align: 'left',
+      ellipsis: { showTitle: false },
+      render: (_, record) => (
+        <Tooltip title={record?.SubContent || '-'}>
+          <span className='text-gray-500'>{record?.SubContent || '—'}</span>
+        </Tooltip>
+      ),
+    },
+    {
+      title: 'Skill',
+      dataIndex: 'Skill',
       align: 'center',
-      render: (parts) => <span>{parts?.length || 0}</span>,
+      render: (_, record) => (
+        <span className='text-gray-600 font-medium'>
+          {record?.Skill?.Name || '-'}
+        </span>
+      ),
     },
     {
       title: 'Action',
       key: 'action',
       align: 'center',
       render: (_, record) => (
-        <div className='flex gap-2 justify-center'>
-          <Tooltip title="Edit Section">
+        <Space size='middle'>
+          <Button
+            type='text'
+            className='text-green-600 hover:bg-blue-50 px-2'
+            icon={<EyeOutlined />}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`${record.ID}?skillName=${record.Skill.Name}`);
+            }}
+          />
+          {record.Topics.length === 0 && (
             <Button
               type='text'
-              className='text-primaryColor hover:bg-blue-50 px-2'
+              className='text-blue-600 hover:bg-blue-50 px-2'
               icon={<EditOutlined />}
-              onClick={handleEdit(record)}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+              }}
             />
-          </Tooltip>
-          {record.Topics.length === 0 && (
-            <Tooltip title="Delete Section">
-              <Button
-                type='text'
-                className='text-red-500 hover:bg-red-50 px-2'
-                icon={<DeleteOutlined />}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openConfirmModal({
-                    title: 'Confirm delete',
-                    message: 'Do you really want to delete this section?',
-                    okText: 'Delete',
-                    okButtonColor: '#FF4D4F',
-                    onConfirm: () => deleteSection(record.ID),
-                  });
-                }}
-              />
-            </Tooltip>
           )}
-        </div>
+          {record.Topics.length === 0 && (
+            <Button
+              type='text'
+              className='text-red-500 hover:bg-red-50 px-2'
+              icon={<DeleteOutlined />}
+              onClick={(e) => {
+                e.stopPropagation();
+                openConfirmModal({
+                  title: 'Confirm delete',
+                  message: 'Do you really want to delete this section?',
+                  okText: 'Delete',
+                  okButtonColor: '#FF4D4F',
+                  onConfirm: () => deleteSection(record.ID),
+                });
+              }}
+            />
+          )}
+        </Space>
       ),
     },
   ];
 
-  const renderCreateModal = () => {
-    switch (activeTab) {
-      case 'READING':
-        return (
-          <CreateReading
-            isOpen={openCreateModal}
-            onClose={() => setOpenCreateModal(false)}
-          />
-        );
-      case 'LISTENING':
-        return (
-          <CreateListening
-            isOpen={openCreateModal}
-            onClose={() => setOpenCreateModal(false)}
-          />
-        );
-      case 'GRAMMAR AND VOCABULARY':
-        return (
-          <CreateGrammarVocab
-            isOpen={openCreateModal}
-            onClose={() => setOpenCreateModal(false)}
-          />
-        );
-      case 'WRITING':
-        return (
-          <CreateWriting
-            isOpen={openCreateModal}
-            onClose={() => setOpenCreateModal(false)}
-          />
-        );
-      case 'SPEAKING':
-        return (
-          <CreateSpeaking
-            isOpen={openCreateModal}
-            onClose={() => setOpenCreateModal(false)}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
-  const renderUpdateModal = () => {
-    if (!editingSection) return null;
-    switch (activeTab) {
-      case 'READING':
-        return (
-          <UpdateReading
-            isOpen={!!editingSection}
-            onClose={() => setEditingSection(null)}
-            data={editingSection}
-          />
-        );
-      case 'LISTENING':
-        return (
-          <UpdateListening
-            isOpen={!!editingSection}
-            onClose={() => setEditingSection(null)}
-            data={editingSection}
-          />
-        );
-      case 'GRAMMAR AND VOCABULARY':
-        return (
-          <UpdateGrammarVocab
-            isOpen={!!editingSection}
-            onClose={() => setEditingSection(null)}
-            data={editingSection}
-          />
-        );
-      case 'WRITING':
-        return (
-          <UpdateWriting
-            isOpen={!!editingSection}
-            onClose={() => setEditingSection(null)}
-            data={editingSection}
-          />
-        );
-      case 'SPEAKING':
-        return (
-          <UpdateSpeaking
-            isOpen={!!editingSection}
-            onClose={() => setEditingSection(null)}
-            data={editingSection}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <>
-      <div className='p-6 min-h-screen bg-gray-50'>
-        <div className='flex justify-between items-center mb-6'>
-          <div>
-            <h1 className='text-2xl font-bold text-gray-800'>Question Bank</h1>
-            <p className='text-gray-500'>Manage exam sections and questions by skill.</p>
-          </div>
-          <Button
-            type='primary'
-            size='large'
-            icon={<PlusOutlined />}
-            className='bg-primaryColor h-12 px-6'
-            onClick={() => setOpenCreateModal(true)}
-          >
-            Create Section
-          </Button>
-        </div>
+      <ModalComponent />
 
-        <Card className='shadow-sm rounded-xl'>
-          {/* ==================== SKILL TABS ==================== */}
-          <Tabs
-            activeKey={activeTab}
-            onChange={(key) => {
-              setActiveTab(key);
-              setSearchText('');
+      <HeaderInfo
+        title='Question List'
+        subtitle='Manage and filter all list section'
+        SubAction={
+          <Dropdown
+            menu={{
+              items: [
+                { label: 'Speaking', key: 'speaking' },
+                { label: 'Reading', key: 'reading' },
+                { label: 'Writing', key: 'writing' },
+                { label: 'Listening', key: 'listening' },
+                { label: 'Grammar And Vocabulary', key: 'grammar' },
+              ],
+              onClick: (e) => navigate(`create/${e.key}`),
             }}
-            centered
-            size='large'
+          >
+            <Button
+              className='w-full p-5'
+              icon={<DownOutlined />}
+              iconPosition='end'
+            >
+              Create Questions
+            </Button>
+          </Dropdown>
+        }
+      />
+
+      <div className='p-4'>
+        <Card className='shadow-sm rounded-xl h-[calc(100vh-200px)]'>
+          {/* ==================== TABS FILTER ==================== */}
+          <Tabs
+            type='card'
+            tabBarGutter={32}
+            activeKey={selectedSkill ?? ''}
+            onChange={(key) => setSelectedSkill(key)}
             items={[
               { key: 'SPEAKING', label: 'Speaking' },
               { key: 'LISTENING', label: 'Listening' },
@@ -224,16 +207,12 @@ const QuestionBank = () => {
           {/* ==================== SEARCH BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
             <Input
-              maxLength={255}
               size='large'
               placeholder='Search section name...'
               prefix={<SearchOutlined className='text-gray-400' />}
               className='w-full sm:w-[260px] lg:w-[320px]'
               value={searchText}
-              onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
-                setSearchText(sanitized)
-              }}
+              onChange={(e) => setSearchText(e.target.value)}
             />
           </div>
 
@@ -249,11 +228,48 @@ const QuestionBank = () => {
               scroll={{ y: 'calc(100vh - 500px)' }}
             />
           </div>
-        </Card>
 
-        {renderCreateModal()}
-        {renderUpdateModal()}
-        <ModalComponent />
+          {/* ==================== PAGINATION ==================== */}
+          <div className='flex flex-col md:flex-row justify-between items-center p-6 border-t border-gray-100 gap-4'>
+            <Text className='text-gray-500'>
+              {totalItems === 0
+                ? 'No data found'
+                : `Showing ${startItem}–${endItem} of ${totalItems} items`}
+            </Text>
+
+            <Pagination
+              current={pagination.page}
+              total={totalItems}
+              pageSize={pagination.pageSize}
+              showSizeChanger
+              onChange={(page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }}
+              itemRender={(page, type, original) => {
+                if (type === 'page') {
+                  const isActive = pagination.page === page;
+
+                  return (
+                    <button
+                      className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
+                        ${
+                          isActive
+                            ? 'bg-[#003087] text-white border-[#003087]'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
+                        }
+                      `}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+
+                return original;
+              }}
+            />
+          </div>
+        </Card>
       </div>
     </>
   );
