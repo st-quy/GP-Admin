@@ -28,7 +28,7 @@ const CreateReading = () => {
       createQuestion(payload, {
         onSuccess: () => {
           message.success('Created successfully!');
-          navigate(-1);
+          navigate('/questions?skillName=READING', { replace: true });
         },
         onError: (err) => {
           message.error(err?.response?.data?.message || 'Failed to create');
@@ -91,9 +91,10 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Input
-              maxLength={255}
-              placeholder='Enter section name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
+          </Form.Item>
+          <Form.Item label='Description' name='description'>
+            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
         </Card>
 
@@ -107,9 +108,7 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input
-              maxLength={255}
-              placeholder='Enter Part 1 Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 1 Name' />
           </Form.Item>
 
           <Form.Item
@@ -185,7 +184,7 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} placeholder='Enter Part 2A Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2A Name' />
           </Form.Item>
 
           <Form.Item
@@ -194,9 +193,8 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input maxLength={255} />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
-
           <Form.List name={['part2A', 'items']}>
             {(fields, helpers) => (
               <OrderingEditor
@@ -219,7 +217,7 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} placeholder='Enter Part 2B Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2B Name' />
           </Form.Item>
 
           <Form.Item
@@ -228,9 +226,8 @@ const CreateReading = () => {
             name={['part2B', 'intro']}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input maxLength={255} />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
           </Form.Item>
-
           <Form.List name={['part2B', 'items']}>
             {(fields, helpers) => (
               <OrderingEditor
@@ -252,7 +249,7 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} placeholder='Enter Part 3 Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 3 Name' />
           </Form.Item>
           {/* CONTENT */}
           <Form.Item
@@ -261,7 +258,7 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter content...' />
+            <Input.TextArea rows={3} placeholder='Enter content...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <MatchingEditor />
@@ -314,7 +311,7 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} placeholder='Enter Part 4 Name' />
+            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 4 Name' />
           </Form.Item>
           {/* CONTENT */}
           <Form.Item
@@ -323,7 +320,7 @@ const CreateReading = () => {
             getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' />
+            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
           </Form.Item>
 
           <MatchingEditorPart4 />

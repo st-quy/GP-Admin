@@ -19,7 +19,7 @@ import {
   DownOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import HeaderInfo from '@app/components/HeaderInfo';
 import useConfirm from '@shared/hook/useConfirm';
@@ -29,10 +29,23 @@ const { Text } = Typography;
 
 const QuestionBank = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { openConfirmModal, ModalComponent } = useConfirm();
 
+  const queryParams = new URLSearchParams(location.search);
+  const skillFromQuery = queryParams.get('skillName')?.trim().toUpperCase();
+  const validSkills = new Set([
+    'SPEAKING',
+    'LISTENING',
+    'READING',
+    'WRITING',
+    'GRAMMAR AND VOCABULARY',
+  ]);
+
   // --- Filter & pagination state ---
-  const [selectedSkill, setSelectedSkill] = useState('SPEAKING');
+  const [selectedSkill, setSelectedSkill] = useState(
+    validSkills.has(skillFromQuery) ? skillFromQuery : 'SPEAKING'
+  );
   const [searchText, setSearchText] = useState('');
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -42,6 +55,12 @@ const QuestionBank = () => {
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSkill, searchText]);
+
+  useEffect(() => {
+    if (validSkills.has(skillFromQuery) && skillFromQuery !== selectedSkill) {
+      setSelectedSkill(skillFromQuery);
+    }
+  }, [skillFromQuery, selectedSkill]);
 
   /* =========================================================
       LOAD SECTION LIST TỪ API (CÓ PHÂN TRANG)
@@ -92,11 +111,15 @@ const QuestionBank = () => {
       dataIndex: 'Description',
       align: 'left',
       ellipsis: { showTitle: false },
-      render: (text, record) => (
-        <Tooltip title={record?.Description || record?.SubContent || '-'}>
-          <span className='text-gray-500'>{record?.Description || record?.SubContent || '—'}</span>
-        </Tooltip>
-      ),
+      render: (_, record) => {
+        const description = record?.Description ?? '—';
+
+        return (
+          <Tooltip title={description}>
+            <span className='text-gray-500'>{description}</span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Skill',
@@ -114,7 +137,7 @@ const QuestionBank = () => {
       align: 'center',
       render: (_, record) => (
         <Space size='middle'>
-          <Tooltip title="View Detail">
+          <Tooltip title='Preview Questions'>
             <Button
               type='text'
               className='text-green-600 hover:bg-blue-50 px-2'
@@ -125,8 +148,9 @@ const QuestionBank = () => {
               }}
             />
           </Tooltip>
+
           {record.Topics.length === 0 && (
-            <Tooltip title="Edit Section">
+            <Tooltip title='Edit Questions'>
               <Button
                 type='text'
                 className='text-blue-600 hover:bg-blue-50 px-2'
@@ -138,8 +162,9 @@ const QuestionBank = () => {
               />
             </Tooltip>
           )}
+
           {record.Topics.length === 0 && (
-            <Tooltip title="Delete Section">
+            <Tooltip title='Delete Questions'>
               <Button
                 type='text'
                 className='text-red-500 hover:bg-red-50 px-2'
@@ -156,6 +181,7 @@ const QuestionBank = () => {
                 }}
               />
             </Tooltip>
+
           )}
         </Space>
       ),
@@ -200,7 +226,12 @@ const QuestionBank = () => {
             type='card'
             tabBarGutter={32}
             activeKey={selectedSkill ?? ''}
-            onChange={(key) => setSelectedSkill(key)}
+            onChange={(key) => {
+              setSelectedSkill(key);
+              navigate(`/questions?skillName=${encodeURIComponent(key)}`, {
+                replace: true,
+              });
+            }}
             items={[
               { key: 'SPEAKING', label: 'Speaking' },
               { key: 'LISTENING', label: 'Listening' },
@@ -222,8 +253,7 @@ const QuestionBank = () => {
               onChange={(e) => {
                 const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
                 setSearchText(sanitized)
-              }
-              }
+              }}
             />
           </div>
 
@@ -241,24 +271,42 @@ const QuestionBank = () => {
           </div>
 
           {/* ==================== PAGINATION ==================== */}
-          <div className='flex flex-col md:flex-row justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm gap-4'>
-            <div className='text-gray-600 font-medium'>
+          <div className='flex flex-col md:flex-row justify-between items-center p-6 border-t border-gray-100 gap-4'>
+            <Text className='text-gray-500'>
               {totalItems === 0
-                ? 'No entries found'
-                : `Showing ${startItem}-${endItem} of ${totalItems} entries`}
-            </div>
+                ? 'No data found'
+                : `Showing ${startItem}–${endItem} of ${totalItems} items`}
+            </Text>
 
             <Pagination
               current={pagination.page}
               total={totalItems}
               pageSize={pagination.pageSize}
               showSizeChanger
-              pageSizeOptions={['5', '10', '15', '20']}
               onChange={(page, size) => {
                 setCurrentPage(page);
                 setPageSize(size);
               }}
-              className="ant-pagination-custom"
+              itemRender={(page, type, original) => {
+                if (type === 'page') {
+                  const isActive = pagination.page === page;
+
+                  return (
+                    <button
+                      className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
+                        ${isActive
+                          ? 'bg-[#003087] text-white border-[#003087]'
+                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
+                        }
+                      `}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+
+                return original;
+              }}
             />
           </div>
         </Card>
