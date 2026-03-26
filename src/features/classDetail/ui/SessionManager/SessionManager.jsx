@@ -8,6 +8,7 @@ import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import SessionTable from "./SessionTable/SessionTable";
 import { Button, message, Tooltip } from "antd";
 
+
 const SessionManager = ({ data, isLoading }) => {
   const [modalState, setModalState] = useState({
     create: false,
@@ -40,7 +41,7 @@ const SessionManager = ({ data, isLoading }) => {
       key: "sessionName",
       className: "!text-center",
       render: (text, record) => (
-        <Link to={`session/${record.ID}`} className="text-[#003087]">
+        <Link to={`/class/${data?.ID}/session/${record.ID}`} className="text-[#003087]">
           {text}
         </Link>
       ),
@@ -104,7 +105,7 @@ const SessionManager = ({ data, isLoading }) => {
               className="text-xl !text-primaryColor hover:opacity-70 disabled:opacity-30"
             />
           </Tooltip>
-          {(record.participantCount === 0 || !record.participantCount) && (
+          {(!record.participantCount || record.participantCount === 0) && (
             <Tooltip title="Delete Session">
               <Button
                 type="link"
