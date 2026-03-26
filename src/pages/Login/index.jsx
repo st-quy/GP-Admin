@@ -10,7 +10,6 @@ import { yupSync } from "@shared/lib/utils";
 import { useLogin } from "../../features/auth/hooks";
 import { useSelector } from "react-redux";
 import { loginSchema } from "./loginSchema";
-import { normalizeEmail } from "@shared/lib/auth/clearAuthState";
 
 const { Title, Text } = Typography;
 
@@ -23,13 +22,7 @@ const LoginPage = () => {
 
   const onSubmit = async (values) => {
     try {
-      const normalizedValues = {
-        ...values,
-        email: normalizeEmail(values.email),
-      };
-
-      form.setFieldValue("email", normalizedValues.email);
-      loginFunc(normalizedValues);
+      loginFunc(values);
     } catch (error) {
       setErrorMessage(error.message);
     }
@@ -91,10 +84,6 @@ const LoginPage = () => {
                 placeholder="Enter your email here"
                 size="large"
                 className="h-11 text-base rounded-lg"
-                onBlur={() => {
-                  const trimmedEmail = normalizeEmail(form.getFieldValue("email"));
-                  form.setFieldValue("email", trimmedEmail);
-                }}
               />
             </Form.Item>
 

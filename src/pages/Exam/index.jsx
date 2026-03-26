@@ -32,8 +32,9 @@ import {
   useUpdateTopic,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
-import StatusTransitionDropdown from '@shared/components/StatusTransitionDropdown';
-import RejectExamModal from '@features/topic/ui/RejectModal';
+import { useDebouncedValue } from '@shared/hook/useDebounceValue';
+import { STATUS_CONFIG } from '@shared/lib/constants/examStatus';
+import { Tag, Tooltip as AntTooltip } from 'antd';
 
 const { Option } = Select;
 const { Text } = Typography;
@@ -51,6 +52,7 @@ const TopicListPage = () => {
 
   // Filters
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 500);
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
@@ -60,7 +62,7 @@ const TopicListPage = () => {
 
   // Query topics from backend with params
   const { data, isLoading } = useGetTopics({
-    searchName: search || undefined,
+    searchName: debouncedSearch || undefined,
     status: statusFilter === 'all' ? undefined : statusFilter,
     page,
     pageSize,
@@ -180,25 +182,36 @@ const TopicListPage = () => {
       title: 'Status',
       dataIndex: 'Status',
       key: 'Status',
-      render: (_, record) => (
-        <StatusTransitionDropdown
-          currentStatus={record.Status}
-          rejectReason={record.ReasonReject}
-          onTransition={async (newStatus) => {
-            await updateTopic({ id: record.ID, data: { Status: newStatus } });
-            message.success(`Status changed to ${newStatus}`);
-          }}
-        />
-      ),
+      render: (_, record) => {
+        const cfg = STATUS_CONFIG[record.Status] || {};
+
+        const tagElement = (
+          <Tag
+            color={cfg.antColor}
+            className='font-medium px-3 py-1 rounded-md'
+          >
+            {cfg.label || record.Status}
+          </Tag>
+        );
+
+        if (record.Status === 'rejected') {
+          return (
+            <AntTooltip
+              title={
+                record.ReasonReject
+                  ? record.ReasonReject
+                  : 'No reject reason provided'
+              }
+            >
+              {tagElement}
+            </AntTooltip>
+          );
+        }
+
+        return tagElement;
+      },
     },
-    // {
-    //   title: 'Creator',
-    //   dataIndex: 'createdBy',
-    //   key: 'createdBy',
-    //   render: (text) => (
-    //     <span className='font-medium text-gray-800'>{text}</span>
-    //   ),
-    // },
+
     {
       title: 'Creation day',
       dataIndex: 'createdAt',
@@ -219,14 +232,6 @@ const TopicListPage = () => {
         </span>
       ),
     },
-    // {
-    //   title: 'Updator',
-    //   dataIndex: 'updatedBy',
-    //   key: 'updatedBy',
-    //   render: (text) => (
-    //     <span className='font-medium text-gray-800'>{text}</span>
-    //   ),
-    // },
     {
       title: 'Action',
       key: 'action',
@@ -303,7 +308,7 @@ const TopicListPage = () => {
             <PlayCircleOutlined
               title='Do mock test'
               type='link'
-              className='p-0 flex items-center'
+              className='p-0 flex items-center cursor-pointer'
               onClick={() => onStartHandler(record)}
             />
           </Space>
@@ -429,43 +434,21 @@ const TopicListPage = () => {
               columns={columns}
               dataSource={topics}
               loading={isLoading}
-              pagination={false}
+              pagination={{
+                current: page,
+                pageSize: pageSize,
+                total: totalItems,
+                showSizeChanger: true,
+                pageSizeOptions: ['5', '10', '20'],
+                onChange: (p, ps) => {
+                  setPage(p);
+                  setPageSize(ps);
+                },
+                position: ['bottomRight'],
+                showTotal: (total, range) => 
+                  `${range[0]}–${range[1]} of ${total} items`,
+              }}
             />
-
-            {/* Pagination */}
-            <div className='flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 p-4 border-t border-gray-100'>
-              <Text className='text-gray-500'>
-                {totalItems === 0
-                  ? 'No data'
-                  : `Showing ${(page - 1) * pageSize + 1}–${Math.min(
-                    page * pageSize,
-                    totalItems
-                  )} of ${totalItems}`}
-              </Text>
-
-              <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600'>
-                <Pagination
-                  current={page}
-                  total={totalItems}
-                  pageSize={pageSize}
-                  showSizeChanger={false}
-                  onChange={(p) => setPage(p)}
-                />
-
-                <Select
-                  className='w-[120px]'
-                  value={String(pageSize)}
-                  onChange={(val) => {
-                    setPageSize(Number(val));
-                    setPage(1);
-                  }}
-                >
-                  <Option value='5'>5 / page</Option>
-                  <Option value='10'>10 / page</Option>
-                  <Option value='20'>20 / page</Option>
-                </Select>
-              </div>
-            </div>
           </Card>
         </div>
       </div>
