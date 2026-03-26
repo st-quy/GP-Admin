@@ -89,6 +89,22 @@
   background-color: transparent !important;
 }
 
+.correct-answer-collapse {
+  .ant-collapse-header {
+    padding: 12px 70px !important;
+    align-items: center !important;
+  }
+  .ant-collapse-content-box {
+    padding: 0 70px 16px !important;
+  }
+  .ant-collapse-item {
+    border-bottom: 1px solid #f0f0f0 !important;
+    &:last-child {
+      border-bottom: none !important;
+    }
+  }
+}
+
 #grading-participants-table .ant-table-tbody > tr:hover > td {
   background-color: #e6f0fa !important;
 }
