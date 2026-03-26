@@ -146,70 +146,8 @@ const CreateExamPage = () => {
         }
     }, [isDirty, isViewMode, navigate]);
 
-    const handleSaveExam = async () => {
-        try {
-            const values = await form.validateFields(['name']);
-            let topicResponse;
-            if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'draft' } });
-                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
-                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
-            } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'draft' });
-                const savedTopicId = topicResponse.ID || topicResponse._ID;
-                if (!savedTopicId) return message.error("Cannot get topic ID");
-                for (const sectionId of selectedParts) {
-                    await createTopicSection({ topicId: savedTopicId, sectionId });
-                }
-            }
-            message.success("Topic saved successfully!");
-            setIsDirty(false);
-            navigate("/exam");
-        } catch (error) {
-            console.error(error);
-            message.error("Failed to save topic");
-        }
-    };
 
-    const handleSubmitExam = async () => {
-        if (instructions.length < 5) {
-            message.warning("Please select all skills before submitting");
-            return;
-        }
-        try {
-            const values = await form.validateFields();
-            let topicResponse;
-            if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'submited' } });
-                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
-                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
-            } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'submited' });
-                const savedTopicId = topicResponse.ID || topicResponse._ID;
-                if (!savedTopicId) return message.error("Cannot get topic ID");
-                for (const sectionId of selectedParts) {
-                    await createTopicSection({ topicId: savedTopicId, sectionId });
-                }
-            }
-            message.success("Topic submitted successfully!");
-            setIsDirty(false);
-            navigate("/exam");
-        } catch (error) {
-            console.error(error);
-            message.error("Failed to submit topic");
-        }
-    };
 
-    const saveDraftAndLeave = async () => {
-        await handleSaveExam();
-        setLeaveConfirmOpen(false);
-    };
-
-    const discardAndLeave = () => {
-        setIsDirty(false);
-        setLeaveConfirmOpen(false);
-        navigate(pendingPath.current || '/exam');
-    };
 
     const handlePartSelect = (sections) => {
         setIsDirty(true);
