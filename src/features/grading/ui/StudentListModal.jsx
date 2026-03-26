@@ -1,4 +1,5 @@
 import "./index.scss";
+import { useRef, useEffect } from "react";
 import { Modal, Table, Button } from "antd";
 import { EditOutlined, AudioOutlined } from "@ant-design/icons";
 
@@ -9,6 +10,13 @@ const StudentListModal = ({
   onClose,
   handleSelect,
 }) => {
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    if (visible && scrollRef.current) {
+      scrollRef.current.focus();
+    }
+  }, [visible]);
   //Filter Data
   const filterData = [];
   data.map((item) => {
@@ -86,17 +94,19 @@ const StudentListModal = ({
   ];
 
   return (
-    <Modal open={visible} onCancel={onClose} footer={null} width={1000}>
+    <Modal open={visible} onCancel={onClose} footer={null} width={1000} styles={{ body: { maxHeight: '70vh', overflow: 'hidden' } }}>
       <div className="px-12 pb-14 pt-8" id="grading-participants-table">
         <h2 className="text-3xl font-bold mb-4">Student List</h2>
-        <Table
-          dataSource={filterData}
-          // @ts-ignore
-          columns={columns}
-          pagination={false}
-          rowKey="ID"
-          scroll={{ y: 500 }}
-        />
+        <div ref={scrollRef} tabIndex={0} id="grading-participants-table-wrapper" style={{ maxHeight: '50vh', overflowY: 'auto', outline: 'none' }}>
+          <Table
+            dataSource={filterData}
+            // @ts-ignore
+            columns={columns}
+            pagination={false}
+            rowKey="ID"
+            sticky
+          />
+        </div>
       </div>
     </Modal>
   );

@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Modal, Input, Typography, Alert, Button } from "antd";
 const { Text } = Typography;
 
-const RejectExamModal = ({ open, onClose, onSubmit }) => {
+const RejectExamModal = ({ open, onCancel, onSubmit }) => {
     const [reason, setReason] = useState("");
 
     const handleConfirm = () => {
@@ -13,7 +13,7 @@ const RejectExamModal = ({ open, onClose, onSubmit }) => {
 
     const handleCancel = () => {
         setReason("");
-        onClose();
+        onCancel();
     };
 
     return (

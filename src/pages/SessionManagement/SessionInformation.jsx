@@ -31,7 +31,31 @@ const SessionInformation = ({ type }) => {
   };
 
   const onSearchChange = (event) => {
-    setSearchKeyword(event.target.value);
+    const rawValue = event.target.value;
+    let cleanValue = rawValue;
+
+    // 1. Proactively handle special characters/emojis
+    if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
+      message.warning('Special characters and emojis are not allowed in search.');
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+    }
+
+    // 2. Proactively handle multiple spaces
+    if (/\s{2,}/.test(cleanValue)) {
+      message.info('Multiple spaces are not allowed; collapsed to a single space.');
+      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+    }
+
+    // 3. Proactively handle length overflow
+    if (cleanValue.length > 50) {
+      message.error('Search limit reached (max 50 characters).');
+      cleanValue = cleanValue.slice(0, 50);
+    }
+
+    // 4. Block leading spaces
+    cleanValue = cleanValue.replace(/^\s+/, '');
+
+    setSearchKeyword(cleanValue);
   };
 
   const handlePublishScore = () => {
@@ -127,6 +151,7 @@ const SessionInformation = ({ type }) => {
         <div className="md:mt-[34px] mt-[20px]">
           <SearchInput
             placeholder="Search by name, level"
+            value={searchKeyword}
             onSearchChange={onSearchChange}
             className={` ${type == TableType.SESSION ? "absolute z-10" : "mb-8"}`}
           />

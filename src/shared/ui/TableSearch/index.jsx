@@ -1,54 +1,89 @@
 import React, { useState } from 'react';
-import { Table, Input, Pagination, Card } from 'antd';
+import { Table, Input, Pagination, Card, message } from 'antd';
 
 const { Search } = Input;
 
 const TableSearch = ({ data, columns, isLoading }) => {
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 5;
+  const [pageSize, setPageSize] = useState(10);
+
+  const handleSearchChange = (e) => {
+    const rawValue = e.target.value;
+    let cleanValue = rawValue;
+
+    // 1. Proactively handle special characters/emojis
+    if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
+      message.warning('Special characters and emojis are not allowed in search.');
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+    }
+
+    // 2. Proactively handle multiple spaces
+    if (/\s{2,}/.test(cleanValue)) {
+      message.info('Multiple spaces are not allowed; collapsed to a single space.');
+      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+    }
+
+    // 3. Proactively handle length overflow
+    if (cleanValue.length > 50) {
+      message.error('Search limit reached (max 50 characters).');
+      cleanValue = cleanValue.slice(0, 50);
+    }
+
+    setSearchText(cleanValue);
+    setCurrentPage(1);
+  };
 
   const filteredData = data.filter((item) => {
-    const searchValue = searchText.toLowerCase();
+    const searchValue = searchText.toLowerCase().trim();
+    if (!searchValue) return true;
+    
     return Object.values(item).some((value) =>
       String(value).toLowerCase().includes(searchValue)
     );
   });
 
-  const start = (currentPage - 1) * pageSize + 1;
-  const end = Math.min(start + pageSize - 1, filteredData.length);
   const total = filteredData.length;
-  const paginatedData = filteredData.slice(start - 1, end);
+  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, total);
+  const paginatedData = filteredData.slice((currentPage - 1) * pageSize, end);
 
   return (
-    <Card className='mt-4'>
+    <Card className='mt-4 shadow-sm border-none'>
       <Search
         placeholder={'Search anything...'}
-        onChange={(e) => {
-          setSearchText(e.target.value);
-          setCurrentPage(1);
-        }}
+        value={searchText}
+        onChange={handleSearchChange}
         className='mb-4 w-full max-w-[300px]'
         allowClear
+        enterButton
       />
       <div className='w-full'>
         <Table
           columns={columns}
           dataSource={paginatedData}
-          rowKey='ID'
-          pagination={false} // Ẩn pagination mặc định
+          rowKey={(record) => record.ID || record.id}
+          pagination={false}
           scroll={{ x: 'max-content' }}
-          className='w-full'
+          className='w-full custom-table'
           loading={isLoading}
         />
-        <div className='flex justify-between items-center mt-2 px-4'>
-          <span className='text-gray-500 text-sm'>{`Showing ${start}-${end} of ${total}`}</span>
+        {/* BUG_CM071: Standardized Pagination UI */}
+        <div className='flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg'>
+          <div className='text-gray-600 font-medium'>
+            {total > 0 ? `Showing ${start}-${end} of ${total} entries` : 'No entries found'}
+          </div>
           <Pagination
             current={currentPage}
             pageSize={pageSize}
             total={total}
-            onChange={(page) => setCurrentPage(page)}
-            showSizeChanger={false}
+            onChange={(page, size) => {
+              setCurrentPage(page);
+              setPageSize(size);
+            }}
+            showSizeChanger
+            pageSizeOptions={['5', '10', '15', '20']}
+            className='ant-pagination-custom'
           />
         </div>
       </div>

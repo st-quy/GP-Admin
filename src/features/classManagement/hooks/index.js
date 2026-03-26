@@ -139,6 +139,9 @@ export const useUpdateClass = () => {
       message.success("Class updated successfully");
       queryClient.invalidateQueries({ queryKey: ["classes"] });
     },
+    onError: ({ response }) => {
+      message.error(response?.data?.message || "Failed to update class");
+    },
   });
 };
 

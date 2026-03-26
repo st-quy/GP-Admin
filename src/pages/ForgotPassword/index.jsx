@@ -9,10 +9,12 @@ const { Title, Text } = Typography;
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
+  const [form] = Form.useForm();
   const { mutate: forgotPasswordFunc, isPending } = useForgotPassword();
+
   const onFinish = (values) => {
     forgotPasswordFunc(
-      { ...values, host: window.location.origin },
+      { ...values, email: values.email?.trim(), host: window.location.origin },
       {
         onSuccess: () => {
           form.resetFields();
@@ -20,7 +22,12 @@ const ForgotPassword = () => {
       }
     );
   };
-  const [form] = Form.useForm();
+
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    form.setFieldsValue({ email: value });
+  };
+
   return (
     <Row className="!gap-0 ">
       <Col
@@ -51,7 +58,12 @@ const ForgotPassword = () => {
             </Text>
           </div>
 
-          <Form layout="vertical" onFinish={onFinish} className="space-y-8">
+          <Form
+            form={form}
+            layout="vertical"
+            onFinish={onFinish}
+            className="space-y-8"
+          >
             <Form.Item
               name="email"
               label={
@@ -66,6 +78,13 @@ const ForgotPassword = () => {
                 size="large"
                 className="h-11 text-base rounded-lg"
                 suffix={<MailOutlined className="text-[#dadcdf]" />}
+                onChange={handleEmailChange}
+                onBlur={() => {
+                  const email = form.getFieldValue("email");
+                  if (email) {
+                    form.setFieldsValue({ email: email.trim() });
+                  }
+                }}
               />
             </Form.Item>
 

@@ -60,8 +60,9 @@ export const useCreateSession = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["classDetail"] });
     },
-    onError: ({response}) => {
-      message.error(response.data.message || `Failed to create session.`);
+    onError: (error) => {
+      const msg = error?.response?.data?.message || "Can't connect. Please check the network and try again";
+      message.error(msg);
     },
   });
 };
@@ -82,7 +83,8 @@ export const useUpdateSession = () => {
       queryClient.invalidateQueries({ queryKey: ["classDetail"] });
     },
     onError: (error) => {
-      message.error(`Failed to update session.`);
+      const msg = error?.response?.data?.message || "Can't connect. Please check the network and try again";
+      message.error(msg);
     },
   });
 };
