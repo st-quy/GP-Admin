@@ -1,16 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { AuthApi } from '../api';
+import { AuthApi } from '../api'; // You'll need to create this
 import { message } from 'antd';
 import { ACCESS_TOKEN, REFRESH_TOKEN } from '@shared/lib/constants/auth';
 import { useNavigate } from 'react-router-dom';
-import { login, logout, updateUser } from '@app/providers/reducer/auth/authSlice';
+import { login, updateUser } from '@app/providers/reducer/auth/authSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import { setStorageData } from '@shared/lib/storage';
 import { jwtDecode } from 'jwt-decode';
-import {
-  clearAuthState,
-  normalizeEmail,
-} from '@shared/lib/auth/clearAuthState';
 
 export const useFetchProfile = (studentId) => {
   return useQuery({
@@ -25,52 +21,40 @@ export const useFetchProfile = (studentId) => {
 export const useLogin = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (credentials) => {
-      const normalizedCredentials = {
-        ...credentials,
-        email: normalizeEmail(credentials.email),
-      };
-
-      const { data } = await AuthApi.login(normalizedCredentials);
+      const { data } = await AuthApi.login(credentials);
       const accessToken = data?.data?.access_token;
       const refreshToken = data?.data?.refresh_token;
 
-      if (!accessToken || !refreshToken) {
-        throw new Error('Login response is missing authentication tokens.');
-      }
+      // Decode token
+      const decoded = jwtDecode(accessToken || '');
 
-      const decoded = jwtDecode(accessToken);
       const roles = Array.isArray(decoded?.roles) ? decoded.roles : [];
 
-      // Save fresh auth state before any redirect so protected routes use the latest token.
+      // Điều hướng theo role
+      if (roles.length > 0 && roles.includes('student')) {
+        return navigate('/unauthorized');
+      } else if (roles.includes('teacher')) {
+        return navigate('/class');
+      } else if (roles.includes('admin')) {
+        navigate('/admin/dashboard');
+      }
+
+      // Lưu token
       setStorageData(ACCESS_TOKEN, accessToken);
       setStorageData(REFRESH_TOKEN, refreshToken);
-      queryClient.removeQueries({ queryKey: ['profile'] });
+
+      // Update redux
       dispatch(login());
-
-      if (roles.includes('student')) {
-        navigate('/unauthorized', { replace: true });
-        return data.data;
-      }
-
-      if (roles.includes('teacher')) {
-        navigate('/class', { replace: true });
-        return data.data;
-      }
-
-      if (roles.includes('admin')) {
-        navigate('/dashboard', { replace: true });
-      }
 
       return data.data;
     },
 
     onError(error) {
       const msg =
-        error?.response?.data?.message || error?.message || 'Login failed. Please try again.';
+        error?.response?.data?.message || 'Login failed. Please try again.';
       message.error(msg);
     },
   });
@@ -131,7 +115,6 @@ export const useResetPassword = () => {
 export const useGetProfile = () => {
   const { userId } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
-
   return useQuery({
     queryKey: ['profile', userId],
     queryFn: async () => {
@@ -153,11 +136,9 @@ export const useGetProfile = () => {
             dob: data.data.dob,
           })
         );
-
         if (!data.data.status) {
           message.error('Your account has been blocked');
-          clearAuthState();
-          dispatch(logout());
+          localStorage.clear();
           window.location.href = `${window.location.origin}/unauthorized`;
         }
 
@@ -220,17 +201,4 @@ export const useChangePassword = () => {
       message.error(response.data.message);
     },
   });
-};
-
-export const useLogout = () => {
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
-  const queryClient = useQueryClient();
-
-  return () => {
-    clearAuthState();
-    queryClient.clear();
-    dispatch(logout());
-    navigate('/login', { replace: true });
-  };
 };

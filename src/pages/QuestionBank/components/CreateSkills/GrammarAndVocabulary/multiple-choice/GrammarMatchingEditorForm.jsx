@@ -163,22 +163,20 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                   {index + 1}
                 </div>
 
-                <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                <Input
                   maxLength={255}
                   placeholder={`Content ${index + 1}`}
                   value={item.text}
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
                     updateLeft(index, sanitized)
-                  }
-                  }
+                  }}
                   status={leftErrors[index] ? 'error' : ''}
                 />
 
                 <Button
                   danger
                   type='text'
-                  htmlType='button'
                   icon={<DeleteOutlined />}
                   onClick={() => removeLeft(index)}
                 />
@@ -193,7 +191,6 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
           ))}
 
           <Button
-            htmlType='button'
             icon={<PlusOutlined />}
             onClick={addLeft}
             style={{ width: '100%', marginTop: 10 }}
@@ -233,12 +230,12 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                   {LETTERS[index]}
                 </div>
 
-                <Input onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                <Input
                   maxLength={255}
                   placeholder={`Option ${LETTERS[index]}`}
                   value={item.text}
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
                     updateRight(index, sanitized)
                   }
                   }
@@ -248,7 +245,6 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 <Button
                   danger
                   type='text'
-                  htmlType='button'
                   icon={<DeleteOutlined />}
                   onClick={() => removeRight(index)}
                 />
@@ -263,7 +259,6 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
           ))}
 
           <Button
-            htmlType='button'
             icon={<PlusOutlined />}
             onClick={addRight}
             style={{ width: '100%', marginTop: 10 }}

@@ -1,54 +1,39 @@
 // @ts-nocheck
-import React, { useEffect, useState, useRef, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import HeaderInfo from '@app/components/HeaderInfo';
 import {
-    LeftOutlined,
-    CustomerServiceOutlined,
-    BookOutlined,
+    AudioOutlined,
     ReadOutlined,
     EditOutlined,
-    AudioOutlined,
-    EyeOutlined,
-    SaveOutlined,
-    SendOutlined,
-    PlusOutlined,
-    SwapOutlined,
+    BookOutlined,
+    CustomerServiceOutlined,
+    HolderOutlined,
+    LeftOutlined,
+    EyeOutlined
 } from "@ant-design/icons";
 import {
-    Button,
     Card,
-    Col,
     Form,
     Input,
-    Layout,
-    Row,
-    Tabs,
-    Typography,
-    Modal,
-    Checkbox,
+    Button,
     Space,
+    Typography,
+    Divider,
     message,
-    Spin,
-    InputNumber,
-    Switch,
-    Tag,
+    DatePicker,
+    Modal,
+    Spin
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
+import ChooseSectionModal from "@features/topic/ui/ChooseSectionModal";
+import PreviewExam from "@shared/ui/PreviewExam";
 import { useSelector } from "react-redux";
-import HeaderInfo from "@app/components/HeaderInfo";
-import { useGetSections } from "@features/section/hooks";
-import {
-    useCreateTopic,
-    useGetTopicWithRelations,
-    useUpdateTopic,
-    useCreateTopicSection,
-    useUpdateTopicSection,
-} from "@features/topic/hooks";
 import useConfirm from "@shared/hook/useConfirm";
-import PreviewExamModal from "@shared/ui/PreviewExam";
-import RejectExamModal from "@features/topic/ui/RejectModal";
-import { DndContext, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, closestCenter, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 
 const SortableQuestionItem = ({ id, children }) => {
     const { setNodeRef, listeners, attributes, transform, transition, isDragging } =
@@ -68,7 +53,7 @@ const SortableQuestionItem = ({ id, children }) => {
 };
 
 const { Text, Title } = Typography;
-const { Content } = Layout;
+const { RangePicker } = DatePicker;
 
 const SKILL_TABS = [
     { key: "SPEAKING", label: "Speaking", icon: <AudioOutlined /> },
@@ -85,32 +70,22 @@ const CreateExamPage = () => {
     const { id: topicId } = useParams();
     const location = useLocation();
     const isViewMode = location.pathname.includes("/exam/view");
-    const isEditMode = location.pathname.includes("/exam/edit");
 
     const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
     const [openModal, setOpenModal] = useState(false);
-    const [selectedParts, setSelectedParts] = useState([]); 
-    const [selectedSectionBySkill, setSelectedSectionBySkill] = useState({}); 
-    const [instructions, setInstructions] = useState([]); 
+    const [selectedParts, setSelectedParts] = useState([]);
+    const [selectedSectionBySkill, setSelectedSectionBySkill] = useState({});
+    const [instructions, setInstructions] = useState([]);
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const { openConfirmModal, ModalComponent } = useConfirm();
-    const [rejectOpen, setRejectOpen] = useState(false);
-    
-    // Dirty Check States (from develop)
     const [isDirty, setIsDirty] = useState(false);
     const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
     const pendingPath = useRef(null);
 
-    // Shuffle & Score States
-    const [shuffleQuestions, setShuffleQuestions] = useState(false);
-    const [shuffleAnswers, setShuffleAnswers] = useState(false);
-    const [questionScores, setQuestionScores] = useState({});
-
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
     );
-
     const { mutateAsync: createExam } = useCreateTopic();
     const { mutateAsync: createTopicSection } = useCreateTopicSection();
     const { data: topicData, isLoading } = useGetTopicWithRelations(topicId);
@@ -118,7 +93,64 @@ const CreateExamPage = () => {
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
     const { role, user } = useSelector((state) => state.auth);
 
+    // Robust check for admin role
+    const isAdmin = Array.isArray(role)
+        ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
+        : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
+
+    const handleApprove = async () => {
+        openConfirmModal({
+            title: 'Approve Exam',
+            message: `Are you sure you want to approve this exam? This will make it available for students.`,
+            okText: 'Approve',
+            okButtonColor: '#52c41a',
+            onConfirm: async () => {
+                try {
+                    await updateTopic({ id: topicId, data: { Status: 'approved' } });
+                    message.success("Exam approved successfully!");
+                    navigate("/exam");
+                } catch (error) {
+                    message.error("Failed to approve exam");
+                }
+            },
+        });
+    };
+
+    const handleReject = async () => {
+        openConfirmModal({
+            title: 'Reject Exam',
+            message: `Are you sure you want to reject this exam? The teacher will need to review and submit it again.`,
+            okText: 'Reject',
+            okButtonColor: '#FF4D4F',
+            onConfirm: async () => {
+                try {
+                    await updateTopic({
+                        id: topicId,
+                        data: { Status: 'rejected', ReasonReject: null }
+                    });
+                    message.success("Exam rejected successfully!");
+                    navigate("/exam");
+                } catch (error) {
+                    message.error("Failed to reject exam");
+                }
+            },
+        });
+    };
+
+    const handleNavigateAway = useCallback((path = '/exam') => {
+        if (isDirty && !isViewMode) {
+            pendingPath.current = path;
+            setLeaveConfirmOpen(true);
+        } else {
+            navigate(path);
+        }
+    }, [isDirty, isViewMode, navigate]);
+
+
+
+
     const handlePartSelect = (sections) => {
+        setIsDirty(true);
         const oldSectionId = selectedSectionBySkill[selectedSkill];
         if (!sections || sections.length === 0) {
             setSelectedParts((prev) => prev.filter((id) => id !== oldSectionId));
@@ -129,10 +161,8 @@ const CreateExamPage = () => {
             });
             setInstructions((prev) => prev.filter((i) => i.skill !== selectedSkill));
             setOpenModal(false);
-            setIsDirty(true);
             return;
         }
-
         const section = sections[0];
         const sectionId = section.ID;
         setSelectedParts((prev) => {
@@ -145,18 +175,17 @@ const CreateExamPage = () => {
             return [...filtered, { skill: selectedSkill, section }];
         });
         setOpenModal(false);
-        setIsDirty(true);
     };
 
-    const handlePreview = () => {
-        if (instructions.length === 0) {
-            message.warning("Please select at least one skill to preview.");
+    const handlePreviewExam = () => {
+        if (!instructions.length) {
+            message.warning("Please select at least one skill before preview");
             return;
         }
-        const skillsOrder = ["SPEAKING", "LISTENING", "GRAMMAR AND VOCABULARY", "READING", "WRITING"];
-        const skills = skillsOrder.map(skillName => {
+        const skillOrder = ["LISTENING", "GRAMMAR AND VOCABULARY", "READING", "WRITING", "SPEAKING"];
+        const skills = skillOrder.map(skillName => {
             const found = instructions.find(i => i.skill === skillName);
-            if (!found) return { ID: skillName, Name: skillName, Parts: [] };
+            if (!found || !found.section) return { ID: null, Name: skillName, Parts: [] };
             return {
                 ID: found.section.SkillID || found.section.Skill?.ID,
                 Name: skillName,
@@ -199,7 +228,7 @@ const CreateExamPage = () => {
             if (topicId) {
                 topicResponse = await updateTopic({
                     id: topicId,
-                    data: { Name: values.name.trim(), Status: 'draft', ShuffleQuestions, ShuffleAnswers }
+                    data: { Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
                 });
                 await updateTopicSection({
                     topicId: topicResponse.ID || topicId,
@@ -207,7 +236,7 @@ const CreateExamPage = () => {
                 });
             } else {
                 topicResponse = await createExam({
-                    Name: values.name.trim(), Status: 'draft', ShuffleQuestions, ShuffleAnswers
+                    Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers
                 });
                 await updateTopicSection({
                     topicId: topicResponse.ID,
@@ -244,7 +273,7 @@ const CreateExamPage = () => {
 
             await updateTopic({
                 id: topicId,
-                data: { Name: values.name.trim(), Status: 'submited', ShuffleQuestions, ShuffleAnswers }
+                data: { Name: values.name.trim(), Status: 'submited', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
             });
             await updateTopicSection({
                 topicId,
@@ -278,114 +307,130 @@ const CreateExamPage = () => {
         const found = instructions.find((i) => i.skill === selectedSkill);
         if (!found) {
             return (
-                <div style={{ textAlign: "center", padding: "40px 0", background: "#f9f9f9", borderRadius: 8, border: "1px dashed #d9d9d9" }}>
-                    <Text type="secondary">No section selected for this skill yet.</Text>
-                    <div style={{ marginTop: 16 }}>
-                        <Button type="primary" icon={<PlusOutlined />} onClick={() => setOpenModal(true)}>Select Section</Button>
-                    </div>
+                <div style={{ width: "100%", height: 180, border: "2px dashed #D1D5DB", borderRadius: 12, display: "flex", justifyContent: "center", alignItems: "center", color: "#9CA3AF", fontSize: 16, fontWeight: 500 }}>
+                    + Instruction
                 </div>
             );
         }
-
-        const { section } = found;
-        const sectionTotalScore = (section.Parts || []).reduce((acc, p) => {
-            return acc + (p.Questions || []).reduce((qAcc, q) => qAcc + (questionScores[q.ID] || 0), 0);
-        }, 0);
-        const maxScore = ["SPEAKING", "WRITING"].includes(selectedSkill) ? 50 : 20;
-
+        const { section } = data;
         return (
-            <Card
-                style={{ borderRadius: 12, background: "#FAFAFA" }}
-                title={
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-                        <div>
-                            <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
-                            <div style={{ marginTop: 4 }}>
-                                <Text strong style={{ color: sectionTotalScore > maxScore ? '#faad14' : '#1677ff' }}>
-                                    Total Section Score: {sectionTotalScore.toFixed(2)}
-                                    {sectionTotalScore > maxScore && <span style={{ color: '#ff4d4f' }}> (Will be capped at {maxScore.toFixed(2)})</span>}
-                                </Text>
-                            </div>
-                        </div>
-                        {!isViewMode && <Button type="dashed" onClick={() => setOpenModal(true)}>Change Section</Button>}
-                    </div>
-                }
-            >
-                {(section.Parts || []).map((part) => (
-                    <div key={part.ID} style={{ marginBottom: 12, padding: 12, border: "1px solid #E5E7EB", borderRadius: 8, background: "white" }}>
-                        <Text strong>{part.Content}</Text>
-                        <div style={{ marginTop: 8 }}>
-                            {(part.Questions || []).map((q, index) => (
-                                <div key={q.ID} style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 24, marginBottom: 16, borderBottom: '1px dashed #f0f0f0', paddingBottom: 8 }}>
-                                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flex: 1 }}>
-                                        <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0a2a79", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600 }}>{index + 1}</div>
-                                        <Text style={{ flex: 1 }}>{q.Content}</Text>
-                                        {shuffleAnswers && q.Type === 'multiple-choice' && <Tag color="orange" style={{ fontSize: 10 }}>Answers will be shuffled</Tag>}
+            <div style={{ width: "100%" }}>
+                <Card style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }} bodyStyle={{ padding: 16 }}>
+                    <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
+                    <br />
+                    <Text type="secondary">{section.Description}</Text>
+                    <div style={{ marginTop: 16 }}>
+                        {(section.Parts || []).map((part) => (
+                            <div key={part.ID} style={{ marginBottom: 12, padding: 12, border: "1px solid #E5E7EB", borderRadius: 8, background: "white" }}>
+                                <Text strong>{part.Content}</Text>
+                                {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                    <>
+                                        <br />
+                                        <Text type="secondary">{part.SubContent}</Text>
+                                    </>
+                                )}
+                                {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
+                                    <div style={{ marginTop: 8 }}>
+                                        <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={(event) => {
+                                            if (isViewMode) return;
+                                            const { active, over } = event;
+                                            if (!over || active.id === over.id) return;
+                                            const questions = [...(part.Questions || [])];
+                                            const oldIdx = questions.findIndex(q => q.ID === active.id);
+                                            const newIdx = questions.findIndex(q => q.ID === over.id);
+                                            if (oldIdx === -1 || newIdx === -1) return;
+                                            const [moved] = questions.splice(oldIdx, 1);
+                                            questions.splice(newIdx, 0, moved);
+                                            setInstructions(prev => prev.map(ins => {
+                                                if (ins.skill !== selectedSkill) return ins;
+                                                return {
+                                                    ...ins,
+                                                    section: {
+                                                        ...ins.section,
+                                                        Parts: (ins.section.Parts || []).map(p => p.ID === part.ID ? { ...p, Questions: questions } : p),
+                                                    },
+                                                };
+                                            }));
+                                        }}>
+                                            <SortableContext items={(part.Questions || []).map(q => q.ID)} strategy={verticalListSortingStrategy}>
+                                                {(part.Questions || []).map((q, index) => (
+                                                    <SortableQuestionItem key={q.ID} id={q.ID}>
+                                                        {(listeners, attributes) => (
+                                                            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10, padding: 8, borderRadius: 8, background: "#fff", border: "1px solid transparent" }}>
+                                                                {!isViewMode && <HolderOutlined {...listeners} {...attributes} style={{ cursor: "grab", color: "#999", fontSize: 16, marginTop: 4, flexShrink: 0 }} />}
+                                                                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0a2a79", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, flexShrink: 0 }}>
+                                                                    {(selectedSkill === "SPEAKING" && part.Content === "Part 4") ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span> : (index + 1)}
+                                                                </div>
+                                                                <Text style={{ fontSize: 15, lineHeight: "20px" }}>{q.Content}</Text>
+                                                            </div>
+                                                        )}
+                                                    </SortableQuestionItem>
+                                                ))}
+                                            </SortableContext>
+                                        </DndContext>
                                     </div>
-                                    {!isViewMode ? (
-                                        <div style={{ minWidth: 140 }}>
-                                            <div style={{ fontSize: 11, color: '#999' }}>Score (pts)</div>
-                                            <InputNumber min={0} max={50} step={0.1} value={questionScores[q.ID] || 0} onChange={(val) => handleScoreChange(q.ID, val)} style={{ width: '100%' }} controls={false} />
-                                        </div>
-                                    ) : (
-                                        <Tag color="blue">{questionScores[q.ID] || 0} pts</Tag>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
+                                )}
+                            </div>
+                        ))}
                     </div>
-                ))}
-            </Card>
+                </Card>
+            </div>
         );
     };
 
     useEffect(() => {
+        if (user && !topicId) {
+            const creatorName = [user.firstName, user.lastName].filter(Boolean).join(' ');
+            form.setFieldsValue({ creator: creatorName });
+        }
+    }, [user, form, topicId]);
+
+    useEffect(() => {
         if (!topicData) return;
-        form.setFieldsValue({ name: topicData.Name });
+        form.setFieldsValue({ name: topicData.Name, duration: topicData.Duration });
         setShuffleQuestions(!!topicData.ShuffleQuestions);
         setShuffleAnswers(!!topicData.ShuffleAnswers);
-        
+
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
-        const scores = {};
-
         (topicData.Sections || []).forEach(section => {
             const skill = section.Skill.Name;
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
             instructionsData.push({ skill, section });
-            const config = section.TopicSection?.ScoreConfig || section.TopicSection?.scoreConfig;
-            if (config) Object.assign(scores, config);
         });
-
         setSelectedSectionBySkill(sectionsBySkill);
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
-        setQuestionScores(scores);
         setIsDirty(false);
     }, [topicData]);
 
     return (
         <>
+            <ModalComponent />
+
             <HeaderInfo
-                title={isViewMode ? "View Exam" : topicId ? "Edit Exam" : "Create Exam"}
+                title={isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
+                subtitle={isViewMode ? "Preview the exam information and structure. Editing is disabled." : topicId ? "Modify exam information, structure, and skill-based questions." : "Set up exam details, structure, and choose skill-based questions."}
                 actions={
                     <div style={{ display: "flex", gap: "12px" }}>
                         <Button icon={<LeftOutlined />} onClick={() => navigate("/exam")}>Back</Button>
-                        <Button icon={<EyeOutlined />} onClick={handlePreview}>Preview</Button>
-                        {!isViewMode && (
+                        <Button icon={<EyeOutlined />} onClick={handlePreviewExam}>Preview</Button>
+                        {isViewMode && topicData?.Status === 'submited' && isAdmin && (
                             <>
-                                <Button type="primary" icon={<SaveOutlined />} onClick={handleSaveExam} style={{ background: "#52c41a", borderColor: "#52c41a" }}>Save Draft</Button>
-                                <Button type="primary" icon={<SendOutlined />} onClick={handleSubmitExam}>Submit</Button>
+                                <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
+                                <Button danger type="primary" onClick={handleReject}>Reject</Button>
                             </>
                         )}
                     </div>
                 }
             />
+
             <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
                 <Spin spinning={isLoading}>
                     <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
+
                         <Card title="Settings" style={{ marginBottom: 24, borderRadius: 12 }}>
                             <Row gutter={24}>
                                 <Col span={12}>
@@ -393,81 +438,133 @@ const CreateExamPage = () => {
                                         <Input placeholder="Exam name..." size="large" disabled={isViewMode} />
                                     </Form.Item>
                                 </Col>
+                                <Col span={6}>
+                                    <Form.Item label="Duration (minutes)" name="duration">
+                                        <InputNumber min={1} max={999} disabled={isViewMode} size="large" style={{ width: '100%' }} />
+                                    </Form.Item>
+                                </Col>
                             </Row>
+
                             {!isViewMode && (
                                 <div style={{ padding: '16px', background: '#f0f5ff', borderRadius: 8 }}>
                                     <Title level={5}><SwapOutlined /> Randomization Settings</Title>
                                     <Row gutter={48}>
                                         <Col>
                                             <Space>
-                                                <Switch checked={shuffleQuestions} onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }} disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"} />
-                                                <Text strong>Shuffle Questions {selectedSkill !== "GRAMMAR AND VOCABULARY" && "(Fixed)"}</Text>
+                                                <Switch
+                                                    checked={shuffleQuestions}
+                                                    onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
+                                                    disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"}
+                                                />
+                                                <Text strong>Shuffle Questions</Text>
                                             </Space>
                                         </Col>
                                         <Col>
                                             <Space>
-                                                <Switch checked={shuffleAnswers} onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }} disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)} />
+                                                <Switch
+                                                    checked={shuffleAnswers}
+                                                    onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
+                                                    disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)}
+                                                />
                                                 <Text strong>Shuffle Answers</Text>
                                             </Space>
                                         </Col>
                                     </Row>
                                 </div>
                             )}
+
+                            <Form.Item label="Creator" name="creator">
+                                <Input disabled />
+                            </Form.Item>
+
+                            <Form.Item label="Last Edited By" name="editor">
+                                <Input disabled />
+                            </Form.Item>
+
+                            <Form.Item label="Duration Time" name="timeRange" rules={[{ required: true }]}>
+                                <RangePicker showTime={{ format: 'HH:mm' }} format="YYYY-MM-DD HH:mm" disabled={isViewMode} />
+                            </Form.Item>
                         </Card>
-                        <Card title="Content" bodyStyle={{ padding: 0 }} style={{ borderRadius: 12 }}>
-                            <Tabs activeKey={selectedSkill} onChange={setSelectedSkill} centered items={SKILL_TABS.map((tab) => ({
-                                key: tab.key,
-                                label: <span>{tab.icon} {tab.label}</span>,
-                                children: <div style={{ padding: "24px" }}>{renderInstructionContent()}</div>
-                            }))} />
-                        </Card>
-                        {!isViewMode && (
-                            <div style={{ marginTop: 24, display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-                                <Button size="large" onClick={() => navigate("/exam")}>Cancel</Button>
-                                <Button size="large" type="primary" icon={<SaveOutlined />} onClick={handleSaveExam} style={{ background: "#52c41a" }}>Save Draft</Button>
-                                <Button size="large" type="primary" icon={<SendOutlined />} onClick={handleSubmitExam}>Submit Exam</Button>
+
+                        <div style={{ borderRadius: 12, background: "#F5F6FA", border: "1px solid #E5E7EB", marginBottom: 20 }}>
+                            <div style={{ display: "flex", height: 40 }}>
+                                {SKILL_TABS.map((tab) => {
+                                    const active = selectedSkill === tab.key;
+                                    return (
+                                        <div
+                                            key={tab.key}
+                                            onClick={() => setSelectedSkill(tab.key)}
+                                            style={{
+                                                padding: "8px 18px",
+                                                cursor: "pointer",
+                                                background: active ? "#1677FF" : "white",
+                                                color: active ? "white" : "#4B5563"
+                                            }}
+                                        >
+                                            {tab.label}
+                                        </div>
+                                    );
+                                })}
                             </div>
-                        )}
+
+                            <div
+                                style={{ padding: "24px", background: "white" }}
+                                onClick={() => { if (!isViewMode) setOpenModal(true) }}
+                            >
+                                {renderSelectedSectionUI()}
+                            </div>
+                        </div>
+
+                        <Divider />
+
+                        <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <Button type="primary" onClick={handlePreviewExam}>Start Exam Preview</Button>
+
+                            <Space>
+                                <Button onClick={() => handleNavigateAway('/exam')}>Cancel</Button>
+
+                                {!isViewMode && (
+                                    <>
+                                        <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
+                                        <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
+                                    </>
+                                )}
+                            </Space>
+                        </div>
+
                     </Form>
                 </Spin>
             </Content>
-            <SectionSelectModal open={openModal} onCancel={() => setOpenModal(false)} onSelect={handlePartSelect} selectedSkill={selectedSkill} initialSelectedIds={selectedSectionBySkill[selectedSkill] ? [selectedSectionBySkill[selectedSkill]] : []} />
-            <PreviewExamModal open={previewOpen} onCancel={() => setPreviewOpen(false)} data={previewData} />
-            <RejectExamModal open={rejectOpen} onCancel={() => setRejectOpen(false)} topicId={topicId} />
-            <Modal title="Unsaved Changes" open={leaveConfirmOpen} onCancel={() => setLeaveConfirmOpen(false)} footer={[
-                <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
-                <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save & Leave</Button>,
-                <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay</Button>
-            ]}><p>Save your work before leaving?</p></Modal>
-            <ModalComponent />
+
+            <ChooseSectionModal
+                open={openModal}
+                onClose={() => setOpenModal(false)}
+                skillName={selectedSkill}
+                onSelect={handlePartSelect}
+                selectedSectionId={selectedSectionBySkill[selectedSkill]}
+            />
+
+            <PreviewExam
+                isModalOpen={previewOpen}
+                setIsModalOpen={setPreviewOpen}
+                dataExam={previewData}
+                fileData={null}
+                setDataExam={setPreviewData}
+            />
+
+            <Modal
+                title="You have unsaved changes"
+                open={leaveConfirmOpen}
+                onCancel={() => setLeaveConfirmOpen(false)}
+                footer={[
+                    <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
+                    <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save as Draft & Leave</Button>,
+                    <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay on Page</Button>,
+                ]}
+            >
+                <p>Would you like to save your work as a draft before leaving?</p>
+            </Modal>
         </>
     );
-};
-
-const SectionSelectModal = ({ open, onCancel, onSelect, selectedSkill, initialSelectedIds }) => {
-    const { data: sections, isLoading } = useGetSections(selectedSkill);
-    const [localSelectedIds, setLocalSelectedIds] = useState(initialSelectedIds);
-    useEffect(() => { if (open) setLocalSelectedIds(initialSelectedIds); }, [open, initialSelectedIds]);
-    const handleConfirm = () => {
-        const selectedObjects = (sections || []).filter((s) => localSelectedIds.includes(s.ID));
-        onSelect(selectedObjects);
-    };
-    return (
-        <Modal title={`Select Section`} open={open} onCancel={onCancel} onOk={handleConfirm} width={800}>
-            <Spin spinning={isLoading}>
-                <div style={{ maxHeight: "500px", overflowY: "auto" }}>
-                    {sections?.map((section) => (
-                        <Card key={section.ID} hoverable style={{ marginBottom: 12, border: localSelectedIds.includes(section.ID) ? "2px solid #1677ff" : "1px solid #f0f0f0", background: localSelectedIds.includes(section.ID) ? "#e6f4ff" : "white" }} onClick={() => setLocalSelectedIds([section.ID])}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <div><Text strong>{section.Name}</Text><p style={{ fontSize: "12px", color: "#666" }}>{section.Description}</p></div>
-                                <Checkbox checked={localSelectedIds.includes(section.ID)} />
-                            </div>
-                        </Card>
-                    ))}
-                </div>
-            </Spin>
-        </Modal>
-    );
-};
-
+}
 export default CreateExamPage;

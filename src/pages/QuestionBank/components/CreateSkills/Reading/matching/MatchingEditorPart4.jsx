@@ -131,7 +131,7 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                     {idx + 1}
                   </Text>
 
-                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                  <Input
                     placeholder={`Content ${idx + 1}`}
                     value={item.text}
                     onChange={(e) => {
@@ -190,7 +190,7 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
                     {letterLabels[idx]}
                   </div>
 
-                  <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                  <Input
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
                     onChange={(e) => {

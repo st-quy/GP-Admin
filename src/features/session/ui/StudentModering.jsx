@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Table, message } from "antd";
+import { Table, message, Pagination } from "antd";
 import CheckCircleIcon from "@/assets/icons/check-circle.svg";
 import CloseCircleIcon from "@/assets/icons/close-circle.svg";
 import ConfirmationModal from "@shared/Modal/ConfirmationModal";
@@ -46,20 +46,27 @@ const StudentMonitoring = ({
       .filter((req) => req.status === "pending")
       .map((req, index) => ({
         key: req.ID || index.toString(),
-        studentName: req.User?.fullName || "null",
-        studentId: req.User?.studentCode || "null",
-        className: req.User?.class || "null",
+        studentName: req.User?.fullName || "Unknown",
+        studentId: req.User?.studentCode || "Unknown",
+        className: req.User?.class || "-",
         requestId: req.ID,
       }));
     return pendingRequests;
   }, [dataSource]);
   const filteredData = useMemo(() => {
-    if (!searchKeyword) return filterPending;
+    // BUG_CM030/CM031: Proactive validation and limit
+    const cleanKeyword = (searchKeyword || '')
+      .replace(/[^a-zA-Z0-9\s]/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .slice(0, 50)
+      .toLowerCase();
+
+    if (!cleanKeyword) return filterPending;
     return filterPending.filter((item) => {
       return (
-        item.studentName.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        item.studentId.toLowerCase().includes(searchKeyword.toLowerCase()) ||
-        item.className.toLowerCase().includes(searchKeyword.toLowerCase())
+        item.studentName.toLowerCase().includes(cleanKeyword) ||
+        item.studentId.toLowerCase().includes(cleanKeyword) ||
+        item.className.toLowerCase().includes(cleanKeyword)
       );
     });
   }, [filterPending, searchKeyword]);
@@ -172,25 +179,13 @@ const StudentMonitoring = ({
     setPageSize(size);
   };
 
-  const paginationConfig = {
-    pageSizeOptions: ["5", "10", "15", "20"],
-    current: currentPage,
-    pageSize: pageSize,
-    total: filteredData?.length || 0,
-    showSizeChanger: true,
-    onShowSizeChange: onShowSizeChange,
-    onChange: (page) => setCurrentPage(page),
-    showTotal: (total, range) => (
-      <span className="text-center md:text-[16px] text-[10px] text-primaryTextColor">
-        Showing {range[0].toString().padStart(2)}-
-        {range[1].toString().padStart(2)} of {total}
-      </span>
-    ),
-  };
+  const startItem =
+    filteredData?.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, filteredData?.length || 0);
 
   return (
     <div className="w-full">
-      <div className="flex items-center">
+      <div className="flex items-center min-h-[32px] mb-2">
         {selectedRowKeys.length > 0 && (
           <div className="flex">
             <div
@@ -215,8 +210,8 @@ const StudentMonitoring = ({
         // @ts-ignore
         columns={columns}
         loading={isLoading}
-        dataSource={filteredData}
-        pagination={paginationConfig}
+        dataSource={filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
+        pagination={false}
         className="border border-gray-200 rounded-lg overflow-hidden"
         rowClassName="hover:bg-gray-50"
         components={{
@@ -244,6 +239,25 @@ const StudentMonitoring = ({
           },
         }}
       />
+      <div className='flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm'>
+        <div className='text-gray-600 font-medium'>
+          {filteredData?.length > 0 
+            ? `Showing ${startItem}-${endItem} of ${filteredData?.length} entries` 
+            : 'No entries found'}
+        </div>
+        <Pagination
+          current={currentPage}
+          pageSize={pageSize}
+          total={filteredData?.length || 0}
+          onChange={(page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          }}
+          showSizeChanger
+          pageSizeOptions={['5', '10', '15', '20']}
+          className='ant-pagination-custom'
+        />
+      </div>
       <ConfirmationModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
