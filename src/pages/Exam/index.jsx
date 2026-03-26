@@ -24,6 +24,7 @@ import {
 
 import HeaderInfo from '@app/components/HeaderInfo';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   useGetTopics,
   useDeleteTopic,
@@ -38,10 +39,15 @@ import { Tag, Tooltip as AntTooltip } from 'antd';
 const { Option } = Select;
 const { Text } = Typography;
 
-
-
 const TopicListPage = () => {
   const navigate = useNavigate();
+  const { role } = useSelector((state) => state.auth);
+  
+  // Robust check for admin role
+  const isAdmin = Array.isArray(role) 
+    ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
+    : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
+    
   const { openConfirmModal, ModalComponent } = useConfirm();
 
   // Filters
@@ -50,6 +56,9 @@ const TopicListPage = () => {
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
+
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [targetTopic, setTargetTopic] = useState(null);
 
   // Query topics from backend with params
   const { data, isLoading } = useGetTopics({
@@ -71,6 +80,43 @@ const TopicListPage = () => {
     approved: data?.statusCounts?.approved || 0,
     Draft: data?.statusCounts?.draft || 0,
     Rejected: data?.statusCounts?.rejected || 0,
+  };
+
+  const handleApproveTopic = (topic) => {
+    openConfirmModal({
+      title: 'Approve Exam',
+      message: `Are you sure you want to approve "${topic.Name}"? This will make the exam available for students.`,
+      okText: 'Approve',
+      okButtonColor: '#52c41a',
+      onConfirm: async () => {
+        try {
+          await updateTopic({ id: topic.ID, data: { Status: 'approved' } });
+          message.success('Exam approved successfully');
+        } catch (error) {
+          message.error('Failed to approve exam');
+        }
+      },
+    });
+  };
+
+  const handleRejectTopic = (topic) => {
+    openConfirmModal({
+      title: 'Reject Exam',
+      message: `Are you sure you want to reject "${topic.Name}"? The teacher will need to review and submit it again.`,
+      okText: 'Reject',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          await updateTopic({
+            id: topic.ID,
+            data: { Status: 'rejected', ReasonReject: null },
+          });
+          message.success('Exam rejected successfully');
+        } catch (error) {
+          message.error('Failed to reject exam');
+        }
+      },
+    });
   };
 
   const handleDeleteTopic = (topic) => {
@@ -119,7 +165,7 @@ const TopicListPage = () => {
       message.error('Cannot edit topic with status Approved or Submited');
       return;
     }
-    navigate(`edit/${topic.ID}`);
+    navigate(`/exam/edit/${topic.ID}`);
   };
 
   const columns = [
@@ -192,8 +238,10 @@ const TopicListPage = () => {
       align: 'center',
       // ellipsis: true,
       render: (_, record) => {
-        const canModify =
-          record.Status === 'submited' || record.Status === 'approved';
+        const isSubmitted = record.Status === 'submited';
+        const isApproved = record.Status === 'approved';
+        const canModify = isSubmitted || isApproved;
+        
         return (
           <Space size='middle'>
             <Button
@@ -206,6 +254,32 @@ const TopicListPage = () => {
                 navigate(`view/${record.ID}`);
               }}
             />
+
+            {isSubmitted && isAdmin && (
+              <>
+                <Button
+                  title='Approve Topic'
+                  type='text'
+                  icon={<CheckCircleOutlined />}
+                  className='text-[#52c41a]'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleApproveTopic(record);
+                  }}
+                />
+                <Button
+                  title='Reject Topic'
+                  type='text'
+                  icon={<CloseCircleOutlined />}
+                  className='text-[#FF4D4F]'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRejectTopic(record);
+                  }}
+                />
+              </>
+            )}
+
             {!canModify && (
               <>
                 <Button
@@ -246,7 +320,7 @@ const TopicListPage = () => {
   return (
     <>
       <ModalComponent />
-
+      
       <HeaderInfo
         title='Topic List'
         subtitle='Manage and track all topics'
