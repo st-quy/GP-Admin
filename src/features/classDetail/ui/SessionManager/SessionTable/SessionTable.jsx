@@ -47,6 +47,16 @@ const SessionTable = ({ data, columns, isLoading }) => {
     })
   );
 
+  const handleSearch = (value) => {
+    const trimmedValue = value.trim();
+    if (trimmedValue.length > 50) {
+      message.error('Search query is too long');
+      return;
+    }
+    setSearchText(trimmedValue);
+    setCurrentPage(1);
+  };
+
   // Filter data based on both search text and status
   const filteredData = data.filter((item) => {
     const searchValue = searchText.toLowerCase().trim();
