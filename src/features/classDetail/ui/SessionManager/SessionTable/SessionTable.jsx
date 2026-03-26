@@ -10,6 +10,35 @@ const SessionTable = ({ data, columns, isLoading }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
+  const handleSearchChange = (e) => {
+    const rawValue = e.target.value;
+    let cleanValue = rawValue;
+
+    // 1. Proactively handle special characters/emojis (BUG_CM013)
+    if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
+      message.warning('Special characters and emojis are not allowed in search.');
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+    }
+
+    // 2. Proactively handle multiple spaces (BUG_CM014)
+    if (/\s{2,}/.test(cleanValue)) {
+      message.info('Multiple spaces are not allowed; collapsed to a single space.');
+      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+    }
+
+    // 3. Proactively handle length overflow (BUG_CM012)
+    if (cleanValue.length > 50) {
+      message.error('Search limit reached (max 50 characters).');
+      cleanValue = cleanValue.slice(0, 50);
+    }
+
+    // 4. Block leading spaces
+    cleanValue = cleanValue.replace(/^\s+/, '');
+
+    setSearchText(cleanValue);
+    setCurrentPage(1);
+  };
+
   // Convert statusOptions object to array for Select options
   const statusFilterOptions = Object.entries(statusOptions).map(
     ([value, info]) => ({
@@ -30,7 +59,7 @@ const SessionTable = ({ data, columns, isLoading }) => {
 
   // Filter data based on both search text and status
   const filteredData = data.filter((item) => {
-    const searchValue = searchText.toLowerCase();
+    const searchValue = searchText.toLowerCase().trim();
     const matchesSearch = searchValue
       ? Object.values(item).some((value) =>
           String(value).toLowerCase().includes(searchValue)
@@ -58,13 +87,8 @@ const SessionTable = ({ data, columns, isLoading }) => {
       <div className="flex items-center gap-4 mb-6">
         <Search
           placeholder="Search sessions..."
-          onSearch={handleSearch}
-          onChange={(e) => {
-            if (e.target.value === "") {
-              setSearchText("");
-              setCurrentPage(1);
-            }
-          }}
+          value={searchText}
+          onChange={handleSearchChange}
           className="w-full max-w-[300px]"
           allowClear
           enterButton

@@ -100,8 +100,8 @@ const StudentSessionTable = ({
       dataIndex: "GrammarVocab",
       key: "GrammarVocab",
       width: "240px",
-      render: (text, record) => (
-        <span>{text || text === 0 ? text : "No Data"}</span>
+      render: (text) => (
+        <span>{text || text === 0 ? text : "-"}</span>
       ),
     },
     {
@@ -112,8 +112,8 @@ const StudentSessionTable = ({
       render: (text, record) => (
         <span>
           {text || text === 0
-            ? text + " | " + record.ListeningLevel
-            : "No Data"}
+            ? text + " | " + (record.ListeningLevel || "-")
+            : "-"}
         </span>
       ),
     },
@@ -124,7 +124,7 @@ const StudentSessionTable = ({
       width: "120px",
       render: (text, record) => (
         <span>
-          {text || text === 0 ? text + " | " + record.ReadingLevel : "No Data"}
+          {text || text === 0 ? text + " | " + (record.ReadingLevel || "-") : "-"}
         </span>
       ),
     },
@@ -144,13 +144,13 @@ const StudentSessionTable = ({
             className="cursor-pointer underline underline-offset-4 hover:opacity-80"
           >
             {text || text === 0
-              ? text + " | " + record.SpeakingLevel
+              ? text + " | " + (record.SpeakingLevel || "Ungraded")
               : "Ungraded"}
           </a>
         ) : (
           <span>
             {text || text === 0
-              ? text + " | " + record.SpeakingLevel
+              ? text + " | " + (record.SpeakingLevel || "Ungraded")
               : "Ungraded"}
           </span>
         ),
@@ -170,10 +170,10 @@ const StudentSessionTable = ({
             }
             className="cursor-pointer underline underline-offset-4 hover:opacity-80"
           >
-            {text ? text + " | " + record.WritingLevel : "Ungraded"}
+            {text || text === 0 ? text + " | " + (record.WritingLevel || "Ungraded") : "Ungraded"}
           </a>
         ) : (
-          <span>{text ? text + " | " + record.WritingLevel : "Ungraded"}</span>
+          <span>{text || text === 0 ? text + " | " + (record.WritingLevel || "Ungraded") : "Ungraded"}</span>
         ),
     },
     {
@@ -181,7 +181,7 @@ const StudentSessionTable = ({
       width: "90px",
       dataIndex: "Total",
       key: "Total",
-      render: (text) => <span>{text ? text : "No Data"}</span>,
+      render: (text) => <span>{text || text === 0 ? text : "-"}</span>,
     },
     {
       title: "LEVEL",
@@ -190,11 +190,11 @@ const StudentSessionTable = ({
       fixed: "right",
       width: "90px",
       render: (level, record) =>
-        type === TableType.SESSION && status !== StatusType.PUBLISHED ? (
+        type === TableType.SESSION && !isPublished ? (
           <Select
             value={levels[record.ID]}
             placeholder="Level"
-            disabled={!isAllScoresPresent(record) || record.IsPublished}
+            disabled={!isAllScoresPresent(record) || record.IsPublished || isPublished}
             onChange={(value) => onLevelChange(record.ID, value)}
             className="p-0"
           >
@@ -205,7 +205,7 @@ const StudentSessionTable = ({
             ))}
           </Select>
         ) : (
-          <span>{level || "No Data"}</span>
+          <span>{level || "-"}</span>
         ),
       onHeaderCell: () => {
         return {
@@ -269,6 +269,10 @@ const StudentSessionTable = ({
     }
   }, [type, status, levels]);
 
+  const total = data?.pagination?.totalItems || 0;
+  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, total);
+
   return (
     <div>
       <Table
@@ -307,14 +311,12 @@ const StudentSessionTable = ({
       />
       <div className='flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm'>
         <div className='text-gray-600 font-medium'>
-          {data?.pagination?.totalItems > 0 
-            ? `Showing ${(currentPage - 1) * pageSize + 1}-${Math.min(currentPage * pageSize, data?.pagination?.totalItems)} of ${data?.pagination?.totalItems} entries` 
-            : 'No entries found'}
+          {total > 0 ? `Showing ${start}-${end} of ${total} entries` : 'No entries found'}
         </div>
         <Pagination
           current={currentPage}
           pageSize={pageSize}
-          total={data?.pagination?.totalItems || 0}
+          total={total}
           onChange={(page, size) => {
             setCurrentPage(page);
             setPageSize(size);

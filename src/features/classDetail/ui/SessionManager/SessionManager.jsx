@@ -6,7 +6,8 @@ import { formatDateTime } from "@shared/lib/utils/formatString";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import SessionTable from "./SessionTable/SessionTable";
-import { Button, message } from "antd";
+import { Button, message, Tooltip } from "antd";
+
 
 const SessionManager = ({ data, isLoading }) => {
   const [modalState, setModalState] = useState({
@@ -40,7 +41,7 @@ const SessionManager = ({ data, isLoading }) => {
       key: "sessionName",
       className: "!text-center",
       render: (text, record) => (
-        <Link to={`session/${record.ID}`} className="text-[#003087]">
+        <Link to={`/class/${data?.ID}/session/${record.ID}`} className="text-[#003087]">
           {text}
         </Link>
       ),
@@ -67,10 +68,10 @@ const SessionManager = ({ data, isLoading }) => {
     },
     {
       title: "NUMBER OF PARTICIPANTS",
-      dataIndex: "SessionParticipants",
-      key: "SessionParticipants",
+      dataIndex: "participantCount",
+      key: "participantCount",
       className: "!text-center",
-      render: (participants) => <span>{participants.length}</span>,
+      render: (count) => <span>{count || 0}</span>,
     },
     {
       title: "STATUS",
@@ -95,19 +96,24 @@ const SessionManager = ({ data, isLoading }) => {
       className: "!text-center",
       render: (_, record) => (
         <div className="flex justify-center items-center gap-4">
-          <Button
-            type="link"
-            icon={<EditOutlined />}
-            onClick={() => openModal("edit", record)}
-            className="text-xl !text-primaryColor hover:opacity-70"
-          />
-          {record.SessionParticipants.length === 0 && (
+          <Tooltip title={record.status === "ON_GOING" ? "Cannot edit ongoing session" : "Edit Session"}>
             <Button
               type="link"
-              icon={<DeleteOutlined />}
-              onClick={() => openModal("delete", record)}
-              className="text-xl !text-red-500 hover:opacity-70"
+              icon={<EditOutlined />}
+              onClick={() => openModal("edit", record)}
+              disabled={record.status === "ON_GOING"}
+              className="text-xl !text-primaryColor hover:opacity-70 disabled:opacity-30"
             />
+          </Tooltip>
+          {(!record.participantCount || record.participantCount === 0) && (
+            <Tooltip title="Delete Session">
+              <Button
+                type="link"
+                icon={<DeleteOutlined />}
+                onClick={() => openModal("delete", record)}
+                className="text-xl !text-red-500 hover:opacity-70"
+              />
+            </Tooltip>
           )}
         </div>
       ),
