@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { Input, Button, Form, Card, Spin, message } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
 
 import {
   useGetQuestionGroupDetail,
@@ -16,7 +15,6 @@ import { yupSync } from '@shared/lib/utils';
 
 const UpdateSpeaking = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
   const { id: sectionId } = useParams();
   const [form] = Form.useForm();
 
@@ -41,7 +39,6 @@ const UpdateSpeaking = () => {
 
     form.setFieldsValue({
       sectionName: data.SectionName,
-      description: data.Description || '',
       parts: {
         part1: {
           ...data.part1,
@@ -77,57 +74,40 @@ const UpdateSpeaking = () => {
   /** ================================================================
    * 4. Submit → gửi format chuẩn BE cần
    * ================================================================ */
-  const mapPartPayload = (partKey, part, index, imageUrl) => {
-    const partId = part?.id || data?.[partKey]?.id || null;
-
-    if (!partId) {
-      throw new Error(`Missing part id for ${partKey}`);
-    }
-
-    return {
-      id: partId,
-      name: part?.name || data?.[partKey]?.name || '',
-      image: imageUrl,
-      sequence: part?.sequence || index + 1,
-      questions: (part?.questions || []).map((q, idx) => ({
-        id: q?.id || null,
-        type: q?.type || 'speaking',
-        sequence: q?.sequence || idx + 1,
-        content: q?.value || q?.content || '',
-      })),
-    };
-  };
+  const mapPartPayload = (part, index, imageUrl) => ({
+    id: part.id,
+    name: part.name,
+    image: imageUrl,
+    sequence: index + 1,
+    questions: part.questions?.map((q, idx) => ({
+      id: q.id || null,
+      type: q.type || 'speaking',
+      sequence: idx + 1,
+      content: q.value || '',
+    })),
+  });
 
   const handleSubmit = (values) => {
-    try {
-      const payload = {
-        SkillName: 'SPEAKING',
-        SectionName: values.sectionName,
-        Description: values.description?.trim() || '',
-        parts: {
-          part1: mapPartPayload('part1', values.parts.part1, 0, images.part1),
-          part2: mapPartPayload('part2', values.parts.part2, 1, images.part2),
-          part3: mapPartPayload('part3', values.parts.part3, 2, images.part3),
-          part4: mapPartPayload('part4', values.parts.part4, 3, images.part4),
-        },
-      };
+    const payload = {
+      SkillName: 'SPEAKING',
+      SectionName: values.sectionName,
+      parts: {
+        part1: mapPartPayload(values.parts.part1, 0, images.part1),
+        part2: mapPartPayload(values.parts.part2, 1, images.part2),
+        part3: mapPartPayload(values.parts.part3, 2, images.part3),
+        part4: mapPartPayload(values.parts.part4, 3, images.part4),
+      },
+    };
 
-      updateSpeaking(
-        { sectionId, payload },
-        {
-          onSuccess: async () => {
-            await Promise.all([
-              queryClient.invalidateQueries({ queryKey: ['sections'] }),
-              queryClient.refetchQueries({ queryKey: ['sections'] }),
-            ]);
-            message.success('Update speaking section successfully!');
-            navigate('/questions', { replace: true });
-          },
-        }
-      );
-    } catch (error) {
-      message.error(error?.message || 'Invalid speaking payload');
-    }
+    updateSpeaking(
+      { sectionId, payload },
+      {
+        onSuccess: () => {
+          message.success('Update speaking section successfully!');
+          navigate(-1);
+        },
+      }
+    );
   };
 
   /** ================================================================
@@ -150,10 +130,6 @@ const UpdateSpeaking = () => {
 
     return (
       <Card title={title} className='mb-6 border rounded-lg shadow-sm'>
-        <Form.Item name={['parts', key, 'id']} hidden>
-          <Input />
-        </Form.Item>
-
         {/* Part Name */}
         <Form.Item
           label='Part Name'
@@ -163,7 +139,7 @@ const UpdateSpeaking = () => {
             yupSync(createSpeakingSchema, ['parts', key, 'name']),
           ]}
         >
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter part name' />
+          <Input placeholder='Enter part name' />
         </Form.Item>
 
         {/* Upload with VALIDATION */}
@@ -222,7 +198,7 @@ const UpdateSpeaking = () => {
                       { required: true, message: 'Question cannot be empty' },
                     ]}
                   >
-                    <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter question' />
+                    <Input placeholder='Enter question' />
                   </Form.Item>
 
                   {f.name >= 3 && (
@@ -261,10 +237,7 @@ const UpdateSpeaking = () => {
             name='sectionName'
             rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
-          </Form.Item>
-          <Form.Item label='Description' name='description'>
-            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input placeholder='Enter section name' />
           </Form.Item>
         </Card>
 

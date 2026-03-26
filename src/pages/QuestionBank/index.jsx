@@ -253,7 +253,7 @@ const QuestionBank = () => {
               onChange={(e) => {
                 const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
                 setSearchText(sanitized)
-              }
+              }}
             />
           </div>
 

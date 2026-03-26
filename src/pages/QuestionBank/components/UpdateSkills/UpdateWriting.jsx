@@ -27,7 +27,6 @@ const UpdateWriting = () => {
 
     form.setFieldsValue({
       sectionName: detail.SectionName || '',
-      description: detail.Description || '',
 
       // ===== PART 1 =====
       part1: {
@@ -103,7 +102,6 @@ const UpdateWriting = () => {
       className='flex flex-col gap-8 pb-20'
       initialValues={{
         sectionName: '',
-        description: '',
         part1: { title: '', questions: [{ question: '' }] },
         part2: { title: '', question: '', fields: [''] },
         part3: {
@@ -123,26 +121,23 @@ const UpdateWriting = () => {
       <Card title='Section Information'>
         {/* HIDDEN: giữ PartID cho 4 phần (sẽ không hiển thị) */}
         <Form.Item name={['part1', 'PartID']} style={{ display: 'none' }}>
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+          <Input />
         </Form.Item>
         <Form.Item name={['part2', 'PartID']} style={{ display: 'none' }}>
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+          <Input />
         </Form.Item>
         <Form.Item name={['part3', 'PartID']} style={{ display: 'none' }}>
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
-        </Form.Item>
-        <Form.Item label='Description' name='description'>
-          <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+          <Input />
         </Form.Item>
         <Form.Item name={['part4', 'PartID']} style={{ display: 'none' }}>
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+          <Input />
         </Form.Item>
         <Form.Item
           label='Section Name'
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='e.g., Fitness Club Writing Test' />
+          <Input placeholder='e.g., Fitness Club Writing Test' />
         </Form.Item>
       </Card>
 
