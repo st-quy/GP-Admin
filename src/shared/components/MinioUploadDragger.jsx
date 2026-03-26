@@ -105,35 +105,54 @@ const MinioUploadDragger = ({
 
         setFileList([pendingFile]);
 
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('folder', bucketType === 'audios' ? 'audio' : 'images');
-
-        // [STABILITY BRIDGE]: Use API Proxy to bypass local CORS/SSL issues with direct MinIO uploads
-        const response = await axiosInstance.post('/presigned-url/upload', formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          },
-          onUploadProgress: (event) => {
-            const percent = Math.round((event.loaded / event.total) * 100);
-            setFileList([
-              {
-                ...pendingFile,
-                percent,
-              },
-            ]);
-            onProgress?.({ percent });
-          }
+        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
+          fileName: file.name,
+          type: bucketType,
         });
 
-        const { fileUrl } = response.data;
-        const uploadedFile = buildUploadedFile(fileUrl, file.name);
-        setFileList([uploadedFile]);
-        onChange?.(fileUrl);
-        onSuccess?.({ fileUrl });
+        const { uploadUrl, fileUrl } = data;
+        const xhr = new XMLHttpRequest();
 
+        xhr.upload.onprogress = (event) => {
+          const total = event.total || file.size;
+          const percent = Math.round((event.loaded / total) * 100);
+
+          setFileList([
+            {
+              ...pendingFile,
+              percent,
+            },
+          ]);
+
+          onProgress?.({ percent });
+        };
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const uploadedFile = buildUploadedFile(fileUrl, file.name);
+            setFileList([uploadedFile]);
+            onChange?.(fileUrl);
+            onSuccess?.({ fileUrl });
+            return;
+          }
+
+          const error = new Error('Upload failed');
+          setFileList([]);
+          onError?.(error);
+          message.error('Upload failed');
+        };
+
+        xhr.onerror = () => {
+          const error = new Error('Upload failed');
+          setFileList([]);
+          onError?.(error);
+          message.error('Upload failed');
+        };
+
+        xhr.open('PUT', uploadUrl, true);
+        xhr.setRequestHeader('Content-Type', file.type);
+        xhr.send(file);
       } catch (error) {
-        console.error('Upload via Proxy error:', error);
         setFileList([]);
         onError?.(error);
         message.error('Upload failed');
