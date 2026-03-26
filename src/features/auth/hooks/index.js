@@ -89,7 +89,9 @@ export const useForgotPassword = () => {
       navigate('/login');
     },
     onError({ response }) {
-      message.error(response.data.message);
+      message.error(
+        response?.data?.message || 'Failed to send reset email. Please try again.'
+      );
     },
   });
 };
