@@ -9,7 +9,8 @@ import {
     CustomerServiceOutlined,
     HolderOutlined,
     LeftOutlined,
-    EyeOutlined
+    EyeOutlined,
+    SwapOutlined
 } from "@ant-design/icons";
 import {
     Card,
@@ -22,7 +23,12 @@ import {
     message,
     DatePicker,
     Modal,
-    Spin
+    Spin,
+    Layout,
+    Row,
+    Col,
+    InputNumber,
+    Switch
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
@@ -54,6 +60,7 @@ const SortableQuestionItem = ({ id, children }) => {
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
+const { Content } = Layout;
 
 const SKILL_TABS = [
     { key: "SPEAKING", label: "Speaking", icon: <AudioOutlined /> },
@@ -81,6 +88,9 @@ const CreateExamPage = () => {
     const { openConfirmModal, ModalComponent } = useConfirm();
     const [isDirty, setIsDirty] = useState(false);
     const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
+    const [ShuffleQuestions, setShuffleQuestions] = useState(false);
+    const [ShuffleAnswers, setShuffleAnswers] = useState(false);
+    const [questionScores, setQuestionScores] = useState({});
     const pendingPath = useRef(null);
 
     const sensors = useSensors(
@@ -312,7 +322,7 @@ const CreateExamPage = () => {
                 </div>
             );
         }
-        const { section } = data;
+        const { section } = found;
         return (
             <div style={{ width: "100%" }}>
                 <Card style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }} bodyStyle={{ padding: 16 }}>
@@ -452,7 +462,7 @@ const CreateExamPage = () => {
                                         <Col>
                                             <Space>
                                                 <Switch
-                                                    checked={shuffleQuestions}
+                                                    checked={ShuffleQuestions}
                                                     onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
                                                     disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"}
                                                 />
@@ -462,7 +472,7 @@ const CreateExamPage = () => {
                                         <Col>
                                             <Space>
                                                 <Switch
-                                                    checked={shuffleAnswers}
+                                                    checked={ShuffleAnswers}
                                                     onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
                                                     disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)}
                                                 />
@@ -511,7 +521,7 @@ const CreateExamPage = () => {
                                 style={{ padding: "24px", background: "white" }}
                                 onClick={() => { if (!isViewMode) setOpenModal(true) }}
                             >
-                                {renderSelectedSectionUI()}
+                                {renderInstructionContent()}
                             </div>
                         </div>
 
