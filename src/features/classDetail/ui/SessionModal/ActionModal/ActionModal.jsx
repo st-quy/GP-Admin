@@ -70,12 +70,49 @@ const ActionModal = ({
   const modalTitle = isEdit ? 'Update Session' : 'Create Session';
   const actionLabel = isEdit ? 'Update session' : 'Create session';
 
+  // BUG_CM015: Reset form when initialData or isOpen changes to ensure fresh data
+  useEffect(() => {
+    if (isOpen) {
+      if (isEdit && initialData) {
+        form.setFieldsValue({
+          sessionName: initialData.sessionName,
+          sessionKey: initialData.sessionKey,
+          examSet: initialData.examSet,
+          dateRange: initialData.startTime && initialData.endTime
+            ? [dayjs(initialData.startTime), dayjs(initialData.endTime)]
+            : undefined,
+        });
+      } else {
+        form.resetFields();
+      }
+    }
+  }, [isOpen, initialData, isEdit, form]);
+
   const handleCancel = () => {
-    onClose();
-    form.resetFields();
-    setSubmitting(false);
-    submitLockRef.current = false;
+    // BUG_CM014: Unsaved changes warning
+    const isDirty = form.isFieldsTouched();
+    if (isDirty) {
+      Modal.confirm({
+        title: 'Unsaved Changes',
+        content: 'You have unsaved changes. Are you sure you want to discard this draft?',
+        okText: 'Discard',
+        cancelText: 'Continue Editing',
+        okButtonProps: { danger: true },
+        onOk: () => {
+          onClose();
+          form.resetFields();
+          setSubmitting(false);
+          submitLockRef.current = false;
+        },
+      });
+    } else {
+      onClose();
+      form.resetFields();
+      setSubmitting(false);
+      submitLockRef.current = false;
+    }
   };
+
   const handlePopupScroll = (e) => {
     const target = e.target; // chính xác: lớp scroll của dropdown
 
@@ -107,38 +144,48 @@ const ActionModal = ({
 
     try {
       const values = await form.validateFields();
+      
+      Modal.confirm({
+        title: `Confirm ${isEdit ? 'Update' : 'Creation'}`,
+        content: `Are you sure you want to ${isEdit ? 'update' : 'create'} this session with these details?`,
+        okText: isEdit ? 'Update' : 'Create',
+        cancelText: 'Cancel',
+        onOk: () => {
+          submitLockRef.current = true;
+          setSubmitting(true);
 
-      submitLockRef.current = true;
-      setSubmitting(true);
+          const sessionData = {
+            sessionId: initialData?.ID || null,
+            sessionName: values.sessionName?.trim(),
+            sessionKey: values.sessionKey?.trim(),
+            startTime: values.dateRange?.[0]?.toISOString() || null,
+            endTime: values.dateRange?.[1]?.toISOString() || null,
+            examSet: values.examSet,
+            ClassID: classId,
+          };
 
-      const sessionData = {
-        sessionId: initialData?.ID || null,
-        sessionName: values.sessionName?.trim(),
-        sessionKey: values.sessionKey?.trim(),
-        startTime: values.dateRange?.[0]?.toISOString() || null,
-        endTime: values.dateRange?.[1]?.toISOString() || null,
-        examSet: values.examSet,
-        ClassID: classId,
-      };
-
-      sessionAction(sessionData, {
-        onSuccess: (data) => {
-          const msg = data?.data?.message || `${actionLabel} success!`;
-          message.success(msg);
-          handleCancel();
-        },
-        onError: (error) => {
-          const serverMsg = error?.response?.data?.message || '';
-          if (serverMsg.toLowerCase().includes('key') || serverMsg.toLowerCase().includes('unique') || serverMsg.toLowerCase().includes('duplicate')) {
-            form.setFields([
-              { name: 'sessionKey', errors: ['This session key is already in use. Please generate a new one.'] },
-            ]);
-          }
-        },
-        onSettled: () => {
-          submitLockRef.current = false;
-          setSubmitting(false);
-        },
+          sessionAction(sessionData, {
+            onSuccess: (data) => {
+              const msg = data?.data?.message || `${actionLabel} success!`;
+              message.success(msg);
+              // BUG FIX: Prevent handleCancel confirmation by resetting manually
+              onClose();
+              form.resetFields();
+            },
+            onError: (error) => {
+              const serverMsg = error?.response?.data?.message || '';
+              if (serverMsg.toLowerCase().includes('key') || serverMsg.toLowerCase().includes('unique') || serverMsg.toLowerCase().includes('duplicate')) {
+                form.setFields([
+                  { name: 'sessionKey', errors: ['This session key is already in use. Please generate a new one.'] },
+                ]);
+              }
+            },
+            onSettled: () => {
+              submitLockRef.current = false;
+              setSubmitting(false);
+            },
+          });
+        }
       });
     } catch {
       // Form validation failed — Ant Design shows inline errors automatically
@@ -175,23 +222,33 @@ const ActionModal = ({
           <Form
             form={form}
             layout='vertical'
-            initialValues={{
-              sessionName: initialData?.sessionName || '',
-              sessionKey: initialData?.sessionKey || '',
-              examSet: initialData?.examSet || '',
-              dateRange:
-                initialData?.startTime && initialData?.endTime
-                  ? [dayjs(initialData.startTime), dayjs(initialData.endTime)]
-                  : undefined,
-            }}
           >
             <Form.Item
               name='sessionName'
               label='Session Name'
               rules={[yupSync(sessionSchema)]}
+              normalize={(value) => {
+                if (!value) return value;
+                let cleanValue = value;
+
+                // 1. Proactively handle special characters/emojis
+                if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
+                  message.warning('Special characters and emojis are not allowed in Session Name.');
+                  cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+                }
+
+                // 2. Proactively handle multiple spaces
+                if (/\s{2,}/.test(cleanValue)) {
+                  message.info('Multiple spaces are not allowed; collapsed to a single space.');
+                  cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+                }
+
+                // 3. Block leading spaces
+                return cleanValue.replace(/^\s+/, '');
+              }}
               required
             >
-              <Input placeholder='Session Name' className='!h-[46px]' />
+              <Input placeholder='Session Name' className='!h-[46px]' maxLength={100} />
             </Form.Item>
 
             <Form.Item
@@ -199,13 +256,15 @@ const ActionModal = ({
               label='Session Key'
               required
               rules={[yupSync(sessionSchema)]}
+              normalize={(value) => value?.trim().toUpperCase()}
             >
               <Input
                 placeholder='Session Key'
                 className='!h-[46px]'
+                maxLength={20}
                 required
                 suffix={
-                  <div onClick={handleGenerateSessionKey}>
+                  <div className="cursor-pointer" onClick={handleGenerateSessionKey}>
                     {isGenerating ? (
                       <Spin indicator={<LoadingOutlined spin />} />
                     ) : (
@@ -256,12 +315,6 @@ const ActionModal = ({
                 format='DD-MM-YYYY HH:mm:ss'
                 disabledDate={disabledDate}
                 showNow={false}
-                onChange={(dates) => {
-                  if (dates && dates[0] && dates[0].isBefore(dayjs(), 'day')) {
-                    message.warning('Start date cannot be in the past');
-                    form.setFieldsValue({ dateRange: null });
-                  }
-                }}
               />
             </Form.Item>
           </Form>

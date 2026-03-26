@@ -25,7 +25,7 @@ const CreateWriting = () => {
       createWritingGroup(payload, {
         onSuccess: () => {
           message.success('Writing test created successfully!');
-          navigate('/questions?skillName=WRITING', { replace: true });
+          navigate(-1);
         },
         onError: (err) => {
           message.error(
@@ -45,7 +45,6 @@ const CreateWriting = () => {
       layout='vertical'
       initialValues={{
         sectionName: '',
-        description: '',
         part1: { title: '', questions: [{ question: '' }] },
         part2: { title: '', question: '', wordLimit: '', fields: [''] },
         part3: {
@@ -69,10 +68,7 @@ const CreateWriting = () => {
           name='sectionName'
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='e.g., Fitness Club Writing Test' />
-        </Form.Item>
-        <Form.Item label='Description' name='description'>
-          <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+          <Input placeholder='e.g., Fitness Club Writing Test' />
         </Form.Item>
       </Card>
 

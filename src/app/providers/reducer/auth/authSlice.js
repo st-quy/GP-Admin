@@ -1,7 +1,7 @@
-import { ACCESS_TOKEN } from '@shared/lib/constants/auth';
+import { ACCESS_TOKEN, REFRESH_TOKEN } from '@shared/lib/constants/auth';
 import { createSlice } from '@reduxjs/toolkit';
 import { jwtDecode } from 'jwt-decode';
-import { getStorageData } from '@shared/lib/storage';
+import { getStorageData, setStorageData } from '@shared/lib/storage';
 
 const checkAuth = () => Boolean(getStorageData(ACCESS_TOKEN));
 
@@ -12,7 +12,7 @@ const getUserRole = () => {
     const decodedToken = jwtDecode(token);
 
     // @ts-ignore - JWT payload may contain custom fields
-    return decodedToken.roles || null;
+    return decodedToken.role || decodedToken.roles || null;
   } catch (error) {
     console.error('Error decoding token:', error);
     return null;
@@ -53,7 +53,6 @@ const authSlice = createSlice({
       state.isAuth = false;
       state.role = null;
       state.user = null;
-      state.userId = null;
     },
     updateRole(state) {
       state.role = getUserRole();
