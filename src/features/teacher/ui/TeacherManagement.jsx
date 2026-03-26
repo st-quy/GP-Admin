@@ -34,6 +34,12 @@ const TeacherManagement = () => {
   });
 
   const handleStatusFilter = (value) => {
+    // When Select is cleared (allowClear), AntD passes undefined/null -> reset filter
+    if (value == null) {
+      setStatusFilter(null);
+      return;
+    }
+
     if (value === 'All') {
       setStatusFilter(null);
     } else {
@@ -70,12 +76,13 @@ const TeacherManagement = () => {
       width: '200px',
       render: (text, record) => (
         <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
-          <a
-            className='cursor-pointer text-[10px] md:text-[14px] underline hover:opacity-80'
+          <button
+            type='button'
+            className='bg-transparent border-none p-0 cursor-pointer text-[10px] md:text-[14px] underline hover:opacity-80'
             onClick={() => navigate(`/teacher/edit/${record.ID}`)}
           >
             {`${record.firstName} ${record.lastName}` || 'Unknown'}
-          </a>
+          </button>
         </div>
       ),
     },

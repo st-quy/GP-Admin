@@ -158,14 +158,14 @@ const TeacherActionModal = ({
 
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        teacherCode: values.teacherCode,
+        firstName: values.firstName?.trim(),
+        lastName: values.lastName?.trim(),
+        email: values.email?.trim(),
+        teacherCode: values.teacherCode?.trim(),
         password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
         role: 'teacher',
         status: values.status,
-        phone: values.phone ? values.phone : undefined,
+        phone: values.phone?.trim() || undefined,
       };
       // @ts-ignore
       teacherAction(data, {
