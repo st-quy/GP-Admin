@@ -259,12 +259,15 @@ const CreateExamPage = () => {
                 Parts: found.section.Parts || [],
             };
         });
+
+        const data = topicData?.data ? topicData.data : topicData;
+
         const previewExamData = {
             ID: topicId,
             Name: form.getFieldValue("name"),
             Skills: skills,
-            createdAt: topicData?.data?.createdAt || new Date().toISOString(),
-            updatedAt: topicData?.data?.updatedAt || new Date().toISOString(),
+            createdAt: data?.createdAt || new Date().toISOString(),
+            updatedAt: data?.updatedAt || new Date().toISOString(),
         };
         setPreviewData(previewExamData);
         setPreviewOpen(true);
@@ -355,15 +358,21 @@ const CreateExamPage = () => {
     }, [user, form, topicId]);
 
     useEffect(() => {
-        if (!topicData?.data) return;
-        const data = topicData.data;
+        if (!topicData) return;
+        
+        // [STABILITY]: Normalize data to handle both nested { data: { ... } } and flat { ... } responses
+        const data = topicData.data ? topicData.data : topicData;
+        
+        if (!data || !data.Name) return;
+
         form.setFieldsValue({ name: data.Name });
         
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
         (data.Sections || []).forEach(section => {
-            const skill = section.Skill.Name;
+            const skill = section.Skill?.Name;
+            if (!skill) return;
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
             instructionsData.push({ skill, section });
@@ -383,14 +392,18 @@ const CreateExamPage = () => {
                     <div style={{ display: "flex", gap: "12px" }}>
                         <Button icon={<LeftOutlined />} onClick={() => navigate("/exam")}>Back</Button>
                         <Button icon={<EyeOutlined />} onClick={handlePreviewExam}>Preview</Button>
-                        {isViewMode && topicData?.data?.Status === 'submited' && isAdmin && (
-                            <>
-                                <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
-                                <Button danger type="primary" onClick={handleReject}>Reject</Button>
-                            </>
-                        )}
+                        {(() => {
+                            const data = topicData?.data ? topicData.data : topicData;
+                            return isViewMode && data?.Status === 'submited' && isAdmin && (
+                                <>
+                                    <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
+                                    <Button danger type="primary" onClick={handleReject}>Reject</Button>
+                                </>
+                            );
+                        })()}
                     </div>
                 }
+
             />
 
             <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)} >
@@ -398,13 +411,17 @@ const CreateExamPage = () => {
                     <Card style={{ marginBottom: 24 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                             <Title level={4} style={{ margin: 0 }}>Exam Information</Title>
-                            {isViewMode && isAdmin && topicData?.data?.Status === "submited" && (
-                                <Space>
-                                    <Button type="primary" style={{ background: "#52c41a" }} onClick={handleApprove}>Approve</Button>
-                                    <Button danger type="primary" onClick={handleReject}>Reject</Button>
-                                </Space>
-                            )}
+                            {(() => {
+                                const data = topicData?.data ? topicData.data : topicData;
+                                return isViewMode && isAdmin && data?.Status === "submited" && (
+                                    <Space>
+                                        <Button type="primary" style={{ background: "#52c41a" }} onClick={handleApprove}>Approve</Button>
+                                        <Button danger type="primary" onClick={handleReject}>Reject</Button>
+                                    </Space>
+                                );
+                            })()}
                         </div>
+
                         <Form.Item label="Exam Name" name="name" getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '')} rules={[{ required: true }]}>
                             <Input maxLength={255} placeholder="Enter exam name" disabled={isViewMode} />
                         </Form.Item>
