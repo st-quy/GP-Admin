@@ -7,7 +7,7 @@ export const Breadcrumb = ({ paths }) => {
     .map((path, index, array) => ({
       title:
         index === array.length - 1 ? (
-          <span>{path.name}</span>
+          <span className='font-semibold text-[#003087]'>{path.name}</span>
         ) : path.index ? (
           <Link to={path.link}>{path.name}</Link>
         ) : (

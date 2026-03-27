@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { Spin } from "antd";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
+import { Spin, Breadcrumb } from "antd";
 import Assessment from "@features/grading/ui/Assessment";
 import AssessmentScores from "@features/grading/ui/AssessmentScores";
 import StudentInfoCard from "@features/grading/ui/StudentInfoCard";
@@ -353,9 +353,20 @@ const GradingPage = () => {
       <Spin size="large" className="flex justify-center items-center h-60" />
     );
 
+  const breadcrumbItems = [
+    { title: <Link to="/class">Class Management</Link> },
+    { title: <Link to={`/class/${classId}`}>Class Detail</Link> },
+    { title: <Link to={`/class/${classId}/session/${sessionId}`}>Session Detail</Link> },
+    { title: <span className="font-semibold text-[#003087]">Grade</span> },
+  ];
+
   return (
     <div className="p-8">
       <ScrollToTop />
+      {/* Breadcrumb */}
+      <div className="bg-white rounded-xl border border-slate-200 px-6 py-4 mb-6">
+        <Breadcrumb separator=">" items={breadcrumbItems} />
+      </div>
       {/* Student Information Card */}
       <StudentInfoCard
         student={userData}

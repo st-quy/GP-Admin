@@ -1,5 +1,6 @@
 import { lazy } from 'react';
 import { ProtectedRoute } from './ProtectedRoute/ProtectedRoute.jsx';
+import { GradingLayout } from './GradingLayout/GradingLayout.jsx';
 import GradingPage from '@pages/grading/GradingPage.jsx';
 import SessionLayout from '../../pages/SessionManagement/SessionLayout.jsx';
 import SessionInformation from '@pages/SessionManagement/SessionInformation.jsx';
@@ -100,6 +101,21 @@ const PrivateRoute = [
                         ),
                       },
                       {
+                        path: 'participant',
+                        children: [
+                          {
+                            path: ':participantId',
+                            breadcrumb: 'Grade',
+                            children: [
+                              {
+                                index: true,
+                                element: <GradingPage />,
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                      {
                         path: 'student',
                         children: [
                           {
@@ -119,21 +135,6 @@ const PrivateRoute = [
                                 // element: <div>hjhghgh</div>,
                                 element: <TeacherResultPage />,
                                 breadcrumb: 'Exam Result',
-                              },
-                            ],
-                          },
-                        ],
-                      },
-                      {
-                        path: 'participant',
-                        children: [
-                          {
-                            path: ':participantId',
-                            breadcrumb: 'Participant Detail',
-                            children: [
-                              {
-                                index: true,
-                                element: <GradingPage />,
                               },
                             ],
                           },

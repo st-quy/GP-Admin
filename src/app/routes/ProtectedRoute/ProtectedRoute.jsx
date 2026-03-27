@@ -160,7 +160,7 @@ export const ProtectedRoute = () => {
       </Sider>
       <Layout className='p-0'>
         <Header className='bg-white px-4 shadow-md flex justify-start items-end h-10'>
-          {location.pathname !== '/' && <Breadcrumb paths={breadcrumbPaths} />}
+          {location.pathname !== '/' && !location.pathname.includes('/participant/') && <Breadcrumb paths={breadcrumbPaths} />}
         </Header>
         <Content className=''>
           <Outlet />
