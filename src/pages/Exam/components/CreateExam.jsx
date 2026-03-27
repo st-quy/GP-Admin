@@ -9,7 +9,9 @@ import {
     CustomerServiceOutlined,
     HolderOutlined,
     LeftOutlined,
-    EyeOutlined
+    EyeOutlined,
+    PlusOutlined,
+    CheckOutlined
 } from "@ant-design/icons";
 import {
     Card,
@@ -22,7 +24,10 @@ import {
     message,
     DatePicker,
     Modal,
-    Spin
+    Spin,
+    Layout,
+    Row,
+    Col
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
@@ -52,519 +57,337 @@ const SortableQuestionItem = ({ id, children }) => {
     );
 };
 
+const { Content } = Layout;
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
 
 const SKILL_TABS = [
     { key: "SPEAKING", label: "Speaking", icon: <AudioOutlined /> },
     { key: "LISTENING", label: "Listening", icon: <CustomerServiceOutlined /> },
-    { key: "GRAMMAR AND VOCABULARY", label: "Grammar & Vocabulary", icon: <BookOutlined /> },
     { key: "READING", label: "Reading", icon: <ReadOutlined /> },
     { key: "WRITING", label: "Writing", icon: <EditOutlined /> },
+    { key: "GRAMMAR AND VOCABULARY", label: "Grammar & Vocabulary", icon: <BookOutlined /> },
 ];
 
-const CreateExamPage = () => {
-    const navigate = useNavigate();
-    const [form] = Form.useForm();
+const SectionSelectModal = ({ open, onCancel, onSelect, selectedSkill, initialSelectedIds = [] }) => {
+    const { data: sections, isLoading } = useGetTopicWithRelations(selectedSkill);
+    const [localSelectedIds, setLocalSelectedIds] = useState(initialSelectedIds);
 
-    const { id: topicId } = useParams();
-    const location = useLocation();
-    const isViewMode = location.pathname.includes("/exam/view");
+    useEffect(() => {
+        if (open) setLocalSelectedIds(initialSelectedIds);
+    }, [open, initialSelectedIds]);
 
-    const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
-    const [openModal, setOpenModal] = useState(false);
-    const [selectedParts, setSelectedParts] = useState([]);
-    const [selectedSectionBySkill, setSelectedSectionBySkill] = useState({});
-    const [instructions, setInstructions] = useState([]);
-    const [previewOpen, setPreviewOpen] = useState(false);
-    const [previewData, setPreviewData] = useState(null);
-    const { openConfirmModal, ModalComponent } = useConfirm();
-    const [isDirty, setIsDirty] = useState(false);
-    const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
-    const pendingPath = useRef(null);
-
-    const sensors = useSensors(
-        useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
-    );
-    const { mutateAsync: createExam } = useCreateTopic();
-    const { mutateAsync: createTopicSection } = useCreateTopicSection();
-    const { data: topicData, isLoading } = useGetTopicWithRelations(topicId);
-    const { mutateAsync: updateTopic } = useUpdateTopic();
-    const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
-    const { role, user } = useSelector((state) => state.auth);
-
-    // Robust check for admin role
-    const isAdmin = Array.isArray(role)
-        ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
-        : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
-
-    const handleApprove = async () => {
-        openConfirmModal({
-            title: 'Approve Exam',
-            message: `Are you sure you want to approve this exam? This will make it available for students.`,
-            okText: 'Approve',
-            okButtonColor: '#52c41a',
-            onConfirm: async () => {
-                try {
-                    await updateTopic({ id: topicId, data: { Status: 'approved' } });
-                    message.success("Exam approved successfully!");
-                    navigate("/exam");
-                } catch (error) {
-                    message.error("Failed to approve exam");
-                }
-            },
-        });
-    };
-
-    const handleReject = async () => {
-        openConfirmModal({
-            title: 'Reject Exam',
-            message: `Are you sure you want to reject this exam? The teacher will need to review and submit it again.`,
-            okText: 'Reject',
-            okButtonColor: '#FF4D4F',
-            onConfirm: async () => {
-                try {
-                    await updateTopic({
-                        id: topicId,
-                        data: { Status: 'rejected', ReasonReject: null }
-                    });
-                    message.success("Exam rejected successfully!");
-                    navigate("/exam");
-                } catch (error) {
-                    message.error("Failed to reject exam");
-                }
-            },
-        });
-    };
-
-    const handleNavigateAway = useCallback((path = '/exam') => {
-        if (isDirty && !isViewMode) {
-            pendingPath.current = path;
-            setLeaveConfirmOpen(true);
-        } else {
-            navigate(path);
-        }
-    }, [isDirty, isViewMode, navigate]);
-
-
-
-
-    const handlePartSelect = (sections) => {
-        setIsDirty(true);
-        const oldSectionId = selectedSectionBySkill[selectedSkill];
-        if (!sections || sections.length === 0) {
-            setSelectedParts((prev) => prev.filter((id) => id !== oldSectionId));
-            setSelectedSectionBySkill((prev) => {
-                const copy = { ...prev };
-                delete copy[selectedSkill];
-                return copy;
-            });
-            setInstructions((prev) => prev.filter((i) => i.skill !== selectedSkill));
-            setOpenModal(false);
-            return;
-        }
-        const section = sections[0];
-        const sectionId = section.ID;
-        setSelectedParts((prev) => {
-            const filtered = prev.filter((id) => id !== oldSectionId);
-            return [...filtered, sectionId];
-        });
-        setSelectedSectionBySkill((prev) => ({ ...prev, [selectedSkill]: sectionId }));
-        setInstructions((prev) => {
-            const filtered = prev.filter((i) => i.skill !== selectedSkill);
-            return [...filtered, { skill: selectedSkill, section }];
-        });
-        setOpenModal(false);
-    };
-
-    const handlePreviewExam = () => {
-        if (!instructions.length) {
-            message.warning("Please select at least one skill before preview");
-            return;
-        }
-        const skillOrder = ["LISTENING", "GRAMMAR AND VOCABULARY", "READING", "WRITING", "SPEAKING"];
-        const skills = skillOrder.map(skillName => {
-            const found = instructions.find(i => i.skill === skillName);
-            if (!found || !found.section) return { ID: null, Name: skillName, Parts: [] };
-            return {
-                ID: found.section.SkillID || found.section.Skill?.ID,
-                Name: skillName,
-                Parts: found.section.Parts || [],
-            };
-        });
-        const previewExamData = {
-            ID: topicData?.ID,
-            Name: form.getFieldValue("name"),
-            Skills: skills,
-            createdAt: topicData?.createdAt || new Date().toISOString(),
-            updatedAt: topicData?.updatedAt || new Date().toISOString(),
-        };
-        setPreviewData(previewExamData);
-        setPreviewOpen(true);
-    };
-
-    const handleSaveExam = async () => {
-        try {
-            const values = form.getFieldsValue();
-            if (!values.name || !values.name.trim()) return message.error("Exam name is required");
-
-            const finalScores = { ...questionScores };
-            instructions.forEach(({ skill, section }) => {
-                const sectionQuestions = [];
-                (section.Parts || []).forEach(p => {
-                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
-                });
-                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
-                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
-                if (total > maxAllowed) {
-                    const ratio = maxAllowed / total;
-                    sectionQuestions.forEach(qid => {
-                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
-                    });
-                }
-            });
-
-            let topicResponse;
-            if (topicId) {
-                topicResponse = await updateTopic({
-                    id: topicId,
-                    data: { Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
-                });
-                await updateTopicSection({
-                    topicId: topicResponse.ID || topicId,
-                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
-                });
-            } else {
-                topicResponse = await createExam({
-                    Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers
-                });
-                await updateTopicSection({
-                    topicId: topicResponse.ID,
-                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
-                });
-            }
-            setIsDirty(false);
-            message.success("Topic saved successfully!");
-            navigate("/exam");
-        } catch (error) {
-            message.error("Failed to save topic");
-        }
-    };
-
-    const handleSubmitExam = async () => {
-        if (instructions.length < 5) return message.warning("Please select all 5 skills before submitting");
-        try {
-            const values = form.getFieldsValue();
-            const finalScores = { ...questionScores };
-            instructions.forEach(({ skill, section }) => {
-                const sectionQuestions = [];
-                (section.Parts || []).forEach(p => {
-                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
-                });
-                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
-                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
-                if (total > maxAllowed) {
-                    const ratio = maxAllowed / total;
-                    sectionQuestions.forEach(qid => {
-                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
-                    });
-                }
-            });
-
-            await updateTopic({
-                id: topicId,
-                data: { Name: values.name.trim(), Status: 'submited', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
-            });
-            await updateTopicSection({
-                topicId,
-                data: { sectionIds: selectedParts, scoreConfig: finalScores }
-            });
-            setIsDirty(false);
-            message.success("Topic submitted successfully!");
-            navigate("/exam");
-        } catch (error) {
-            message.error("Failed to submit topic");
-        }
-    };
-
-    const handleScoreChange = (questionId, score) => {
-        setQuestionScores(prev => ({ ...prev, [questionId]: score }));
-        setIsDirty(true);
-    };
-
-    const discardAndLeave = () => {
-        setIsDirty(false);
-        setLeaveConfirmOpen(false);
-        navigate(pendingPath.current);
-    };
-
-    const saveDraftAndLeave = async () => {
-        await handleSaveExam();
-        setLeaveConfirmOpen(false);
-    };
-
-    const renderInstructionContent = () => {
-        const found = instructions.find((i) => i.skill === selectedSkill);
-        if (!found) {
-            return (
-                <div style={{ width: "100%", height: 180, border: "2px dashed #D1D5DB", borderRadius: 12, display: "flex", justifyContent: "center", alignItems: "center", color: "#9CA3AF", fontSize: 16, fontWeight: 500 }}>
-                    + Instruction
-                </div>
-            );
-        }
-        const { section } = data;
-        return (
-            <div style={{ width: "100%" }}>
-                <Card style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }} bodyStyle={{ padding: 16 }}>
-                    <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
-                    <br />
-                    <Text type="secondary">{section.Description}</Text>
-                    <div style={{ marginTop: 16 }}>
-                        {(section.Parts || []).map((part) => (
-                            <div key={part.ID} style={{ marginBottom: 12, padding: 12, border: "1px solid #E5E7EB", borderRadius: 8, background: "white" }}>
-                                <Text strong>{part.Content}</Text>
-                                {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                    <>
-                                        <br />
-                                        <Text type="secondary">{part.SubContent}</Text>
-                                    </>
-                                )}
-                                {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                    <div style={{ marginTop: 8 }}>
-                                        <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={(event) => {
-                                            if (isViewMode) return;
-                                            const { active, over } = event;
-                                            if (!over || active.id === over.id) return;
-                                            const questions = [...(part.Questions || [])];
-                                            const oldIdx = questions.findIndex(q => q.ID === active.id);
-                                            const newIdx = questions.findIndex(q => q.ID === over.id);
-                                            if (oldIdx === -1 || newIdx === -1) return;
-                                            const [moved] = questions.splice(oldIdx, 1);
-                                            questions.splice(newIdx, 0, moved);
-                                            setInstructions(prev => prev.map(ins => {
-                                                if (ins.skill !== selectedSkill) return ins;
-                                                return {
-                                                    ...ins,
-                                                    section: {
-                                                        ...ins.section,
-                                                        Parts: (ins.section.Parts || []).map(p => p.ID === part.ID ? { ...p, Questions: questions } : p),
-                                                    },
-                                                };
-                                            }));
-                                        }}>
-                                            <SortableContext items={(part.Questions || []).map(q => q.ID)} strategy={verticalListSortingStrategy}>
-                                                {(part.Questions || []).map((q, index) => (
-                                                    <SortableQuestionItem key={q.ID} id={q.ID}>
-                                                        {(listeners, attributes) => (
-                                                            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10, padding: 8, borderRadius: 8, background: "#fff", border: "1px solid transparent" }}>
-                                                                {!isViewMode && <HolderOutlined {...listeners} {...attributes} style={{ cursor: "grab", color: "#999", fontSize: 16, marginTop: 4, flexShrink: 0 }} />}
-                                                                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0a2a79", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, flexShrink: 0 }}>
-                                                                    {(selectedSkill === "SPEAKING" && part.Content === "Part 4") ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span> : (index + 1)}
-                                                                </div>
-                                                                <Text style={{ fontSize: 15, lineHeight: "20px" }}>{q.Content}</Text>
-                                                            </div>
-                                                        )}
-                                                    </SortableQuestionItem>
-                                                ))}
-                                            </SortableContext>
-                                        </DndContext>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                </Card>
-            </div>
+    const handleToggle = (id) => {
+        setLocalSelectedIds(prev =>
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
         );
     };
 
+    return (
+        <Modal
+            title={`Select ${selectedSkill} Sections`}
+            open={open}
+            onCancel={onCancel}
+            onOk={() => onSelect(localSelectedIds)}
+            width={800}
+        >
+            <Spin spinning={isLoading}>
+                <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                    {sections?.data?.map(section => (
+                        <Card
+                            key={section.ID}
+                            size="small"
+                            style={{ marginBottom: 12, cursor: 'pointer', borderColor: localSelectedIds.includes(section.ID) ? '#1890ff' : '#f0f0f0' }}
+                            onClick={() => handleToggle(section.ID)}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div>
+                                    <Text strong>{section.Name}</Text>
+                                    <br />
+                                    <Text type="secondary">{section.Description || "No description"}</Text>
+                                </div>
+                                <Button type={localSelectedIds.includes(section.ID) ? "primary" : "default"} shape="circle" icon={localSelectedIds.includes(section.ID) ? <CheckOutlined /> : <PlusOutlined />} />
+                            </div>
+                        </Card>
+                    ))}
+                </div>
+            </Spin>
+        </Modal>
+    );
+};
+
+const CreateExamPage = () => {
+    const navigate = useNavigate();
+    const { id } = useParams();
+    const [form] = Form.useForm();
+    const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [showConfirmLeave, setShowConfirmLeave] = useState(false);
+    const [isDirty, setIsDirty] = useState(false);
+
+    // useQuery
+    const { data: topicData, isLoading: isTopicLoading } = useGetTopicWithRelations(id, { enabled: !!id });
+
+    // useMutation
+    const createTopic = useCreateTopic();
+    const updateTopic = useUpdateTopic();
+    const createTopicSection = useCreateTopicSection();
+    const updateTopicSection = useUpdateTopicSection();
+
+    const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
     useEffect(() => {
-        if (user && !topicId) {
-            const creatorName = [user.firstName, user.lastName].filter(Boolean).join(' ');
-            form.setFieldsValue({ creator: creatorName });
+        if (topicData?.data) {
+            form.setFieldsValue({
+                Name: topicData.data.Name,
+                ShuffleQuestions: topicData.data.ShuffleQuestions,
+                ShuffleAnswers: topicData.data.ShuffleAnswers,
+            });
         }
-    }, [user, form, topicId]);
+    }, [topicData, form]);
 
-    useEffect(() => {
-        if (!topicData) return;
-        form.setFieldsValue({ name: topicData.Name, duration: topicData.Duration });
-        setShuffleQuestions(!!topicData.ShuffleQuestions);
-        setShuffleAnswers(!!topicData.ShuffleAnswers);
+    const handleFormChange = () => setIsDirty(true);
 
-        const sectionsBySkill = {};
-        const instructionsData = [];
-        const selectedIds = [];
-        (topicData.Sections || []).forEach(section => {
-            const skill = section.Skill.Name;
-            sectionsBySkill[skill] = section.ID;
-            selectedIds.push(section.ID);
-            instructionsData.push({ skill, section });
-        });
-        setSelectedSectionBySkill(sectionsBySkill);
-        setInstructions(instructionsData);
-        setSelectedParts(selectedIds);
-        setIsDirty(false);
-    }, [topicData]);
+    const onFinish = async (values) => {
+        try {
+            setIsSaving(true);
+            let topicId = id;
+
+            if (!id) {
+                const res = await createTopic.mutateAsync(values);
+                topicId = res.data.ID;
+            } else {
+                await updateTopic.mutateAsync({ id, payload: values });
+            }
+
+            message.success(id ? "Exam updated successfully" : "Exam created successfully");
+            setIsDirty(false);
+            if (!id) navigate(`/exam/edit/${topicId}`);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDragEnd = (event, sectionId) => {
+        const { active, over } = event;
+        if (active.id !== over.id) {
+            // Reorder questions logic (client-side state or API call)
+        }
+    };
+
+    const renderInstructionContent = () => {
+        const sections = topicData?.data?.Sections?.filter(s => s.Parts?.[0]?.Skill?.Name === selectedSkill) || [];
+
+        if (sections.length === 0) {
+            return (
+                <div style={{ width: "100%", height: 180, border: "2px dashed #D1D5DB", borderRadius: 12, display: "flex", justifyContent: "center", alignItems: "center", color: "#9CA3AF", fontSize: 16, fontWeight: 500 }}>
+                    No instructions added for this skill yet.
+                </div>
+            );
+        }
+
+        return sections.map((section) => (
+            <Card
+                key={section.ID}
+                title={
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <HolderOutlined style={{ cursor: "grab", color: "#9CA3AF" }} />
+                        <Text strong>{section.Name}</Text>
+                    </div>
+                }
+                extra={<Button type="link" danger>Remove</Button>}
+                style={{ marginBottom: 16, borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
+            >
+                {section.Parts?.map((part) => (
+                    <div key={part.ID} style={{ marginBottom: 20 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <Text strong>{part.Content}</Text>
+                                {part.SubContent && (
+                                    <Tag color="blue" style={{ borderRadius: 4 }}>{part.SubContent}</Tag>
+                                )}
+                            </div>
+                        </div>
+
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDragEnd(e, section.ID)} modifiers={[restrictToVerticalAxis]}>
+                            <SortableContext items={part.Questions.map(q => q.ID)} strategy={verticalListSortingStrategy}>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                                    {part.Questions.map((q, index) => (
+                                        <SortableQuestionItem key={q.ID} id={q.ID}>
+                                            {(listeners, attributes) => (
+                                                <div
+                                                    {...attributes}
+                                                    {...listeners}
+                                                    style={{
+                                                        display: "flex",
+                                                        alignItems: "flex-start",
+                                                        gap: 12,
+                                                        padding: "12px 16px",
+                                                        background: "#F9FAFB",
+                                                        borderRadius: 8,
+                                                        border: "1px solid #F3F4F6",
+                                                        transition: "all 0.2s"
+                                                    }}
+                                                >
+                                                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0a2a79", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, flexShrink: 0 }}>
+                                                        {index + 1}
+                                                    </div>
+                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>{q.Content}</Text>
+                                                </div>
+                                            )}
+                                        </SortableQuestionItem>
+                                    ))}
+                                </div>
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+                ))}
+            </Card>
+        ));
+    };
 
     return (
         <>
-            <ModalComponent />
-
             <HeaderInfo
-                title={isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
-                subtitle={isViewMode ? "Preview the exam information and structure. Editing is disabled." : topicId ? "Modify exam information, structure, and skill-based questions." : "Set up exam details, structure, and choose skill-based questions."}
-                actions={
-                    <div style={{ display: "flex", gap: "12px" }}>
-                        <Button icon={<LeftOutlined />} onClick={() => navigate("/exam")}>Back</Button>
-                        <Button icon={<EyeOutlined />} onClick={handlePreviewExam}>Preview</Button>
-                        {isViewMode && topicData?.Status === 'submited' && isAdmin && (
-                            <>
-                                <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
-                                <Button danger type="primary" onClick={handleReject}>Reject</Button>
-                            </>
-                        )}
-                    </div>
+                title={id ? "Edit Exam" : "Create New Exam"}
+                subtitle={id ? "Update exam settings and questions" : "Set up a new examination for your classes"}
+                SubAction={
+                    <Button
+                        icon={<LeftOutlined />}
+                        onClick={() => navigate("/exam")}
+                        className="!rounded-full"
+                    >
+                        Back
+                    </Button>
                 }
             />
 
-            <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-                <Spin spinning={isLoading}>
-                    <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
+            <Form
+                form={form}
+                layout="vertical"
+                onFinish={onFinish}
+                onValuesChange={handleFormChange}
+                initialValues={{ ShuffleQuestions: false, ShuffleAnswers: false }}
+            >
+                <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
+                    <Row gutter={24}>
+                        <Col xs={24} lg={8}>
+                            <Card title="General Settings" style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
+                                <Form.Item
+                                    label="Exam Name"
+                                    name="Name"
+                                    rules={[{ required: true, message: "Please enter exam name" }]}
+                                >
+                                    <Input placeholder="Mid-term Test 2024" size="large" />
+                                </Form.Item>
 
-                        <Card title="Settings" style={{ marginBottom: 24, borderRadius: 12 }}>
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item label="Exam Name" name="name" rules={[{ required: true }]}>
-                                        <Input placeholder="Exam name..." size="large" disabled={isViewMode} />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={6}>
-                                    <Form.Item label="Duration (minutes)" name="duration">
-                                        <InputNumber min={1} max={999} disabled={isViewMode} size="large" style={{ width: '100%' }} />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
+                                <Divider />
 
-                            {!isViewMode && (
-                                <div style={{ padding: '16px', background: '#f0f5ff', borderRadius: 8 }}>
-                                    <Title level={5}><SwapOutlined /> Randomization Settings</Title>
-                                    <Row gutter={48}>
-                                        <Col>
-                                            <Space>
-                                                <Switch
-                                                    checked={shuffleQuestions}
-                                                    onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
-                                                    disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"}
-                                                />
-                                                <Text strong>Shuffle Questions</Text>
-                                            </Space>
-                                        </Col>
-                                        <Col>
-                                            <Space>
-                                                <Switch
-                                                    checked={shuffleAnswers}
-                                                    onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
-                                                    disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)}
-                                                />
-                                                <Text strong>Shuffle Answers</Text>
-                                            </Space>
-                                        </Col>
-                                    </Row>
-                                </div>
-                            )}
+                                <Form.Item label="Randomization" style={{ marginBottom: 0 }}>
+                                    <Space direction="vertical" style={{ width: "100%" }}>
+                                        <Form.Item name="ShuffleQuestions" valuePropName="checked" style={{ marginBottom: 8 }}>
+                                            <Button block type={form.getFieldValue("ShuffleQuestions") ? "primary" : "default"} onClick={() => { form.setFieldsValue({ ShuffleQuestions: !form.getFieldValue("ShuffleQuestions") }); setIsDirty(true); }}>
+                                                Shuffle Questions
+                                            </Button>
+                                        </Form.Item>
+                                        <Form.Item name="ShuffleAnswers" valuePropName="checked">
+                                            <Button block type={form.getFieldValue("ShuffleAnswers") ? "primary" : "default"} onClick={() => { form.setFieldsValue({ ShuffleAnswers: !form.getFieldValue("ShuffleAnswers") }); setIsDirty(true); }}>
+                                                Shuffle Answers
+                                            </Button>
+                                        </Form.Item>
+                                    </Space>
+                                </Form.Item>
+                            </Card>
 
-                            <Form.Item label="Creator" name="creator">
-                                <Input disabled />
-                            </Form.Item>
-
-                            <Form.Item label="Last Edited By" name="editor">
-                                <Input disabled />
-                            </Form.Item>
-
-                            <Form.Item label="Duration Time" name="timeRange" rules={[{ required: true }]}>
-                                <RangePicker showTime={{ format: 'HH:mm' }} format="YYYY-MM-DD HH:mm" disabled={isViewMode} />
-                            </Form.Item>
-                        </Card>
-
-                        <div style={{ borderRadius: 12, background: "#F5F6FA", border: "1px solid #E5E7EB", marginBottom: 20 }}>
-                            <div style={{ display: "flex", height: 40 }}>
-                                {SKILL_TABS.map((tab) => {
-                                    const active = selectedSkill === tab.key;
-                                    return (
-                                        <div
-                                            key={tab.key}
-                                            onClick={() => setSelectedSkill(tab.key)}
-                                            style={{
-                                                padding: "8px 18px",
-                                                cursor: "pointer",
-                                                background: active ? "#1677FF" : "white",
-                                                color: active ? "white" : "#4B5563"
-                                            }}
-                                        >
-                                            {tab.label}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div
-                                style={{ padding: "24px", background: "white" }}
-                                onClick={() => { if (!isViewMode) setOpenModal(true) }}
+                            <Button
+                                type="primary"
+                                size="large"
+                                block
+                                icon={<EyeOutlined />}
+                                style={{ marginTop: 24, height: 50, borderRadius: 12, background: "#0a2a79" }}
+                                onClick={() => setIsPreviewOpen(true)}
                             >
-                                {renderSelectedSectionUI()}
+                                Preview Exam
+                            </Button>
+                        </Col>
+
+                        <Col xs={24} lg={16}>
+                            <Card
+                                title="Exam Content"
+                                style={{ borderRadius: 12, boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}
+                                tabList={SKILL_TABS}
+                                activeTabKey={selectedSkill}
+                                onTabChange={setSelectedSkill}
+                                tabBarExtraContent={
+                                    <Button
+                                        type="primary"
+                                        icon={<PlusOutlined />}
+                                        onClick={() => setIsModalOpen(true)}
+                                        className="bg-primaryColor"
+                                    >
+                                        Add Section
+                                    </Button>
+                                }
+                            >
+                                <Spin spinning={isTopicLoading}>
+                                    {renderInstructionContent()}
+                                </Spin>
+                            </Card>
+
+                            <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24 }}>
+                                <Space size="middle">
+                                    <Button size="large" style={{ borderRadius: 8, width: 120 }}>Cancel</Button>
+                                    <Button
+                                        type="primary"
+                                        size="large"
+                                        loading={isSaving}
+                                        onClick={() => form.submit()}
+                                        style={{ borderRadius: 8, width: 120, background: "#0a2a79" }}
+                                    >
+                                        {id ? "Update" : "Create"}
+                                    </Button>
+                                </Space>
                             </div>
-                        </div>
+                        </Col>
+                    </Row>
+                </Content>
+            </Form>
 
-                        <Divider />
-
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <Button type="primary" onClick={handlePreviewExam}>Start Exam Preview</Button>
-
-                            <Space>
-                                <Button onClick={() => handleNavigateAway('/exam')}>Cancel</Button>
-
-                                {!isViewMode && (
-                                    <>
-                                        <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
-                                        <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
-                                    </>
-                                )}
-                            </Space>
-                        </div>
-
-                    </Form>
-                </Spin>
-            </Content>
-
-            <ChooseSectionModal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
-                skillName={selectedSkill}
-                onSelect={handlePartSelect}
-                selectedSectionId={selectedSectionBySkill[selectedSkill]}
+            <SectionSelectModal
+                open={isModalOpen}
+                onCancel={() => setIsModalOpen(false)}
+                selectedSkill={selectedSkill}
+                onSelect={(ids) => {
+                    console.log("Selected IDs:", ids);
+                    setIsModalOpen(false);
+                }}
             />
 
-            <PreviewExam
-                isModalOpen={previewOpen}
-                setIsModalOpen={setPreviewOpen}
-                dataExam={previewData}
-                fileData={null}
-                setDataExam={setPreviewData}
-            />
+            {isPreviewOpen && (
+                <PreviewExam
+                    isModalOpen={isPreviewOpen}
+                    setIsModalOpen={setIsPreviewOpen}
+                    dataExam={topicData?.data}
+                />
+            )}
 
             <Modal
-                title="You have unsaved changes"
-                open={leaveConfirmOpen}
-                onCancel={() => setLeaveConfirmOpen(false)}
+                title="Unsaved Changes"
+                open={showConfirmLeave}
+                onCancel={() => setShowConfirmLeave(false)}
                 footer={[
-                    <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
-                    <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save as Draft & Leave</Button>,
-                    <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay on Page</Button>,
+                    <Button key="leave" onClick={() => navigate("/exam")}>Leave Without Saving</Button>,
+                    <Button key="save" type="primary" loading={isSaving} onClick={() => { form.submit(); navigate("/exam"); }}>Save and Leave</Button>,
                 ]}
             >
-                <p>Would you like to save your work as a draft before leaving?</p>
+                <p>You have unsaved changes. Would you like to save them before leaving?</p>
             </Modal>
         </>
     );
-}
+};
+
 export default CreateExamPage;
