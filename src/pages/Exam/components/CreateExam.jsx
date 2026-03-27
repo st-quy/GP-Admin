@@ -93,6 +93,11 @@ const CreateExamPage = () => {
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
     const { role, user } = useSelector((state) => state.auth);
     
+    // Surgical Fix: Reset modal on navigation to resolve persistence bug
+    useEffect(() => {
+        setOpenModal(false);
+    }, [location.key]);
+
     // Robust check for admin role
     const isAdmin = Array.isArray(role) 
       ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
@@ -255,11 +260,11 @@ const CreateExamPage = () => {
             };
         });
         const previewExamData = {
-            ID: topicData?.ID,
+            ID: topicId,
             Name: form.getFieldValue("name"),
             Skills: skills,
-            createdAt: topicData?.createdAt || new Date().toISOString(),
-            updatedAt: topicData?.updatedAt || new Date().toISOString(),
+            createdAt: topicData?.data?.createdAt || new Date().toISOString(),
+            updatedAt: topicData?.data?.updatedAt || new Date().toISOString(),
         };
         setPreviewData(previewExamData);
         setPreviewOpen(true);
@@ -278,8 +283,10 @@ const CreateExamPage = () => {
         return (
             <div style={{ width: "100%" }}>
                 <Card style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }} bodyStyle={{ padding: 16 }}>
-                    <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
-                    <br />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
+                        {!isViewMode && <Button type="link" danger onClick={(e) => { e.stopPropagation(); handlePartSelect([]); }}>Remove</Button>}
+                    </div>
                     <Text type="secondary">{section.Description}</Text>
                     <div style={{ marginTop: 16 }}>
                         {(section.Parts || []).map((part) => (
@@ -348,20 +355,14 @@ const CreateExamPage = () => {
     }, [user, form, topicId]);
 
     useEffect(() => {
-        if (!topicData) return;
-        form.setFieldsValue({ name: topicData.Name });
-        if (topicData.creator) {
-            const creatorName = [topicData.creator.firstName, topicData.creator.lastName].filter(Boolean).join(' ');
-            form.setFieldsValue({ creator: creatorName });
-        }
-        if (topicData.updater) {
-            const editorName = [topicData.updater.firstName, topicData.updater.lastName].filter(Boolean).join(' ');
-            form.setFieldsValue({ editor: editorName });
-        }
+        if (!topicData?.data) return;
+        const data = topicData.data;
+        form.setFieldsValue({ name: data.Name });
+        
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
-        (topicData.Sections || []).forEach(section => {
+        (data.Sections || []).forEach(section => {
             const skill = section.Skill.Name;
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
@@ -375,7 +376,6 @@ const CreateExamPage = () => {
 
     return (
         <>
-            <ModalComponent />
             <HeaderInfo
                 title={isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
                 subtitle={isViewMode ? "Preview the exam information and structure. Editing is disabled." : topicId ? "Modify exam information, structure, and skill-based questions." : "Set up exam details, structure, and choose skill-based questions."}
@@ -383,7 +383,7 @@ const CreateExamPage = () => {
                     <div style={{ display: "flex", gap: "12px" }}>
                         <Button icon={<LeftOutlined />} onClick={() => navigate("/exam")}>Back</Button>
                         <Button icon={<EyeOutlined />} onClick={handlePreviewExam}>Preview</Button>
-                        {isViewMode && topicData?.Status === 'submited' && isAdmin && (
+                        {isViewMode && topicData?.data?.Status === 'submited' && isAdmin && (
                             <>
                                 <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
                                 <Button danger type="primary" onClick={handleReject}>Reject</Button>
@@ -398,7 +398,7 @@ const CreateExamPage = () => {
                     <Card style={{ marginBottom: 24 }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                             <Title level={4} style={{ margin: 0 }}>Exam Information</Title>
-                            {isViewMode && isAdmin && topicData?.Status === "submited" && (
+                            {isViewMode && isAdmin && topicData?.data?.Status === "submited" && (
                                 <Space>
                                     <Button type="primary" style={{ background: "#52c41a" }} onClick={handleApprove}>Approve</Button>
                                     <Button danger type="primary" onClick={handleReject}>Reject</Button>
@@ -427,7 +427,10 @@ const CreateExamPage = () => {
                                 );
                             })}
                         </div>
-                        <div style={{ padding: "24px 24px 40px", background: "white", borderBottom: "1px solid #E5E7EB", cursor: "pointer" }} onClick={() => { if (!isViewMode) setOpenModal(true) }}>
+                        <div 
+                            style={{ padding: "24px 24px 40px", background: "white", borderBottom: "1px solid #E5E7EB", cursor: isViewMode ? "default" : "pointer" }} 
+                            onClick={() => { if (!isViewMode) setOpenModal(true) }}
+                        >
                             {renderSelectedSectionUI()}
                         </div>
                     </div>
@@ -445,7 +448,7 @@ const CreateExamPage = () => {
                             )}
                         </Space>
                     </div>
-                    <ChooseSectionModal open={openModal} onClose={() => setOpenModal(false)} skillName={selectedSkill} onSelect={handlePartSelect} selectedSectionId={selectedSectionBySkill[selectedSkill]} />
+                    <ChooseSectionModal open={openModal} onCancel={() => setOpenModal(false)} skillName={selectedSkill} onSelect={handlePartSelect} selectedSectionId={selectedSectionBySkill[selectedSkill]} />
                 </div>
                 <PreviewExam isModalOpen={previewOpen} setIsModalOpen={setPreviewOpen} dataExam={previewData} fileData={null} setDataExam={setPreviewData} />
                 <ModalComponent />
