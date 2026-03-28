@@ -15,7 +15,6 @@ import UpdateClassModal from '@features/classManagement/ui/Modal/UpdateClass';
 import DeleteClassModal from '@features/classManagement/ui/Modal/DeleteClass';
 import { useSelector } from 'react-redux';
 import PreviewExam from '@shared/ui/PreviewExam';
-import '@shared/assets/styles/figma-redesign.css';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
