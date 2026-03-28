@@ -43,10 +43,15 @@ const MatchingEditor = ({ errors = {} }) => {
   };
 
   const removeLeftItem = (idx) => {
-    const item = leftItems[idx];
-
     setLeftItems((prev) => prev.filter((_, i) => i !== idx));
-    setMapping((prev) => prev.filter((m) => m.leftIndex !== item.id));
+    setMapping((prev) =>
+      prev
+        .filter((m) => m.leftIndex !== idx)
+        .map((m) => {
+          if (m.leftIndex > idx) return { ...m, leftIndex: m.leftIndex - 1 };
+          return m;
+        })
+    );
   };
 
   /* ---------------- RIGHT ---------------- */
@@ -99,7 +104,11 @@ const MatchingEditor = ({ errors = {} }) => {
                   <Input
                     placeholder={`Content ${idx + 1}`}
                     value={item.text}
-                    onChange={(e) => updateLeftItem(idx, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateLeftItem(idx, sanitized)
+                    }
+                    }
                   />
 
                   <Button
@@ -152,7 +161,11 @@ const MatchingEditor = ({ errors = {} }) => {
                   <Input
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
-                    onChange={(e) => updateRightItem(idx, e.target.value)}
+                    onChange={(e) => {
+                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                      updateRightItem(idx, sanitized)
+                    }
+                    }
                   />
 
                   <Button

@@ -53,7 +53,11 @@ const DropdownEditor = () => {
         </Text>
       </Space>
 
-      <Form.Item name={['part1', 'content']} noStyle>
+      <Form.Item
+        name={['part1', 'content']}
+        noStyle={false}
+        rules={[{ required: true, message: 'Content is required' }]}
+      >
         <TextArea
           rows={6}
           placeholder='Type reading text... Example: Dear [0], thank you for [1].'

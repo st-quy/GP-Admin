@@ -4,7 +4,7 @@ import DeleteModal from "../SessionModal/DeleteModal/DeleteModal";
 import { Link } from "react-router-dom";
 import { useClassDetailQuery } from "../../hooks/useClassDetail";
 import { useParams } from "react-router-dom";
-import { Button, Tooltip } from "antd";
+import { Button, Tooltip, message } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import SessionTable from "./SessionTable/SessionTable";
 import { formatDateTime } from "@shared/lib/utils/formatString";
@@ -59,10 +59,10 @@ const SessionManager = () => {
     },
     {
       title: "NUMBER OF PARTICIPANTS",
-      dataIndex: "SessionParticipants",
-      key: "SessionParticipants",
+      dataIndex: "participantCount",
+      key: "participantCount",
       className: "!text-center",
-      render: (participants) => <span>{participants?.length || 0}</span>,
+      render: (count) => <span>{count || 0}</span>,
     },
     {
       title: "STATUS",
@@ -96,7 +96,7 @@ const SessionManager = () => {
               className="text-xl !text-primaryColor hover:opacity-70 disabled:opacity-30"
             />
           </Tooltip>
-          {(record.participantCount === 0 || !record.participantCount) && (
+          {(!record.participantCount || record.participantCount === 0) && (
             <Tooltip title="Delete Session">
               <Button
                 type="link"
