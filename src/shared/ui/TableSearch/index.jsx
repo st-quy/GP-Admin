@@ -67,7 +67,7 @@ const TableSearch = ({
     });
   }, [data, localSearchText, serverSide]);
 
-  const total = serverSide ? totalProp : filteredData.length;
+  const total = totalProp > 0 ? totalProp : (serverSide ? totalProp : filteredData.length);
   const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const end = Math.min(currentPage * pageSize, total);
   
@@ -140,13 +140,6 @@ const TableSearch = ({
                 itemRender={(page, type, original) => {
                   if (type === 'page') {
                     const isActive = currentPage === page;
-                    // Logic: First, Last, and 2 around Current
-                    const isVisible = page === 1 || 
-                                    page === Math.ceil(total/pageSize) || 
-                                    (page >= currentPage - 2 && page <= currentPage + 2);
-                    
-                    if (!isVisible) return null;
-
                     return (
                       <button className={`figma-page-btn ${isActive ? 'active' : ''}`}>
                         {page}
@@ -160,7 +153,7 @@ const TableSearch = ({
                     return <button className="figma-symbol-btn" type="button">{"\u203A"}</button>;
                   }
                   if (type === 'jump-prev' || type === 'jump-next') {
-                    return <span className="text-gray-400 px-1">...</span>;
+                    return <span className="text-[#637381] px-1" style={{ fontSize: '16px', lineHeight: '25px' }}>...</span>;
                   }
                   return original;
                 }}

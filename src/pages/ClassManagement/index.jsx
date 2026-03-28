@@ -15,6 +15,7 @@ import UpdateClassModal from '@features/classManagement/ui/Modal/UpdateClass';
 import DeleteClassModal from '@features/classManagement/ui/Modal/DeleteClass';
 import { useSelector } from 'react-redux';
 import PreviewExam from '@shared/ui/PreviewExam';
+import '@shared/assets/styles/figma-redesign.css';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
@@ -25,12 +26,24 @@ const ClassManagement = () => {
   const [isOpen, setIsOpen] = useState('');
   const [dataClass, setClassData] = useState(null);
   
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // @ts-ignore
   const { userId, user } = useSelector((state) => state.auth);
 
   const teacherId = user?.role.includes('admin') ? null : userId;
   
-  const { data: classList, isLoading } = useGetAllClass(teacherId);
+  // Use server-side params
+  const { data: response, isLoading } = useGetAllClass({
+    teacherId,
+    page: currentPage,
+    limit: pageSize
+  });
+
+  const classList = response?.data || [];
+  const totalItems = response?.total || 0;
 
   const handleExport = async () => {
     setExportLoading(true);
@@ -46,6 +59,14 @@ const ClassManagement = () => {
   const handleDeleteClass = (record) => () => {
     setIsOpen('Delete');
     setClassData(record);
+  };
+
+  const onParamsChange = (params) => {
+    if (params.page !== undefined) setCurrentPage(params.page);
+    if (params.pageSize !== undefined) {
+      setPageSize(params.pageSize);
+      setCurrentPage(1); // Reset to first page when size changes
+    }
   };
 
   const columns = [
@@ -176,11 +197,16 @@ const ClassManagement = () => {
       
       <div className='figma-content-wrapper'>
         <TableSearch
-          data={classList || []}
+          data={classList}
+          total={totalItems}
           columns={columns}
           isLoading={isLoading}
           placeholder="Search by class name"
           isFigmaRedesign={true}
+          serverSide={true}
+          onParamsChange={onParamsChange}
+          currentPage={currentPage}
+          pageSize={pageSize}
         />
       </div>
         
