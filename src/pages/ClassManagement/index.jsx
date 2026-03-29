@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DeleteOutlined, EditOutlined, PlusOutlined, HomeOutlined, RightOutlined, ExportOutlined, ImportOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ExportOutlined, ImportOutlined } from '@ant-design/icons';
 import {
   useGetAllClass,
   handleImportClick,
@@ -9,7 +9,7 @@ import {
 } from '@features/classManagement/hooks';
 import CreateClassModal from '@features/classManagement/ui/Modal/CreateClass';
 import TableSearch from '@shared/ui/TableSearch';
-import { Button, Tooltip, Breadcrumb } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { Link } from 'react-router-dom';
 import UpdateClassModal from '@features/classManagement/ui/Modal/UpdateClass';
 import DeleteClassModal from '@features/classManagement/ui/Modal/DeleteClass';
@@ -34,7 +34,6 @@ const ClassManagement = () => {
 
   const teacherId = user?.role.includes('admin') ? null : userId;
   
-  // Use server-side params
   const { data: response, isLoading } = useGetAllClass({
     teacherId,
     page: currentPage,
@@ -64,7 +63,7 @@ const ClassManagement = () => {
     if (params.page !== undefined) setCurrentPage(params.page);
     if (params.pageSize !== undefined) {
       setPageSize(params.pageSize);
-      setCurrentPage(1); // Reset to first page when size changes
+      setCurrentPage(1);
     }
   };
 
@@ -121,27 +120,6 @@ const ClassManagement = () => {
 
   return (
     <div className='figma-page-container'>
-      <div className='figma-content-wrapper pt-6 pb-2'>
-        <Breadcrumb 
-          className='mb-4 text-[14px] font-medium'
-          items={[
-            { title: <span className='text-gray-400'>Dashboard</span> },
-            { title: <span className='text-[#111827]'>Class Management</span> },
-          ]}
-        />
-      </div>
-
-      <div className='figma-content-wrapper'>
-        <div className='figma-breadcrumb-card'>
-          <div className='flex items-center gap-2'>
-            <HomeOutlined style={{ color: '#003087', fontSize: '18px' }} />
-            <span className='font-medium text-[#003087] text-[16px]'>Home</span>
-            <RightOutlined style={{ color: '#637381', fontSize: '12px', marginLeft: '4px' }} />
-            <span className='text-[#637381] text-[16px] font-medium'>Class Management</span>
-          </div>
-        </div>
-      </div>
-
       <div className='figma-content-wrapper'>
         <div className='figma-header-section'>
           <div>
