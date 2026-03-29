@@ -5,6 +5,7 @@ import { RouterProvider } from "react-router-dom";
 import NotFound from "@pages/NotFoundPage";
 import { useGetProfile } from "@features/auth/hooks";
 import { Spin } from "antd";
+import { useSelector } from "react-redux";
 
 const router = createBrowserRouter(
   [
@@ -28,11 +29,15 @@ const router = createBrowserRouter(
 
 const RouteProvider = () => {
   const { isLoading } = useGetProfile();
+  // @ts-ignore
+  const { isAuth, user } = useSelector((state) => state.auth);
 
-  if (isLoading) {
+  // If we are authenticated but user data isn't here yet, show global loader
+  // This prevents the app from rendering the "Loading..." text in the navbar later
+  if (isAuth && isLoading && !user) {
     return (
       <div className="flex justify-center items-center h-screen">
-        <Spin size="large" />
+        <Spin size="large" tip="Synchronizing profile..." />
       </div>
     );
   }
