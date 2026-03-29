@@ -140,6 +140,14 @@ body {
 
 /* APTIS-214: Figma Redesign Common Classes */
 
+.figma-page-container {
+  background: #f9f9f9;
+  min-height: 100vh;
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  padding-bottom: 100px;
+}
+
 .figma-content-wrapper {
   width: 90%;
   max-width: 1476px;
@@ -159,7 +167,6 @@ body {
   height: 68px;
 }
 
-/* Breadcrumb Item Styles */
 .figma-breadcrumb-parent {
   font-family: 'Inter', sans-serif;
   font-weight: 500;
@@ -174,6 +181,13 @@ body {
   font-size: 16px;
   line-height: 24px;
   color: #003087;
+}
+
+.figma-header-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
 }
 
 .figma-title {
