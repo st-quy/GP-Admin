@@ -26,7 +26,119 @@ body {
 .ant-segmented.ant-segmented-lg .ant-segmented-item-label {
   padding: 0 20px !important;
 }
-/* APTIS-214: Figma Redesign Overrides */
+
+/* APTIS-238: Top Navbar Redesign */
+
+.figma-navbar {
+  height: 160px;
+  background: #FFFFFF;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 6%;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+.figma-navbar-logo-group {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+}
+
+.figma-navbar-nav-group {
+  background: #F7F7F7;
+  border-radius: 400px;
+  display: flex;
+  align-items: center;
+  padding: 4px;
+  height: 52px;
+  position: relative;
+  isolation: isolate;
+}
+
+.nav-highlight-slider {
+  position: absolute;
+  height: 44px;
+  background: #003087;
+  border-radius: 400px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: -1;
+}
+
+.figma-navbar-item {
+  height: 44px;
+  padding: 0 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 400px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 16px;
+  color: #374151;
+  transition: color 0.2s;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.figma-navbar-item.active {
+  color: #FFFFFF !important;
+}
+
+.figma-navbar-user-group {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.figma-navbar-username {
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 26px;
+  color: #374151;
+  text-align: right;
+  text-decoration: none;
+}
+
+.figma-navbar-username:hover {
+  color: #003087;
+  text-decoration: underline;
+}
+
+.figma-navbar-logout {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  border-radius: 8px;
+  transition: background 0.2s;
+  color: #6B7280;
+}
+
+.figma-navbar-logout:hover {
+  background: #f3f4f6;
+  color: #111928;
+}
+
+.figma-main-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.figma-content-area {
+  flex: 1;
+  background: #f9f9f9;
+}
+
+/* APTIS-214: Figma Redesign Common Classes */
 
 .figma-page-container {
   background: #f9f9f9;
@@ -36,14 +148,12 @@ body {
   padding-bottom: 100px;
 }
 
-/* Common Centered Wrapper for 90% Width / 1476px Max */
 .figma-content-wrapper {
   width: 90%;
   max-width: 1476px;
   margin: 0 auto;
 }
 
-/* Floating Breadcrumbs Card */
 .figma-breadcrumb-card {
   background: #ffffff;
   border: 0.5px solid #003087;
@@ -53,7 +163,24 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 40px auto 30px auto;
+  margin: 0 auto 30px auto;
+  height: 68px;
+}
+
+.figma-breadcrumb-parent {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  color: #637381;
+}
+
+.figma-breadcrumb-current {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+  font-size: 16px;
+  line-height: 24px;
+  color: #003087;
 }
 
 .figma-header-section {
@@ -107,7 +234,6 @@ body {
   justify-content: center;
 }
 
-/* Table Container */
 .figma-table-card {
   background: #ffffff;
   box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1);
