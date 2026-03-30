@@ -113,60 +113,64 @@ const SessionInformation = ({ type }) => {
   ];
 
   return (
-    <div className="session-container flex flex-col p-2 md:p-8">
-      <Details type={type} isLoading={isLoading} data={data} />
+    <div className="figma-page-container">
+      <div className="figma-content-wrapper pb-10">
+        <div className="py-8">
+          <Details type={type} isLoading={isLoading} data={data} />
 
-      <div className="w-full">
-        <div className="flex justify-between">
-          <div>
-            <p className="text-[30px] text-black font-bold">
-              {type == TableType.SESSION
-                ? "Student Monitoring"
-                : "Assessment History"}
-            </p>
-            <p className="text-[18px] text-primaryTextColor font-medium mt-[10px]">
-              {type == TableType.SESSION
-                ? "Track student request and participation."
-                : "Overview of Past Performance."}
-            </p>
-          </div>
-          {type === TableType.SESSION && (
-            <div>
-              <Button
-                className={`font-bold rounded-full transition-all duration-150 ease-in-out
-    md:px-[28px] px-[18px] md:py-[13px] py-[7px] 
-    md:text-base text-xs border-none transform 
-
-    ${isLoadingPublishScores ? "cursor-not-allowed opacity-60" : "hover:scale-105"}
-  `}
-                onClick={handlePublishScore}
-                disabled={data?.isPublished}
-                loading={isLoadingPublishScores}
-              >
-                {data?.isPublished ? "Published" : "Publish Score"}
-              </Button>
+          <div className="w-full">
+            <div className="flex justify-between">
+              <div>
+                <h4 className="figma-title">
+                  {type == TableType.SESSION
+                    ? "Student Monitoring"
+                    : "Assessment History"}
+                </h4>
+                <p className="figma-subtitle">
+                  {type == TableType.SESSION
+                    ? "Track student request and participation."
+                    : "Overview of Past Performance."}
+                </p>
+              </div>
+              {type === TableType.SESSION && (
+                <div>
+                  <Button
+                    className={`font-bold rounded-full transition-all duration-150 ease-in-out
+        md:px-[28px] px-[18px] md:py-[13px] py-[7px] 
+        md:text-base text-xs border-none transform 
+        !h-[50px] !bg-primaryColor !text-white
+        ${isLoadingPublishScores ? "cursor-not-allowed opacity-60" : "hover:scale-105"}
+      `}
+                    onClick={handlePublishScore}
+                    disabled={data?.isPublished}
+                    loading={isLoadingPublishScores}
+                  >
+                    {data?.isPublished ? "Published" : "Publish Score"}
+                  </Button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        <div className="md:mt-[34px] mt-[20px]">
-          <SearchInput
-            placeholder="Search by name, level"
-            value={searchKeyword}
-            onSearchChange={onSearchChange}
-            className={` ${type == TableType.SESSION ? "absolute z-10" : "mb-8"}`}
-          />
-        </div>
-        <div className={`${type == TableType.SESSION && "h-[500px]"}`}>
-          {type == TableType.SESSION ? (
-            <Tabs defaultActiveKey="item-1" items={items} />
-          ) : (
-            <StudentSessionTable
-              id={sessionId}
-              studentId={studentId}
-              type={type}
-              searchKeyword={searchKeyword}
-            />
-          )}
+            <div className="md:mt-[34px] mt-[20px]">
+              <SearchInput
+                placeholder="Search by name, level"
+                value={searchKeyword}
+                onSearchChange={onSearchChange}
+                className={` ${type == TableType.SESSION ? "absolute z-10" : "mb-8"}`}
+              />
+            </div>
+            <div className={`${type == TableType.SESSION && "h-[500px]"}`}>
+              {type == TableType.SESSION ? (
+                <Tabs defaultActiveKey="item-1" items={items} />
+              ) : (
+                <StudentSessionTable
+                  id={sessionId}
+                  studentId={studentId}
+                  type={type}
+                  searchKeyword={searchKeyword}
+                />
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
