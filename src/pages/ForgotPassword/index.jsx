@@ -28,6 +28,14 @@ const ForgotPassword = () => {
     form.setFieldsValue({ email: value });
   };
 
+  const handleEmailBlur = () => {
+    const email = form.getFieldValue("email");
+    if (email) {
+      form.setFieldsValue({ email: email.trim() });
+      form.validateFields(["email"]);
+    }
+  };
+
   return (
     <Row className="!gap-0 ">
       <Col
@@ -78,13 +86,9 @@ const ForgotPassword = () => {
                 size="large"
                 className="h-11 text-base rounded-lg"
                 suffix={<MailOutlined className="text-[#dadcdf]" />}
+                maxLength={255}
                 onChange={handleEmailChange}
-                onBlur={() => {
-                  const email = form.getFieldValue("email");
-                  if (email) {
-                    form.setFieldsValue({ email: email.trim() });
-                  }
-                }}
+                onBlur={handleEmailBlur}
               />
             </Form.Item>
 
