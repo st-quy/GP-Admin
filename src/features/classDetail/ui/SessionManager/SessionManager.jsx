@@ -4,7 +4,7 @@ import DeleteModal from "../SessionModal/DeleteModal/DeleteModal";
 import { Link } from "react-router-dom";
 import { useClassDetailQuery } from "../../hooks/useClassDetail";
 import { useParams } from "react-router-dom";
-import { Button, Tooltip, message } from "antd";
+import { Button, Tooltip } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import SessionTable from "./SessionTable/SessionTable";
 import { formatDateTime } from "@shared/lib/utils/formatString";
@@ -38,31 +38,40 @@ const SessionManager = () => {
       key: "sessionName",
       className: "!text-center",
       render: (text, record) => (
-        <Link to={`/class/${classId}/session/${record.ID}`} className="text-primaryColor font-medium hover:underline">
+        <Link
+          to={`/class/${classId}/session/${record.ID}`}
+          className="font-medium text-primaryColor hover:underline"
+        >
           {text}
         </Link>
       ),
+    },
+    {
+      title: "SESSION KEY",
+      dataIndex: "sessionKey",
+      key: "sessionKey",
+      className: "!text-center",
+      render: (text) => <span className="font-medium text-primaryTextColor">{text || "---"}</span>,
     },
     {
       title: "START TIME",
       dataIndex: "startTime",
       key: "startTime",
       className: "!text-center",
-      render: (text) => <span>{formatDateTime(text)}</span>,
+      render: (text) => <span className="font-medium text-primaryTextColor">{formatDateTime(text)}</span>,
     },
     {
       title: "END TIME",
       dataIndex: "endTime",
       key: "endTime",
       className: "!text-center",
-      render: (text) => <span>{formatDateTime(text)}</span>,
+      render: (text) => <span className="font-medium text-primaryTextColor">{formatDateTime(text)}</span>,
     },
     {
       title: "NUMBER OF PARTICIPANTS",
-      dataIndex: "participantCount",
       key: "participantCount",
       className: "!text-center",
-      render: (count) => <span>{count || 0}</span>,
+      render: (_, record) => <span className="font-medium text-primaryTextColor">{record.SessionParticipants?.length || 0}</span>,
     },
     {
       title: "STATUS",
@@ -73,7 +82,7 @@ const SessionManager = () => {
         const info = statusOptions[status];
         return (
           <span
-            className="px-3 py-1 rounded-full text-sm font-medium inline-block text-center"
+            className="inline-block rounded-[30px] px-[10px] py-[3px] text-center text-[12px] font-medium leading-[20px]"
             style={{ backgroundColor: info?.bg, color: info?.text }}
           >
             {info?.label || status}
@@ -82,28 +91,28 @@ const SessionManager = () => {
       },
     },
     {
-      title: "ACTION",
+      title: "ACTIONS",
       key: "action",
       className: "!text-center",
       render: (_, record) => (
-        <div className="flex justify-center items-center gap-4">
+        <div className="flex items-center justify-center gap-4">
           <Tooltip title={record.status === "ON_GOING" ? "Cannot edit ongoing session" : "Edit Session"}>
-            <Button
-              type="link"
-              icon={<EditOutlined />}
+            <button
               onClick={() => openModal("edit", record)}
               disabled={record.status === "ON_GOING"}
-              className="text-xl !text-primaryColor hover:opacity-70 disabled:opacity-30"
-            />
+              className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70 disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
+            </button>
           </Tooltip>
-          {(!record.participantCount || record.participantCount === 0) && (
+          {(!record.SessionParticipants?.length || record.SessionParticipants?.length === 0) && (
             <Tooltip title="Delete Session">
-              <Button
-                type="link"
-                icon={<DeleteOutlined />}
+              <button
                 onClick={() => openModal("delete", record)}
-                className="text-xl !text-red-500 hover:opacity-70"
-              />
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+              >
+                <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
+              </button>
             </Tooltip>
           )}
         </div>
@@ -115,16 +124,16 @@ const SessionManager = () => {
     <>
       <div className="flex w-full items-center justify-between pt-8">
         <div>
-          <h4 className="font-[700] md:text-[28px] lg:text-[30px]">
+          <h4 className="figma-title">
             Sessions list
           </h4>
-          <p className="text-primaryTextColor md:text-[16px] lg:text-[18px] font-[500]">
+          <p className="figma-subtitle">
             Overview of Active and Past Sessions
           </p>
         </div>
         <Button
           onClick={() => openModal("create")}
-          className="!rounded-full !bg-primaryColor !p-6 !text-white font-medium lg:text-base md:text-sm"
+          className="!h-[50px] !w-[170px] !rounded-[50px] !bg-primaryColor !text-white font-[500] leading-[24px] hover:!opacity-90"
         >
           Create session
         </Button>
