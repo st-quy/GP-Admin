@@ -5,6 +5,7 @@ import {
   useCreateTeacher,
   useUpdateTeacher,
 } from '@features/teacher/hook/useTeacherQuery';
+import { useFetchTeachers } from '@features/teacher/hook/useTeacherQuery';
 import { EditOutlined, PlusCircleOutlined } from '@ant-design/icons';
 
 const yupSync = (schema) => ({
@@ -21,6 +22,7 @@ const accountSchema = Yup.object().shape({
   firstName: Yup.string()
     .required('First name is required')
     .max(50, 'First name must not exceed 50 characters')
+    .matches(/^[a-zA-Z\s]+$/, 'First name cannot contain special characters or numbers')
     .transform((value) => value?.trim())
     .test('not-only-spaces', 'First name cannot be only spaces', (value) => {
       return !value || value.trim().length > 0;
@@ -28,6 +30,7 @@ const accountSchema = Yup.object().shape({
   lastName: Yup.string()
     .required('Last name is required')
     .max(50, 'Last name must not exceed 50 characters')
+    .matches(/^[a-zA-Z\s]+$/, 'Last name cannot contain special characters or numbers')
     .transform((value) => value?.trim())
     .test('not-only-spaces', 'Last name cannot be only spaces', (value) => {
       return !value || value.trim().length > 0;
@@ -75,6 +78,34 @@ const TeacherActionModal = ({
   const { mutate: teacherAction, isPending: isOnAction } = isEdit
     ? useUpdateTeacher()
     : useCreateTeacher();
+
+  // Fetch all teachers for unique validation
+  const { data: allTeachersData } = useFetchTeachers({ page: 1, limit: 1000 });
+  const allTeachers = allTeachersData?.data?.teachers || [];
+
+  const handleNameBlur = (fieldName) => {
+    const value = form.getFieldValue(fieldName);
+    if (value) {
+      form.setFieldsValue({ [fieldName]: value.trim() });
+      form.validateFields([fieldName]);
+    }
+  };
+
+  const handleEmailBlur = () => {
+    const email = form.getFieldValue('email');
+    if (email) {
+      form.setFieldsValue({ email: email.trim() });
+      form.validateFields(['email']);
+    }
+  };
+
+  const handleTeacherCodeBlur = () => {
+    const teacherCode = form.getFieldValue('teacherCode');
+    if (teacherCode) {
+      form.setFieldsValue({ teacherCode: teacherCode.trim() });
+      form.validateFields(['teacherCode']);
+    }
+  };
 
   const applyBackendFieldErrors = (messages = []) => {
     const normalizedMessages = messages
@@ -147,6 +178,29 @@ const TeacherActionModal = ({
     setPasswordValue('');
   };
 
+  const validateUniqueEmailAndTeacherCode = (email, teacherCode, currentId) => {
+    const emailExists = allTeachers.some(
+      (t) => t.email.toLowerCase() === email.toLowerCase() && t.ID !== currentId
+    );
+    const teacherCodeExists = allTeachers.some(
+      (t) => t.teacherCode.toLowerCase() === teacherCode.toLowerCase() && t.ID !== currentId
+    );
+
+    const errors = [];
+    if (emailExists) {
+      errors.push({ name: 'email', errors: ['Email already exists'] });
+    }
+    if (teacherCodeExists) {
+      errors.push({ name: 'teacherCode', errors: ['Teacher Code already exists'] });
+    }
+
+    if (errors.length > 0) {
+      form.setFields(errors);
+      return false;
+    }
+    return true;
+  };
+
   // @ts-ignore
   const onAction = async (values) => {
     try {
@@ -155,6 +209,28 @@ const TeacherActionModal = ({
         { name: 'teacherCode', errors: [] },
         { name: 'phone', errors: [] },
       ]);
+
+      // Validate unique email and teacher code
+      if (isEdit) {
+        const isValid = validateUniqueEmailAndTeacherCode(
+          values.email?.trim(),
+          values.teacherCode?.trim(),
+          initialData?.ID
+        );
+        if (!isValid) {
+          return;
+        }
+      } else {
+        // For create, also check uniqueness
+        const isValid = validateUniqueEmailAndTeacherCode(
+          values.email?.trim(),
+          values.teacherCode?.trim(),
+          null
+        );
+        if (!isValid) {
+          return;
+        }
+      }
 
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
@@ -290,7 +366,12 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='firstName'
               >
-                <Input className='h-[46px]' placeholder='First name' />
+                <Input 
+                  className='h-[46px]' 
+                  placeholder='First name' 
+                  maxLength={50}
+                  onBlur={() => handleNameBlur('firstName')}
+                />
               </Form.Item>
               <Form.Item
                 label={
@@ -302,7 +383,12 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='lastName'
               >
-                <Input className='h-[46px]' placeholder='Last name' />
+                <Input 
+                  className='h-[46px]' 
+                  placeholder='Last name' 
+                  maxLength={50}
+                  onBlur={() => handleNameBlur('lastName')}
+                />
               </Form.Item>
             </div>
             <div className='grid grid-cols-2 gap-4'>
@@ -316,7 +402,12 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='email'
               >
-                <Input className='h-[46px]' placeholder='Email' />
+                <Input 
+                  className='h-[46px]' 
+                  placeholder='Email' 
+                  maxLength={100}
+                  onBlur={handleEmailBlur}
+                />
               </Form.Item>
               <Form.Item
                 label={
@@ -328,7 +419,12 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='teacherCode'
               >
-                <Input className='h-[46px]' placeholder='Teacher Code' />
+                <Input 
+                  className='h-[46px]' 
+                  placeholder='Teacher Code' 
+                  maxLength={20}
+                  onBlur={handleTeacherCodeBlur}
+                />
               </Form.Item>
             </div>
             <div className='grid grid-cols-2 gap-4'>
