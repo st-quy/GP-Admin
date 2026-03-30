@@ -7,11 +7,11 @@ param(
 $ErrorActionPreference = 'Stop'
 
 Write-Host "Checking teacher admin UI: $TeacherUrl" -ForegroundColor Cyan
-curl.exe -k -I $TeacherUrl
+curl.exe -k --ssl-no-revoke -I $TeacherUrl
 
 Write-Host ""
 Write-Host "Checking API docs: $ApiDocsUrl" -ForegroundColor Cyan
-curl.exe -k -I $ApiDocsUrl
+curl.exe -k --ssl-no-revoke -I $ApiDocsUrl
 
 Write-Host ""
 Write-Host "Recent API logs from ${ApiContainer}:" -ForegroundColor Green
