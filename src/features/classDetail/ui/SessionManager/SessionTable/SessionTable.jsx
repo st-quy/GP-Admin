@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { Table, Input, Pagination, Select, message } from "antd";
+import { Table, Input, Select, message } from "antd";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
-
-const { Search } = Input;
+import { SearchOutlined } from "@ant-design/icons";
 
 const SessionTable = ({ data, columns, isLoading }) => {
   const [searchText, setSearchText] = useState("");
@@ -84,49 +83,105 @@ const SessionTable = ({ data, columns, isLoading }) => {
 
   return (
     <div className="mt-4">
-      <div className="flex items-center gap-4 mb-6">
-        <Search
+      <div className="mb-6 flex items-center gap-4">
+        <Input
           placeholder="Search sessions..."
           value={searchText}
           onChange={handleSearchChange}
-          className="w-full max-w-[300px]"
+          className="figma-search-input"
+          prefix={<SearchOutlined className="text-[#9CA3AF]" />}
           allowClear
-          enterButton
         />
         <Select
-          className="w-[180px] h-[40px]"
+          className="h-[48px] w-[180px] !border-[#DFE4EA] !shadow-[0px_4px_4px_rgba(0,0,0,0.1)]"
           placeholder="Filter by status"
           onChange={handleStatusFilterChange}
           allowClear
           options={statusFilterOptions}
         />
       </div>
-      <div className="w-full">
+      <div className="figma-table-card figma-table-overrides w-full">
         <Table
           columns={columns}
           dataSource={paginatedData}
           rowKey="ID"
           pagination={false}
           scroll={{ x: "max-content" }}
-          className="w-full custom-table"
+          className="w-full"
           loading={isLoading}
         />
-        <div className="flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm">
-          <div className="text-gray-600 font-medium">
-            {total > 0 ? `Showing ${start}-${end} of ${total} entries` : 'No entries found'}
+      </div>
+
+      <div className="figma-pagination-wrapper">
+        <div className="figma-pagination-box">
+          <div className="figma-pagination-text">
+            {total > 0
+              ? `Showing ${start}-${end} of ${total}`
+              : "No entries found"}
           </div>
-          <Pagination
-            current={currentPage}
-            pageSize={pageSize}
-            total={total}
-            onChange={(page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            }}
-            showSizeChanger
-            pageSizeOptions={["5", "10", "15", "20"]}
-            className="ant-pagination-custom"
-          />
+
+          <div className="figma-pagination-nav-group">
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="figma-page-btn"
+            >
+              <img src="/src/assets/icons/chevron-left.svg" alt="prev" style={{ display: 'none' }} />
+              {"<"}
+            </button>
+
+            {[...Array(Math.ceil(total / pageSize))].map((_, i) => {
+              const page = i + 1;
+              // Simple pagination logic for brevity, can be expanded
+              if (
+                page === 1 ||
+                page === Math.ceil(total / pageSize) ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`figma-page-btn ${currentPage === page ? "active" : ""}`}
+                  >
+                    {page}
+                  </button>
+                );
+              }
+              if (page === currentPage - 2 || page === currentPage + 2) {
+                return <span key={page} className="text-[#637381]">...</span>;
+              }
+              return null;
+            })}
+
+            <button
+              onClick={() =>
+                setCurrentPage((p) => Math.min(Math.ceil(total / pageSize), p + 1))
+              }
+              disabled={currentPage === Math.ceil(total / pageSize)}
+              className="figma-page-btn"
+            >
+              {">"}
+            </button>
+
+            <div className="figma-page-size-container">
+              <Select
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+                options={[
+                  { value: 5, label: "5 / pages" },
+                  { value: 10, label: "10 / pages" },
+                  { value: 15, label: "15 / pages" },
+                  { value: 20, label: "20 / pages" },
+                ]}
+                variant="borderless"
+                className="figma-page-size-select w-[110px]"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
