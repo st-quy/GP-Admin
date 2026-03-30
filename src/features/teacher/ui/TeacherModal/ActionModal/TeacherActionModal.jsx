@@ -18,6 +18,12 @@ const yupSync = (schema) => ({
   },
 });
 
+const trimAndLimit = (value, maxLength) =>
+  typeof value === 'string' ? value.trim().slice(0, maxLength) : value;
+
+const trimStartAndLimit = (value, maxLength) =>
+  typeof value === 'string' ? value.trimStart().slice(0, maxLength) : value;
+
 const accountSchema = Yup.object().shape({
   firstName: Yup.string()
     .required('First name is required')
@@ -84,50 +90,54 @@ const TeacherActionModal = ({
   const allTeachers = allTeachersData?.data?.teachers || [];
 
   const handleNameBlur = (fieldName) => {
-    const value = form.getFieldValue(fieldName);
-    if (value) {
-      const trimmed = value.trim().slice(0, 50);
+    const trimmed = trimAndLimit(form.getFieldValue(fieldName), 50);
+    if (trimmed !== undefined) {
       form.setFieldsValue({ [fieldName]: trimmed });
       form.validateFields([fieldName]);
     }
   };
 
   const handleNameChange = (e, fieldName) => {
-    const value = e.target.value;
-    // Trim leading spaces and limit to 50 characters
-    const trimmed = value.trimStart().slice(0, 50);
+    const trimmed = trimStartAndLimit(e.target.value, 50);
     form.setFieldsValue({ [fieldName]: trimmed });
   };
 
   const handleEmailChange = (e) => {
-    const value = e.target.value;
-    // Trim leading spaces immediately and limit to 100 characters
-    const trimmed = value.trimStart().slice(0, 100);
+    const trimmed = trimStartAndLimit(e.target.value, 100);
     form.setFieldsValue({ email: trimmed });
   };
 
   const handleEmailBlur = () => {
-    const email = form.getFieldValue('email');
-    if (email) {
-      const trimmedAndLimited = email.trim().slice(0, 100);
+    const trimmedAndLimited = trimAndLimit(form.getFieldValue('email'), 100);
+    if (trimmedAndLimited !== undefined) {
       form.setFieldsValue({ email: trimmedAndLimited });
       form.validateFields(['email']);
     }
   };
 
   const handleTeacherCodeChange = (e) => {
-    const value = e.target.value;
-    // Trim leading spaces immediately and limit to 20 characters
-    const trimmed = value.trimStart().slice(0, 20);
+    const trimmed = trimStartAndLimit(e.target.value, 20);
     form.setFieldsValue({ teacherCode: trimmed });
   };
 
   const handleTeacherCodeBlur = () => {
-    const teacherCode = form.getFieldValue('teacherCode');
-    if (teacherCode) {
-      const trimmedAndLimited = teacherCode.trim().slice(0, 20);
+    const trimmedAndLimited = trimAndLimit(form.getFieldValue('teacherCode'), 20);
+    if (trimmedAndLimited !== undefined) {
       form.setFieldsValue({ teacherCode: trimmedAndLimited });
       form.validateFields(['teacherCode']);
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = typeof e.target.value === 'string' ? e.target.value.trimStart() : e.target.value;
+    form.setFieldsValue({ phone: value });
+  };
+
+  const handlePhoneBlur = () => {
+    const trimmedPhone = trimAndLimit(form.getFieldValue('phone'), 10);
+    if (trimmedPhone !== undefined) {
+      form.setFieldsValue({ phone: trimmedPhone });
+      form.validateFields(['phone']);
     }
   };
 
@@ -258,14 +268,14 @@ const TeacherActionModal = ({
 
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
-        firstName: values.firstName?.trim(),
-        lastName: values.lastName?.trim(),
-        email: values.email?.trim(),
-        teacherCode: values.teacherCode?.trim(),
+        firstName: trimAndLimit(values.firstName, 50),
+        lastName: trimAndLimit(values.lastName, 50),
+        email: trimAndLimit(values.email, 100),
+        teacherCode: trimAndLimit(values.teacherCode, 20),
         password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
         role: 'teacher',
         status: values.status,
-        phone: values.phone?.trim() || undefined,
+        phone: trimAndLimit(values.phone, 10) || undefined,
       };
       // @ts-ignore
       teacherAction(data, {
@@ -491,7 +501,13 @@ const TeacherActionModal = ({
                 name='phone'
                 rules={[yupSync(accountSchema)]}
               >
-                <Input className='h-[46px]' placeholder='Phone Number' />
+                <Input
+                  className='h-[46px]'
+                  placeholder='Phone Number'
+                  maxLength={10}
+                  onChange={handlePhoneChange}
+                  onBlur={handlePhoneBlur}
+                />
               </Form.Item>
             </div>
             <div className='flex flex-row items-center'>
