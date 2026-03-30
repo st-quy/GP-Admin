@@ -86,24 +86,57 @@ const TeacherActionModal = ({
   const handleNameBlur = (fieldName) => {
     const value = form.getFieldValue(fieldName);
     if (value) {
-      form.setFieldsValue({ [fieldName]: value.trim() });
+      const trimmed = value.trim().slice(0, 50);
+      form.setFieldsValue({ [fieldName]: trimmed });
       form.validateFields([fieldName]);
     }
+  };
+
+  const handleNameChange = (e, fieldName) => {
+    const value = e.target.value;
+    // Trim leading spaces and limit to 50 characters
+    const trimmed = value.trimStart().slice(0, 50);
+    form.setFieldsValue({ [fieldName]: trimmed });
   };
 
   const handleEmailBlur = () => {
     const email = form.getFieldValue('email');
     if (email) {
-      form.setFieldsValue({ email: email.trim() });
+      const trimmedAndLimited = email.trim().slice(0, 100);
+      form.setFieldsValue({ email: trimmedAndLimited });
       form.validateFields(['email']);
+    }
+  };
+
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    // Trim leading/trailing spaces and limit to 100 characters
+    const trimmed = value.trimStart();
+    if (trimmed.length <= 100) {
+      form.setFieldsValue({ email: trimmed });
+    } else {
+      // If over 100 chars, only keep first 100 after trimming
+      form.setFieldsValue({ email: trimmed.slice(0, 100) });
     }
   };
 
   const handleTeacherCodeBlur = () => {
     const teacherCode = form.getFieldValue('teacherCode');
     if (teacherCode) {
-      form.setFieldsValue({ teacherCode: teacherCode.trim() });
+      const trimmedAndLimited = teacherCode.trim().slice(0, 20);
+      form.setFieldsValue({ teacherCode: trimmedAndLimited });
       form.validateFields(['teacherCode']);
+    }
+  };
+
+  const handleTeacherCodeChange = (e) => {
+    const value = e.target.value;
+    // Trim leading/trailing spaces and limit to 20 characters
+    const trimmed = value.trimStart();
+    if (trimmed.length <= 20) {
+      form.setFieldsValue({ teacherCode: trimmed });
+    } else {
+      form.setFieldsValue({ teacherCode: trimmed.slice(0, 20) });
     }
   };
 
@@ -366,10 +399,11 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='firstName'
               >
-                <Input 
-                  className='h-[46px]' 
-                  placeholder='First name' 
+                <Input
+                  className='h-[46px]'
+                  placeholder='First name'
                   maxLength={50}
+                  onChange={(e) => handleNameChange(e, 'firstName')}
                   onBlur={() => handleNameBlur('firstName')}
                 />
               </Form.Item>
@@ -383,10 +417,11 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='lastName'
               >
-                <Input 
-                  className='h-[46px]' 
-                  placeholder='Last name' 
+                <Input
+                  className='h-[46px]'
+                  placeholder='Last name'
                   maxLength={50}
+                  onChange={(e) => handleNameChange(e, 'lastName')}
                   onBlur={() => handleNameBlur('lastName')}
                 />
               </Form.Item>
@@ -402,10 +437,11 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='email'
               >
-                <Input 
-                  className='h-[46px]' 
-                  placeholder='Email' 
+                <Input
+                  className='h-[46px]'
+                  placeholder='Email'
                   maxLength={100}
+                  onChange={handleEmailChange}
                   onBlur={handleEmailBlur}
                 />
               </Form.Item>
@@ -419,10 +455,11 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='teacherCode'
               >
-                <Input 
-                  className='h-[46px]' 
-                  placeholder='Teacher Code' 
+                <Input
+                  className='h-[46px]'
+                  placeholder='Teacher Code'
                   maxLength={20}
+                  onChange={handleTeacherCodeChange}
                   onBlur={handleTeacherCodeBlur}
                 />
               </Form.Item>
