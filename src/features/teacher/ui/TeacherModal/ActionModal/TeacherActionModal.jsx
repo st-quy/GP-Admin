@@ -99,6 +99,13 @@ const TeacherActionModal = ({
     form.setFieldsValue({ [fieldName]: trimmed });
   };
 
+  const handleEmailChange = (e) => {
+    const value = e.target.value;
+    // Trim leading spaces immediately and limit to 100 characters
+    const trimmed = value.trimStart().slice(0, 100);
+    form.setFieldsValue({ email: trimmed });
+  };
+
   const handleEmailBlur = () => {
     const email = form.getFieldValue('email');
     if (email) {
@@ -108,16 +115,11 @@ const TeacherActionModal = ({
     }
   };
 
-  const handleEmailChange = (e) => {
+  const handleTeacherCodeChange = (e) => {
     const value = e.target.value;
-    // Trim leading/trailing spaces and limit to 100 characters
-    const trimmed = value.trimStart();
-    if (trimmed.length <= 100) {
-      form.setFieldsValue({ email: trimmed });
-    } else {
-      // If over 100 chars, only keep first 100 after trimming
-      form.setFieldsValue({ email: trimmed.slice(0, 100) });
-    }
+    // Trim leading spaces immediately and limit to 20 characters
+    const trimmed = value.trimStart().slice(0, 20);
+    form.setFieldsValue({ teacherCode: trimmed });
   };
 
   const handleTeacherCodeBlur = () => {
@@ -126,17 +128,6 @@ const TeacherActionModal = ({
       const trimmedAndLimited = teacherCode.trim().slice(0, 20);
       form.setFieldsValue({ teacherCode: trimmedAndLimited });
       form.validateFields(['teacherCode']);
-    }
-  };
-
-  const handleTeacherCodeChange = (e) => {
-    const value = e.target.value;
-    // Trim leading/trailing spaces and limit to 20 characters
-    const trimmed = value.trimStart();
-    if (trimmed.length <= 20) {
-      form.setFieldsValue({ teacherCode: trimmed });
-    } else {
-      form.setFieldsValue({ teacherCode: trimmed.slice(0, 20) });
     }
   };
 
@@ -443,6 +434,12 @@ const TeacherActionModal = ({
                   maxLength={100}
                   onChange={handleEmailChange}
                   onBlur={handleEmailBlur}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pastedText = e.clipboardData.getData('text').trimStart().slice(0, 100);
+                    const currentValue = form.getFieldValue('email') || '';
+                    form.setFieldsValue({ email: currentValue + pastedText });
+                  }}
                 />
               </Form.Item>
               <Form.Item
@@ -461,6 +458,12 @@ const TeacherActionModal = ({
                   maxLength={20}
                   onChange={handleTeacherCodeChange}
                   onBlur={handleTeacherCodeBlur}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pastedText = e.clipboardData.getData('text').trimStart().slice(0, 20);
+                    const currentValue = form.getFieldValue('teacherCode') || '';
+                    form.setFieldsValue({ teacherCode: currentValue + pastedText });
+                  }}
                 />
               </Form.Item>
             </div>
