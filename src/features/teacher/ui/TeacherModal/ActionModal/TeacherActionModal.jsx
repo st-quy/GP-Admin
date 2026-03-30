@@ -38,12 +38,12 @@ const accountSchema = Yup.object().shape({
   email: Yup.string()
     .email('Invalid email')
     .required('Email is required')
-    .max(100, 'Email must not exceed 100 characters')
-    .transform((value) => value?.trim()),
+    .transform((value) => value?.trim())
+    .max(100, 'Email must not exceed 100 characters'),
   teacherCode: Yup.string()
     .required('Teacher Code is required')
-    .max(20, 'Teacher Code must not exceed 20 characters')
     .transform((value) => value?.trim())
+    .max(20, 'Teacher Code must not exceed 20 characters')
     .test('not-only-spaces', 'Teacher Code cannot be only spaces', (value) => {
       return !value || value.trim().length > 0;
     }),
