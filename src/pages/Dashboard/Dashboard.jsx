@@ -23,20 +23,12 @@ import {
   TeamOutlined,
   DownOutlined,
 } from "@ant-design/icons";
-import { fetchDashboardStats } from "../../features/dashboard/services/dashboardService";
-import {
-  fetchTeachers,
-  fetchStudents,
-} from "../../features/dashboard/services/userService";
 import { StatCard } from "../../features/dashboard/components/StatCard";
 import { RecentActivities } from "../../features/dashboard/components/RecentActivities";
-import { PendingRequests } from "../../features/dashboard/components/PendingRequests";
 import { SessionChart } from "../../features/dashboard/components/SessionChart";
-import moment from "moment";
+import { fetchStudents } from "../../features/dashboard/services/userService";
 
-const { Title } = Typography;
-const { TabPane } = Tabs;
-const { Option } = Select;
+const { Title, Text } = Typography;
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -73,15 +65,12 @@ const Dashboard = () => {
       const data = await response.json();
       if (data.status === 200) {
         setSessions(data.data);
-        // Set first session as default
         if (data.data.length > 0) {
           setSelectedSession(data.data[0]);
         }
       }
     } catch (error) {
       console.error("Error fetching sessions:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -90,17 +79,9 @@ const Dashboard = () => {
       const studentsData = await fetchStudents();
       if (Array.isArray(studentsData)) {
         setStudents(studentsData);
-        setSessionStats((prev) => ({
-          ...prev,
-          totalStudents: studentsData.length,
-        }));
-      } else {
-        console.warn("Invalid students data format");
-        setStudents([]);
       }
     } catch (error) {
       console.error("Error fetching students:", error);
-      setStudents([]);
     }
   };
 
@@ -108,19 +89,16 @@ const Dashboard = () => {
     if (selectedSession) {
       calculateSessionStats();
     }
-  }, [selectedSession]);
+  }, [selectedSession, sessions]);
 
   const calculateSessionStats = () => {
-    // Count sessions by status
     const sessionsByStatus = sessions.reduce((acc, session) => {
       acc[session.status] = (acc[session.status] || 0) + 1;
       return acc;
     }, {});
 
     setSessionStats({
-      totalStudents: selectedSession?.Classes?.className
-        ? Math.floor(Math.random() * 30) + 20
-        : 0,
+      totalStudents: students.length,
       ongoingSessions: sessionsByStatus["ON_GOING"] || 0,
       upcomingSessions: sessionsByStatus["NOT_STARTED"] || 0,
       completedSessions: sessionsByStatus["COMPLETE"] || 0,
@@ -139,7 +117,7 @@ const Dashboard = () => {
     label: (
       <div className="py-2 px-4 hover:bg-gray-100">
         <div className="font-medium">{session.sessionName}</div>
-        <div className="text-sm text-gray-500">{session.Classes.className}</div>
+        <div className="text-sm text-gray-500">{session.Classes?.className}</div>
       </div>
     ),
     onClick: () => handleSessionChange(session.ID),
@@ -150,7 +128,7 @@ const Dashboard = () => {
       <div>
         <div className="font-medium">{selectedSession.sessionName}</div>
         <div className="text-sm text-gray-500">
-          {selectedSession.Classes.className}
+          {selectedSession.Classes?.className}
         </div>
       </div>
     </Space>
@@ -211,144 +189,141 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="mb-6 flex justify-between items-center">
-        <Title level={2}>Dashboard</Title>
-        <Dropdown
-          menu={{ items: dropdownItems }}
-          trigger={["click"]}
-          overlayStyle={{
-            minWidth: "300px",
-            borderRadius: "8px",
-            boxShadow: "0 2px 8px rgba(0,0,0,0.15)",
-          }}
-        >
-          <Button
-            style={{
-              width: "300px",
-              height: "auto",
-              padding: "8px 12px",
-              textAlign: "left",
-              whiteSpace: "normal",
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            {selectedSessionLabel}
-            <DownOutlined />
-          </Button>
-        </Dropdown>
+    <div className="figma-page-container">
+      <div className="figma-content-wrapper">
+        <div className="py-8">
+          <div className="mb-10 flex justify-between items-start">
+            <div>
+              <h4 className="figma-title">Dashboard</h4>
+              <p className="figma-subtitle">Monitor and organize both classes and individual sessions.</p>
+            </div>
+            <Dropdown menu={{ items: dropdownItems }} trigger={["click"]}>
+              <Button
+                style={{
+                  width: "300px",
+                  height: "auto",
+                  padding: "8px 12px",
+                  textAlign: "left",
+                  whiteSpace: "normal",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  borderRadius: "8px",
+                  border: "1px solid #DFE4EA",
+                  boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.05)"
+                }}
+              >
+                {selectedSessionLabel}
+                <DownOutlined />
+              </Button>
+            </Dropdown>
+          </div>
+
+          {/* Statistics Cards */}
+          <Row gutter={[30, 30]} className="mb-10">
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<TeamOutlined />}
+                title="Total Students"
+                value={students.length}
+                subtitle="Total registered"
+                color="#003087"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<BookOutlined />}
+                title="Session Status"
+                value={selectedSession?.status || "N/A"}
+                subtitle="Current Status"
+                color="#22AD5C"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<ClockCircleOutlined />}
+                title="Total Sessions"
+                value={sessions.length}
+                subtitle={`${sessionChartData.find(d => d.type === 'Ongoing')?.value || 0} Ongoing`}
+                color="#F2994A"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<FileTextOutlined />}
+                title="Completed"
+                value={sessionChartData.find(d => d.type === 'Completed')?.value || 0}
+                subtitle="Sessions finished"
+                color="#9B51E0"
+              />
+            </Col>
+          </Row>
+
+          {/* Charts and Activity Sections */}
+          <Row gutter={[30, 30]}>
+            <Col xs={24} lg={16}>
+              <Card 
+                className="h-full rounded-[5px] border-none shadow-[0px_1px_3px_rgba(166,175,195,0.4)]"
+                bodyStyle={{ padding: '20px' }}
+              >
+                <Tabs
+                  defaultActiveKey="1"
+                  className="figma-custom-tabs"
+                  items={[
+                    {
+                      key: "1",
+                      label: "Session Overview",
+                      children: (
+                        <div className="p-4 flex justify-center">
+                          <SessionChart data={sessionChartData} />
+                        </div>
+                      ),
+                    },
+                    {
+                      key: "2",
+                      label: "Recent Activities",
+                      children: (
+                        <RecentActivities sessionId={selectedSession?.ID} />
+                      ),
+                    },
+                  ]}
+                />
+              </Card>
+            </Col>
+            <Col xs={24} lg={8}>
+              <Card 
+                title={<span className="text-[18px] font-bold">Session Details</span>} 
+                className="h-full rounded-[5px] border-none shadow-[0px_1px_3px_rgba(166,175,195,0.4)]"
+                bodyStyle={{ padding: '20px' }}
+              >
+                {selectedSession ? (
+                  <Descriptions bordered column={1} size="small">
+                    <Descriptions.Item label="Topic">
+                      {selectedSession.Topic?.Name}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Session Key">
+                      {selectedSession.sessionKey}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Status">
+                      <Tag color={getStatusColor(selectedSession.status)}>
+                        {selectedSession.status}
+                      </Tag>
+                    </Descriptions.Item>
+                    <Descriptions.Item label="Start">
+                      {new Date(selectedSession.startTime).toLocaleDateString()}
+                    </Descriptions.Item>
+                    <Descriptions.Item label="End">
+                      {new Date(selectedSession.endTime).toLocaleDateString()}
+                    </Descriptions.Item>
+                  </Descriptions>
+                ) : (
+                  <Empty description="Select a session" />
+                )}
+              </Card>
+            </Col>
+          </Row>
+        </div>
       </div>
-
-      {/* Statistics Cards */}
-      <Row gutter={[24, 24]} className="mb-6">
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <StatCard
-            icon={<TeamOutlined className="text-2xl text-white" />}
-            title="Total Students"
-            value={students.length}
-            subtitle={
-              selectedSession
-                ? `In ${selectedSession.Classes.className}`
-                : "Total registered"
-            }
-            color="#1890ff"
-          />
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <StatCard
-            icon={<BookOutlined className="text-2xl text-white" />}
-            title="Session Status"
-            value={selectedSession?.status || "N/A"}
-            subtitle="Current Status"
-            color="#52c41a"
-          />
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <StatCard
-            icon={<ClockCircleOutlined className="text-2xl text-white" />}
-            title="Total Sessions"
-            value={sessions.length}
-            subtitle={`${sessionChartData[0]?.value || 0} Ongoing, ${sessionChartData[1]?.value || 0} Not Started`}
-            color="#faad14"
-          />
-        </Col>
-        <Col xs={24} sm={12} md={8} lg={6}>
-          <StatCard
-            icon={<FileTextOutlined className="text-2xl text-white" />}
-            title="Completed Sessions"
-            value={sessionChartData[2]?.value || 0}
-            subtitle={`${(((sessionChartData[2]?.value || 0) / sessions.length) * 100).toFixed(1)}% Complete`}
-            color="#722ed1"
-          />
-        </Col>
-      </Row>
-
-      {/* Charts and Activity Sections */}
-      <Row gutter={[16, 16]}>
-        <Col xs={24} lg={16}>
-          <Card className="h-full">
-            <Tabs
-              defaultActiveKey="1"
-              className="custom-tabs"
-              items={[
-                {
-                  key: "1",
-                  label: (
-                    <span className="px-4 text-base font-medium">
-                      Session Overview
-                    </span>
-                  ),
-                  children: (
-                    <div className="p-4">
-                      <SessionChart data={sessionChartData} />
-                    </div>
-                  ),
-                },
-                {
-                  key: "2",
-                  label: (
-                    <span className="px-4 text-base font-medium">
-                      Recent Activities
-                    </span>
-                  ),
-                  children: (
-                    <RecentActivities sessionId={selectedSession?.ID} />
-                  ),
-                },
-              ]}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} lg={8}>
-          <Card title="Session Details" className="h-full">
-            {selectedSession ? (
-              <Descriptions bordered column={1}>
-                <Descriptions.Item label="Topic">
-                  {selectedSession.Topic.Name}
-                </Descriptions.Item>
-                <Descriptions.Item label="Session Key">
-                  {selectedSession.sessionKey}
-                </Descriptions.Item>
-                <Descriptions.Item label="Status">
-                  <Tag color={getStatusColor(selectedSession.status)}>
-                    {selectedSession.status}
-                  </Tag>
-                </Descriptions.Item>
-                <Descriptions.Item label="Start Time">
-                  {new Date(selectedSession.startTime).toLocaleString()}
-                </Descriptions.Item>
-                <Descriptions.Item label="End Time">
-                  {new Date(selectedSession.endTime).toLocaleString()}
-                </Descriptions.Item>
-              </Descriptions>
-            ) : (
-              <Empty description="Select a session to view details" />
-            )}
-          </Card>
-        </Col>
-      </Row>
     </div>
   );
 };
