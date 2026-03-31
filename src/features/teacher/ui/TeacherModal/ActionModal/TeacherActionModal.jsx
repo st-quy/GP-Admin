@@ -5,6 +5,7 @@ import {
   useCreateTeacher,
   useUpdateTeacher,
 } from '@features/teacher/hook/useTeacherQuery';
+import { useFetchTeachers } from '@features/teacher/hook/useTeacherQuery';
 import { EditOutlined, PlusCircleOutlined } from '@ant-design/icons';
 
 const yupSync = (schema) => ({
@@ -17,10 +18,17 @@ const yupSync = (schema) => ({
   },
 });
 
+const trimAndLimit = (value, maxLength) =>
+  typeof value === 'string' ? value.trim().slice(0, maxLength) : value;
+
+const trimStartAndLimit = (value, maxLength) =>
+  typeof value === 'string' ? value.trimStart().slice(0, maxLength) : value;
+
 const accountSchema = Yup.object().shape({
   firstName: Yup.string()
     .required('First name is required')
     .max(50, 'First name must not exceed 50 characters')
+    .matches(/^[a-zA-Z\s]+$/, 'First name cannot contain special characters or numbers')
     .transform((value) => value?.trim())
     .test('not-only-spaces', 'First name cannot be only spaces', (value) => {
       return !value || value.trim().length > 0;
@@ -28,6 +36,7 @@ const accountSchema = Yup.object().shape({
   lastName: Yup.string()
     .required('Last name is required')
     .max(50, 'Last name must not exceed 50 characters')
+    .matches(/^[a-zA-Z\s]+$/, 'Last name cannot contain special characters or numbers')
     .transform((value) => value?.trim())
     .test('not-only-spaces', 'Last name cannot be only spaces', (value) => {
       return !value || value.trim().length > 0;
@@ -35,12 +44,12 @@ const accountSchema = Yup.object().shape({
   email: Yup.string()
     .email('Invalid email')
     .required('Email is required')
-    .max(100, 'Email must not exceed 100 characters')
-    .transform((value) => value?.trim()),
+    .transform((value) => value?.trim())
+    .max(100, 'Email must not exceed 100 characters'),
   teacherCode: Yup.string()
     .required('Teacher Code is required')
-    .max(20, 'Teacher Code must not exceed 20 characters')
     .transform((value) => value?.trim())
+    .max(20, 'Teacher Code must not exceed 20 characters')
     .test('not-only-spaces', 'Teacher Code cannot be only spaces', (value) => {
       return !value || value.trim().length > 0;
     }),
@@ -75,6 +84,62 @@ const TeacherActionModal = ({
   const { mutate: teacherAction, isPending: isOnAction } = isEdit
     ? useUpdateTeacher()
     : useCreateTeacher();
+
+  // Fetch all teachers for unique validation
+  const { data: allTeachersData } = useFetchTeachers({ page: 1, limit: 1000 });
+  const allTeachers = allTeachersData?.data?.teachers || [];
+
+  const handleNameBlur = (fieldName) => {
+    const trimmed = trimAndLimit(form.getFieldValue(fieldName), 50);
+    if (trimmed !== undefined) {
+      form.setFieldsValue({ [fieldName]: trimmed });
+      form.validateFields([fieldName]);
+    }
+  };
+
+  const handleNameChange = (e, fieldName) => {
+    const trimmed = trimStartAndLimit(e.target.value, 50);
+    form.setFieldsValue({ [fieldName]: trimmed });
+  };
+
+  const handleEmailChange = (e) => {
+    const trimmed = trimStartAndLimit(e.target.value, 100);
+    form.setFieldsValue({ email: trimmed });
+  };
+
+  const handleEmailBlur = () => {
+    const trimmedAndLimited = trimAndLimit(form.getFieldValue('email'), 100);
+    if (trimmedAndLimited !== undefined) {
+      form.setFieldsValue({ email: trimmedAndLimited });
+      form.validateFields(['email']);
+    }
+  };
+
+  const handleTeacherCodeChange = (e) => {
+    const trimmed = trimStartAndLimit(e.target.value, 20);
+    form.setFieldsValue({ teacherCode: trimmed });
+  };
+
+  const handleTeacherCodeBlur = () => {
+    const trimmedAndLimited = trimAndLimit(form.getFieldValue('teacherCode'), 20);
+    if (trimmedAndLimited !== undefined) {
+      form.setFieldsValue({ teacherCode: trimmedAndLimited });
+      form.validateFields(['teacherCode']);
+    }
+  };
+
+  const handlePhoneChange = (e) => {
+    const value = typeof e.target.value === 'string' ? e.target.value.trimStart() : e.target.value;
+    form.setFieldsValue({ phone: value });
+  };
+
+  const handlePhoneBlur = () => {
+    const trimmedPhone = trimAndLimit(form.getFieldValue('phone'), 10);
+    if (trimmedPhone !== undefined) {
+      form.setFieldsValue({ phone: trimmedPhone });
+      form.validateFields(['phone']);
+    }
+  };
 
   const applyBackendFieldErrors = (messages = []) => {
     const normalizedMessages = messages
@@ -147,6 +212,29 @@ const TeacherActionModal = ({
     setPasswordValue('');
   };
 
+  const validateUniqueEmailAndTeacherCode = (email, teacherCode, currentId) => {
+    const emailExists = allTeachers.some(
+      (t) => t.email.toLowerCase() === email.toLowerCase() && t.ID !== currentId
+    );
+    const teacherCodeExists = allTeachers.some(
+      (t) => t.teacherCode.toLowerCase() === teacherCode.toLowerCase() && t.ID !== currentId
+    );
+
+    const errors = [];
+    if (emailExists) {
+      errors.push({ name: 'email', errors: ['Email already exists'] });
+    }
+    if (teacherCodeExists) {
+      errors.push({ name: 'teacherCode', errors: ['Teacher Code already exists'] });
+    }
+
+    if (errors.length > 0) {
+      form.setFields(errors);
+      return false;
+    }
+    return true;
+  };
+
   // @ts-ignore
   const onAction = async (values) => {
     try {
@@ -156,16 +244,38 @@ const TeacherActionModal = ({
         { name: 'phone', errors: [] },
       ]);
 
+      // Validate unique email and teacher code
+      if (isEdit) {
+        const isValid = validateUniqueEmailAndTeacherCode(
+          values.email?.trim(),
+          values.teacherCode?.trim(),
+          initialData?.ID
+        );
+        if (!isValid) {
+          return;
+        }
+      } else {
+        // For create, also check uniqueness
+        const isValid = validateUniqueEmailAndTeacherCode(
+          values.email?.trim(),
+          values.teacherCode?.trim(),
+          null
+        );
+        if (!isValid) {
+          return;
+        }
+      }
+
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
-        firstName: values.firstName?.trim(),
-        lastName: values.lastName?.trim(),
-        email: values.email?.trim(),
-        teacherCode: values.teacherCode?.trim(),
+        firstName: trimAndLimit(values.firstName, 50),
+        lastName: trimAndLimit(values.lastName, 50),
+        email: trimAndLimit(values.email, 100),
+        teacherCode: trimAndLimit(values.teacherCode, 20),
         password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
         role: 'teacher',
         status: values.status,
-        phone: values.phone?.trim() || undefined,
+        phone: trimAndLimit(values.phone, 10) || undefined,
       };
       // @ts-ignore
       teacherAction(data, {
@@ -290,7 +400,13 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='firstName'
               >
-                <Input className='h-[46px]' placeholder='First name' />
+                <Input
+                  className='h-[46px]'
+                  placeholder='First name'
+                  maxLength={50}
+                  onChange={(e) => handleNameChange(e, 'firstName')}
+                  onBlur={() => handleNameBlur('firstName')}
+                />
               </Form.Item>
               <Form.Item
                 label={
@@ -302,7 +418,13 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='lastName'
               >
-                <Input className='h-[46px]' placeholder='Last name' />
+                <Input
+                  className='h-[46px]'
+                  placeholder='Last name'
+                  maxLength={50}
+                  onChange={(e) => handleNameChange(e, 'lastName')}
+                  onBlur={() => handleNameBlur('lastName')}
+                />
               </Form.Item>
             </div>
             <div className='grid grid-cols-2 gap-4'>
@@ -316,7 +438,19 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='email'
               >
-                <Input className='h-[46px]' placeholder='Email' />
+                <Input
+                  className='h-[46px]'
+                  placeholder='Email'
+                  maxLength={100}
+                  onChange={handleEmailChange}
+                  onBlur={handleEmailBlur}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pastedText = e.clipboardData.getData('text').trimStart().slice(0, 100);
+                    const currentValue = form.getFieldValue('email') || '';
+                    form.setFieldsValue({ email: currentValue + pastedText });
+                  }}
+                />
               </Form.Item>
               <Form.Item
                 label={
@@ -328,7 +462,19 @@ const TeacherActionModal = ({
                 rules={[yupSync(accountSchema)]}
                 name='teacherCode'
               >
-                <Input className='h-[46px]' placeholder='Teacher Code' />
+                <Input
+                  className='h-[46px]'
+                  placeholder='Teacher Code'
+                  maxLength={20}
+                  onChange={handleTeacherCodeChange}
+                  onBlur={handleTeacherCodeBlur}
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    const pastedText = e.clipboardData.getData('text').trimStart().slice(0, 20);
+                    const currentValue = form.getFieldValue('teacherCode') || '';
+                    form.setFieldsValue({ teacherCode: currentValue + pastedText });
+                  }}
+                />
               </Form.Item>
             </div>
             <div className='grid grid-cols-2 gap-4'>
@@ -355,7 +501,13 @@ const TeacherActionModal = ({
                 name='phone'
                 rules={[yupSync(accountSchema)]}
               >
-                <Input className='h-[46px]' placeholder='Phone Number' />
+                <Input
+                  className='h-[46px]'
+                  placeholder='Phone Number'
+                  maxLength={10}
+                  onChange={handlePhoneChange}
+                  onBlur={handlePhoneBlur}
+                />
               </Form.Item>
             </div>
             <div className='flex flex-row items-center'>

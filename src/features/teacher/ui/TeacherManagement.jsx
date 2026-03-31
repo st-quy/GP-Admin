@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Table, Input, Select, Space, Tag, message } from 'antd';
 import { SearchOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useFetchTeachers } from '../hook/useTeacherQuery';
+import { useFetchTeacherById, useFetchTeachers } from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
@@ -31,6 +31,12 @@ const TeacherManagement = () => {
     limit: pageSize,
     search: debouncedSearchTerm,
     ...(statusFilter !== null && { status: statusFilter }),
+  });
+  const {
+    data: teacherDetailData,
+    isLoading: isTeacherDetailLoading,
+  } = useFetchTeacherById(editingTeacherId, {
+    enabled: Boolean(editingTeacherId),
   });
 
   const handleStatusFilter = (value) => {
@@ -173,9 +179,11 @@ const TeacherManagement = () => {
   };
 
   const selectedTeacher =
+    teacherDetailData?.data ||
     teachersData?.data?.teachers?.find(
       (teacher) => teacher.ID === editingTeacherIdNumber
-    ) || null;
+    ) ||
+    null;
 
   const handleCloseEditModal = () => {
     navigate('/teacher');
@@ -226,7 +234,7 @@ const TeacherManagement = () => {
         scroll={{ x: 600 }}
         className='mb-4'
         components={tableComponents}
-        loading={isLoading || !teachersData}
+        loading={isLoading || isTeacherDetailLoading || !teachersData}
         pagination={{
           current: currentPage,
           pageSize: pageSize,
