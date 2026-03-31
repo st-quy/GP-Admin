@@ -53,7 +53,7 @@ const Dashboard = () => {
       setLoading(true);
       const [statsData, sessionsRes] = await Promise.all([
         fetchDashboardStats(),
-        axiosInstance.get("/sessions/all")
+        axiosInstance.get("/sessions/all?limit=9999")
       ]);
 
       setStats(statsData);
@@ -114,10 +114,13 @@ const Dashboard = () => {
                 showSearch
                 placeholder="Search by session or class name..."
                 className="w-full h-[48px] figma-search-input-select"
-                optionFilterProp="children"
                 onChange={setSelectedSessionId}
                 value={selectedSessionId}
                 allowClear
+                filterOption={(input, option) =>
+                  (option?.children?.[0] || "").toLowerCase().includes(input.toLowerCase()) ||
+                  (option?.children?.[2] || "").toLowerCase().includes(input.toLowerCase())
+                }
               >
                 {sessions.map(s => (
                   <Select.Option key={s.ID} value={s.ID}>

@@ -3,8 +3,8 @@ import axiosInstance from "@shared/config/axios";
 export const fetchDashboardStats = async () => {
   try {
     const [studentsRes, sessionsRes] = await Promise.all([
-      axiosInstance.get("/users/students"),
-      axiosInstance.get("/sessions/all"),
+      axiosInstance.get("/users/students?limit=9999"),
+      axiosInstance.get("/sessions/all?limit=9999"),
     ]);
 
     const students = studentsRes.data?.data?.students || [];
