@@ -7,6 +7,7 @@ import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import { useNavigate, useParams } from 'react-router-dom';
 import { deleteTeachers } from '../api/teacherAPI';
+
 const { Option } = Select;
 
 const TeacherManagement = () => {
@@ -20,6 +21,7 @@ const TeacherManagement = () => {
     typeof editingTeacherId === 'string' ? Number(editingTeacherId) : null;
   const { openConfirmModal, ModalComponent } = useConfirm();
 
+  // Escape special SQL-like characters for search
   const escapeSearchTerm = (term) => {
     return term.replace(/([%_\\])/g, '\\$1');
   };
@@ -39,6 +41,7 @@ const TeacherManagement = () => {
   });
 
   const handleStatusFilter = (value) => {
+    // When Select is cleared (allowClear), AntD passes undefined/null -> reset filter
     if (value == null) {
       setStatusFilter(null);
       return;
@@ -246,7 +249,7 @@ const TeacherManagement = () => {
           },
           itemRender: (page, type, original) => {
             if (type === 'page') {
-              const isActive = currentPage === page; // FIX: phải dùng currentPage, không dùng pagination.page
+              const isActive = currentPage === page;
 
               return (
                 <button

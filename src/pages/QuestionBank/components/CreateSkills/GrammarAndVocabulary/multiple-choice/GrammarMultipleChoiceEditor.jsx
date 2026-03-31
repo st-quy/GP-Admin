@@ -82,7 +82,6 @@ const GrammarMultipleChoiceEditor = ({
           rows={3}
           placeholder='Enter grammar/vocabulary question...'
           value={questionText}
-          maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
           onChange={(e) => setQuestionText(e.target.value)}
           style={{ marginTop: 8 }}
         />
@@ -133,7 +132,7 @@ const GrammarMultipleChoiceEditor = ({
 
               {/* Input text option */}
               <Col flex='auto'>
-                <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                <Input
                   placeholder={`Option ${opt.label || LETTERS[idx]}`}
                   value={opt.value}
                   onChange={(e) => updateOptionText(opt.id, e.target.value)}

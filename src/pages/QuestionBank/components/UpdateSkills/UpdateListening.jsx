@@ -4,14 +4,13 @@ import {
   Input,
   Select,
   Button,
-  Upload,
   message,
   Form,
   Card,
   Space,
   Collapse,
 } from 'antd';
-import { AudioOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -19,9 +18,9 @@ import {
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
 
-import axiosInstance from '@shared/config/axios';
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import ListeningMatchingEditor from '../CreateSkills/Listening/ListeningMatchingEditor';
+import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
@@ -42,7 +41,6 @@ const UpdateListening = () => {
   // STATE
   // ===============================
   const [sectionName, setSectionName] = useState('');
-  const [description, setDescription] = useState('');
   const [part1Name, setPart1Name] = useState('');
   const [part2Name, setPart2Name] = useState('');
   const [part3Name, setPart3Name] = useState('');
@@ -91,7 +89,6 @@ const UpdateListening = () => {
     const d = detail;
 
     setSectionName(d.SectionName);
-    setDescription(d.Description || '');
 
     // ---- PART 1 ----
     setPart1Id(d.part1?.id);
@@ -203,37 +200,6 @@ const UpdateListening = () => {
   }, [detail]);
 
   // ===============================
-  // AUDIO UPLOAD
-  // ===============================
-  const uploadAudio = async (file, onSuccess, onError, setUrl) => {
-    try {
-      if (file.type !== 'audio/mpeg') return message.error('Only MP3 allowed');
-
-      const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-        fileName: file.name,
-        type: 'audios',
-      });
-
-      await fetch(data.uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-
-      setUrl(data.fileUrl);
-      onSuccess({ url: data.fileUrl });
-    } catch (err) {
-      onError(err);
-    }
-  };
-
-  const uploadProps = (setter) => ({
-    accept: '.mp3',
-    customRequest: ({ file, onSuccess, onError }) =>
-      uploadAudio(file, onSuccess, onError, setter),
-  });
-
-  // ===============================
   // VALIDATION ICON
   // ===============================
 
@@ -279,7 +245,6 @@ const UpdateListening = () => {
     }
     const values = {
       sectionName,
-      description,
       part1Id,
       part2Id,
       part3Id,
@@ -523,18 +488,9 @@ const UpdateListening = () => {
     <Form layout='vertical' style={{ paddingBottom: 40 }}>
       <Card title={<span>Section Information</span>} className='mb-6'>
         <Form.Item label='Section Name' required>
-          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+          <Input
             value={sectionName}
             onChange={(e) => setSectionName(e.target.value)}
-          />
-        </Form.Item>
-        <Form.Item label='Description'>
-          <TextArea
-            rows={3}
-            value={description}
-            placeholder='-'
-            maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
-            onChange={(e) => setDescription(e.target.value)}
           />
         </Form.Item>
       </Card>
@@ -547,7 +503,7 @@ const UpdateListening = () => {
           )}
         >
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Enter part name...'
               value={part1Name}
               onChange={(e) => setPart1Name(e.target.value)}
@@ -577,7 +533,6 @@ const UpdateListening = () => {
                     <TextArea
                       rows={2}
                       value={q.instruction}
-                      maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                       onChange={(e) =>
                         setPart1((prev) =>
                           prev.map((x) =>
@@ -590,17 +545,21 @@ const UpdateListening = () => {
                     />
                   </Form.Item>
 
-                  <Upload
-                    {...uploadProps((url) =>
+                  <MinioUploadDragger
+                    accept='.mp3'
+                    allowedMimeTypes={['audio/mpeg']}
+                    bucketType='audios'
+                    hint='Drop an MP3 file here or click to browse'
+                    onChange={(url) =>
                       setPart1((prev) =>
                         prev.map((x) =>
                           x.id === q.id ? { ...x, audioUrl: url } : x
                         )
                       )
-                    )}
-                  >
-                    <Button icon={<AudioOutlined />}>Upload audio</Button>
-                  </Upload>
+                    }
+                    title='Upload question audio'
+                    value={q.audioUrl}
+                  />
 
                   {q.audioUrl && <audio src={q.audioUrl} controls />}
 
@@ -608,7 +567,7 @@ const UpdateListening = () => {
                     <div key={o.id} className='flex items-center gap-3 mb-2'>
                       <b className='w-6'>{o.label}</b>
 
-                      <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                      <Input
                         className='flex-1'
                         value={o.value}
                         onChange={(e) =>
@@ -674,7 +633,7 @@ const UpdateListening = () => {
         {/* PART 2 */}
         <Card title={renderHeader('PART 2 — Matching', valid2)}>
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Enter Part 2 name...'
               value={part2Name}
               onChange={(e) => setPart2Name(e.target.value)}
@@ -685,22 +644,23 @@ const UpdateListening = () => {
             <TextArea
               rows={2}
               value={part2.instruction}
-              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart2((prev) => ({ ...prev, instruction: e.target.value }))
               }
             />
           </Form.Item>
 
-          <Upload
-            {...uploadProps((url) =>
+          <MinioUploadDragger
+            accept='.mp3'
+            allowedMimeTypes={['audio/mpeg']}
+            bucketType='audios'
+            hint='Drop an MP3 file here or click to browse'
+            onChange={(url) =>
               setPart2((prev) => ({ ...prev, audioUrl: url }))
-            )}
-          >
-            <Button icon={<AudioOutlined />} className='mb-6'>
-              Upload audio
-            </Button>
-          </Upload>
+            }
+            title='Upload Part 2 audio'
+            value={part2.audioUrl}
+          />
 
           {part2.audioUrl && <audio src={part2.audioUrl} controls />}
 
@@ -721,7 +681,7 @@ const UpdateListening = () => {
         {/* PART 3 */}
         <Card title={renderHeader('PART 3 — Matching', valid3)}>
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Part 3 name'
               value={part3Name}
               onChange={(e) => setPart3Name(e.target.value)}
@@ -732,22 +692,23 @@ const UpdateListening = () => {
             <TextArea
               rows={2}
               value={part3.instruction}
-              maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
               onChange={(e) =>
                 setPart3((prev) => ({ ...prev, instruction: e.target.value }))
               }
             />
           </Form.Item>
 
-          <Upload
-            {...uploadProps((url) =>
+          <MinioUploadDragger
+            accept='.mp3'
+            allowedMimeTypes={['audio/mpeg']}
+            bucketType='audios'
+            hint='Drop an MP3 file here or click to browse'
+            onChange={(url) =>
               setPart3((prev) => ({ ...prev, audioUrl: url }))
-            )}
-          >
-            <Button icon={<AudioOutlined />} className='!mb-6'>
-              Upload audio
-            </Button>
-          </Upload>
+            }
+            title='Upload Part 3 audio'
+            value={part3.audioUrl}
+          />
 
           {part3.audioUrl && <audio src={part3.audioUrl} controls />}
 
@@ -768,7 +729,7 @@ const UpdateListening = () => {
         {/* PART 4 */}
         <Card title={renderHeader('PART 4 — Listening Groups', valid4)}>
           <Form.Item label='Part Name' required>
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+            <Input
               placeholder='Enter Part 4 name...'
               value={part4Name}
               onChange={(e) => setPart4Name(e.target.value)}
@@ -789,7 +750,6 @@ const UpdateListening = () => {
                   <TextArea
                     rows={2}
                     value={g.instruction}
-                    maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }}
                     onChange={(e) =>
                       updateGroupField(g.id, 'instruction', e.target.value)
                     }
@@ -797,16 +757,15 @@ const UpdateListening = () => {
                 </Form.Item>
 
                 {/* Audio upload */}
-                <Upload
+                <MinioUploadDragger
                   accept='.mp3'
-                  {...uploadProps((url) =>
-                    updateGroupField(g.id, 'audioUrl', url)
-                  )}
-                >
-                  <Button icon={<AudioOutlined />} className='mb-6'>
-                    Upload audio (MP3)
-                  </Button>
-                </Upload>
+                  allowedMimeTypes={['audio/mpeg']}
+                  bucketType='audios'
+                  hint='Drop an MP3 file here or click to browse'
+                  onChange={(url) => updateGroupField(g.id, 'audioUrl', url)}
+                  title='Upload group audio'
+                  value={g.audioUrl}
+                />
 
                 {g.audioUrl && <audio src={g.audioUrl} controls />}
 
@@ -816,7 +775,7 @@ const UpdateListening = () => {
                     <Card size='small' className='flex-1 mt-4'>
                       {/* Sub-question content */}
                       <Form.Item label={`Sub question ${s.id}`} required>
-                        <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                        <Input
                           value={s.content}
                           onChange={(e) =>
                             updateGroupSub(
@@ -836,7 +795,7 @@ const UpdateListening = () => {
                           className='flex gap-2 mb-1 items-center'
                         >
                           <div>{o.label}</div>
-                          <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }}
+                          <Input
                             value={o.value}
                             onChange={(e) =>
                               updateGroupOption(

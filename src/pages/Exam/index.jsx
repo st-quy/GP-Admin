@@ -9,8 +9,6 @@ import {
   Button,
   Typography,
   message,
-  Tag,
-  Tooltip,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -26,36 +24,45 @@ import {
 
 import HeaderInfo from '@app/components/HeaderInfo';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
   useGetTopics,
   useDeleteTopic,
   useDeleteTopicSectionByTopicId,
+  useUpdateTopic,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
+import { useDebouncedValue } from '@shared/hook/useDebounceValue';
+import { STATUS_CONFIG } from '@shared/lib/constants/examStatus';
+import { Tag, Tooltip as AntTooltip } from 'antd';
 
 const { Option } = Select;
 const { Text } = Typography;
 
-const statusTagConfig = {
-  submited: { bg: 'bg-amber-100', text: 'text-gray-700', label: 'Submited' },
-  approved: { bg: 'bg-emerald-100', text: 'text-gray-700', label: 'Approved' },
-  draft: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Draft' },
-  rejected: { bg: 'bg-rose-100', text: 'text-gray-700', label: 'Rejected' },
-};
-
 const TopicListPage = () => {
   const navigate = useNavigate();
+  const { role } = useSelector((state) => state.auth);
+  
+  // Robust check for admin role
+  const isAdmin = Array.isArray(role) 
+    ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
+    : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
+    
   const { openConfirmModal, ModalComponent } = useConfirm();
 
   // Filters
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 500);
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(5);
 
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [targetTopic, setTargetTopic] = useState(null);
+
   // Query topics from backend with params
   const { data, isLoading } = useGetTopics({
-    searchName: search || undefined,
+    searchName: debouncedSearch || undefined,
     status: statusFilter === 'all' ? undefined : statusFilter,
     page,
     pageSize,
@@ -66,12 +73,50 @@ const TopicListPage = () => {
 
   const deleteTopic = useDeleteTopic();
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
+  const { mutateAsync: updateTopic } = useUpdateTopic();
 
   const counts = {
     Submited: data?.statusCounts?.submited || 0,
     approved: data?.statusCounts?.approved || 0,
     Draft: data?.statusCounts?.draft || 0,
     Rejected: data?.statusCounts?.rejected || 0,
+  };
+
+  const handleApproveTopic = (topic) => {
+    openConfirmModal({
+      title: 'Approve Exam',
+      message: `Are you sure you want to approve "${topic.Name}"? This will make the exam available for students.`,
+      okText: 'Approve',
+      okButtonColor: '#52c41a',
+      onConfirm: async () => {
+        try {
+          await updateTopic({ id: topic.ID, data: { Status: 'approved' } });
+          message.success('Exam approved successfully');
+        } catch (error) {
+          message.error('Failed to approve exam');
+        }
+      },
+    });
+  };
+
+  const handleRejectTopic = (topic) => {
+    openConfirmModal({
+      title: 'Reject Exam',
+      message: `Are you sure you want to reject "${topic.Name}"? The teacher will need to review and submit it again.`,
+      okText: 'Reject',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          await updateTopic({
+            id: topic.ID,
+            data: { Status: 'rejected', ReasonReject: null },
+          });
+          message.success('Exam rejected successfully');
+        } catch (error) {
+          message.error('Failed to reject exam');
+        }
+      },
+    });
   };
 
   const handleDeleteTopic = (topic) => {
@@ -120,7 +165,7 @@ const TopicListPage = () => {
       message.error('Cannot edit topic with status Approved or Submited');
       return;
     }
-    navigate(`edit/${topic.ID}`);
+    navigate(`/exam/edit/${topic.ID}`);
   };
 
   const columns = [
@@ -128,6 +173,7 @@ const TopicListPage = () => {
       title: 'Topic Name',
       dataIndex: 'Name',
       key: 'Name',
+      ellipsis: true,
       render: (text) => (
         <span className='font-medium text-gray-800'>{text}</span>
       ),
@@ -137,19 +183,20 @@ const TopicListPage = () => {
       dataIndex: 'Status',
       key: 'Status',
       render: (_, record) => {
-        const cfg = statusTagConfig[record.Status] || {};
+        const cfg = STATUS_CONFIG[record.Status] || {};
 
         const tagElement = (
           <Tag
-            className={`${cfg.bg} ${cfg.text} font-medium px-3 py-1 rounded-md`}
+            color={cfg.antColor}
+            className='font-medium px-3 py-1 rounded-md'
           >
-            {cfg.label}
+            {cfg.label || record.Status}
           </Tag>
         );
 
         if (record.Status === 'rejected') {
           return (
-            <Tooltip
+            <AntTooltip
               title={
                 record.ReasonReject
                   ? record.ReasonReject
@@ -157,21 +204,14 @@ const TopicListPage = () => {
               }
             >
               {tagElement}
-            </Tooltip>
+            </AntTooltip>
           );
         }
 
         return tagElement;
       },
     },
-    {
-      title: 'Creator',
-      dataIndex: 'createdBy',
-      key: 'createdBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
-      ),
-    },
+
     {
       title: 'Creation day',
       dataIndex: 'createdAt',
@@ -193,23 +233,19 @@ const TopicListPage = () => {
       ),
     },
     {
-      title: 'Updator',
-      dataIndex: 'updatedBy',
-      key: 'updatedBy',
-      render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
-      ),
-    },
-    {
       title: 'Action',
       key: 'action',
       align: 'center',
+      // ellipsis: true,
       render: (_, record) => {
-        const canModify =
-          record.Status === 'submited' || record.Status === 'approved';
+        const isSubmitted = record.Status === 'submited';
+        const isApproved = record.Status === 'approved';
+        const canModify = isSubmitted || isApproved;
+        
         return (
           <Space size='middle'>
             <Button
+              title='Review Topic'
               type='text'
               icon={<EyeOutlined />}
               className='text-[#1890FF]'
@@ -218,9 +254,36 @@ const TopicListPage = () => {
                 navigate(`view/${record.ID}`);
               }}
             />
+
+            {isSubmitted && isAdmin && (
+              <>
+                <Button
+                  title='Approve Topic'
+                  type='text'
+                  icon={<CheckCircleOutlined />}
+                  className='text-[#52c41a]'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleApproveTopic(record);
+                  }}
+                />
+                <Button
+                  title='Reject Topic'
+                  type='text'
+                  icon={<CloseCircleOutlined />}
+                  className='text-[#FF4D4F]'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleRejectTopic(record);
+                  }}
+                />
+              </>
+            )}
+
             {!canModify && (
               <>
                 <Button
+                  title='Edit Topic'
                   type='text'
                   icon={<EditOutlined />}
                   className='text-[#1890FF]'
@@ -231,6 +294,7 @@ const TopicListPage = () => {
                 />
 
                 <Button
+                  title='Delete Topic'
                   type='text'
                   icon={<DeleteOutlined />}
                   className='text-[#FF4D4F]'
@@ -244,7 +308,7 @@ const TopicListPage = () => {
             <PlayCircleOutlined
               title='Do mock test'
               type='link'
-              className='p-0 flex items-center'
+              className='p-0 flex items-center cursor-pointer'
               onClick={() => onStartHandler(record)}
             />
           </Space>
@@ -256,7 +320,7 @@ const TopicListPage = () => {
   return (
     <>
       <ModalComponent />
-
+      
       <HeaderInfo
         title='Topic List'
         subtitle='Manage and track all topics'
@@ -340,9 +404,12 @@ const TopicListPage = () => {
                 placeholder='Search topic name...'
                 prefix={<SearchOutlined />}
                 value={search}
+                maxLength={255}
                 onChange={(e) => {
+                  const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '');
+
                   setPage(1);
-                  setSearch(e.target.value);
+                  setSearch(sanitized);
                 }}
               />
 
@@ -367,43 +434,21 @@ const TopicListPage = () => {
               columns={columns}
               dataSource={topics}
               loading={isLoading}
-              pagination={false}
+              pagination={{
+                current: page,
+                pageSize: pageSize,
+                total: totalItems,
+                showSizeChanger: true,
+                pageSizeOptions: ['5', '10', '20'],
+                onChange: (p, ps) => {
+                  setPage(p);
+                  setPageSize(ps);
+                },
+                position: ['bottomRight'],
+                showTotal: (total, range) => 
+                  `${range[0]}–${range[1]} of ${total} items`,
+              }}
             />
-
-            {/* Pagination */}
-            <div className='flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 p-4 border-t border-gray-100'>
-              <Text className='text-gray-500'>
-                {totalItems === 0
-                  ? 'No data'
-                  : `Showing ${(page - 1) * pageSize + 1}–${Math.min(
-                      page * pageSize,
-                      totalItems
-                    )} of ${totalItems}`}
-              </Text>
-
-              <div className='flex items-center gap-4 [&_.ant-pagination-item>a]:text-black [&_.ant-pagination-item-active>a]:text-blue-600'>
-                <Pagination
-                  current={page}
-                  total={totalItems}
-                  pageSize={pageSize}
-                  showSizeChanger={false}
-                  onChange={(p) => setPage(p)}
-                />
-
-                <Select
-                  className='w-[120px]'
-                  value={String(pageSize)}
-                  onChange={(val) => {
-                    setPageSize(Number(val));
-                    setPage(1);
-                  }}
-                >
-                  <Option value='5'>5 / page</Option>
-                  <Option value='10'>10 / page</Option>
-                  <Option value='20'>20 / page</Option>
-                </Select>
-              </div>
-            </div>
           </Card>
         </div>
       </div>

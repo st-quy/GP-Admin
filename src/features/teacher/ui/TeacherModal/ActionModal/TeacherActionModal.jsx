@@ -232,6 +232,7 @@ const TeacherActionModal = ({
       form.setFields(errors);
       return false;
     }
+
     return true;
   };
 
@@ -282,7 +283,9 @@ const TeacherActionModal = ({
               ? [backendMessage]
               : [];
 
-          const hasInlineFieldError = applyBackendFieldErrors(normalizedMessages);
+          const hasInlineFieldError = applyBackendFieldErrors(
+            normalizedMessages
+          );
 
           const fallbackMessage =
             normalizedMessages.length > 0
@@ -336,7 +339,6 @@ const TeacherActionModal = ({
       <Modal
         open={isModalOpen}
         okText={isEdit ? 'Update' : 'Create'}
-        // onOk={onAction}
         closable={true}
         destroyOnClose
         keyboard={true}
