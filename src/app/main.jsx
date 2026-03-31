@@ -25,11 +25,10 @@ ReactDOM.createRoot(document.getElementById("root")).render(
               headerBg: "#F5F5F5", // Màu nền của header bảng
             },
             Pagination: {
-              colorPrimaryActive: "#fff",
-              itemActiveBg: "#fff",
-              colorPrimary: "#fff",
-              colorPrimaryHover: "#fff",
-              colorPrimaryTextHover: "#fff",
+              itemActiveBg: "#0A2A79",
+              colorPrimary: "#0A2A79",
+              colorPrimaryHover: "#0A2A79",
+              colorPrimaryBorder: "#0A2A79",
             },
           },
           token: {
