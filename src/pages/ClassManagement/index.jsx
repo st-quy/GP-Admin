@@ -38,9 +38,16 @@ const ClassManagement = () => {
   // @ts-ignore
   const { userId, user } = useSelector((state) => state.auth);
 
-  const { data: classList, isLoading } = useGetAllClass(
-    user?.role.includes('admin') ? null : userId
-  );
+  const teacherId = user?.role.includes('admin') ? null : userId;
+  
+  const { data: response, isLoading } = useGetAllClass({
+    teacherId,
+    page: currentPage,
+    limit: pageSize
+  });
+
+  const classList = response?.data || [];
+  const totalItems = response?.total || 0;
 
   const handleExport = async () => {
     setExportLoading(true);
@@ -172,6 +179,7 @@ const ClassManagement = () => {
             >
               Import
             </Button>
+            
             <input
               type='file'
               accept='.xlsx, .xls'
@@ -186,10 +194,12 @@ const ClassManagement = () => {
               }}
               style={{ display: 'none' }}
             />
+
             <Button
               type='primary'
               className='!h-[50px] !min-w-[145px] !rounded-full !border-none !bg-primaryColor !px-7 !text-[16px] !font-medium hover:!bg-[#002A6B]'
               onClick={() => setIsOpen('Create')}
+              icon={<PlusOutlined />}
             >
               Create new class
             </Button>
@@ -308,20 +318,21 @@ const ClassManagement = () => {
           isOpen={isOpen === 'Create' ? true : false}
           onClose={() => setIsOpen(null)}
         />
-        {dataClass && (
-          <UpdateClassModal
-            isOpen={isOpen === 'Update' ? true : false}
-            onClose={() => {
-              setClassData(null);
-              setIsOpen(null);
-            }}
-            data={dataClass}
-          />
-        )}
-        <DeleteClassModal
-          isOpen={isOpen === 'Delete' ? true : false}
-          onClose={() => setIsOpen(null)}
-          classId={dataClass?.ID}
+      )}
+      
+      <DeleteClassModal
+        isOpen={isOpen === 'Delete'}
+        onClose={() => setIsOpen(null)}
+        classId={dataClass?.ID}
+      />
+      
+      {isModalOpen && (
+        <PreviewExam
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          dataExam={dataExam}
+          fileData={fileData}
+          setDataExam={setDataExam}
         />
         {isModalOpen && (
           <PreviewExam

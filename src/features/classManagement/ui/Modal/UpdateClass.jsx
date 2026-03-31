@@ -49,7 +49,22 @@ const UpdateClassModal = ({ data, isOpen, onClose }) => {
             }
             name="className"
             required={false}
-            rules={[yupSync(CreateClassSchema)]}
+            normalize={(value) => {
+              if (!value) return value;
+              // Remove leading spaces instantly, collapse multiple internal spaces to one
+              return value.replace(/^\s+/, '').replace(/\s{2,}/g, ' ');
+            }}
+            rules={[
+              yupSync(CreateClassSchema),
+              {
+                validator: (_, value) => {
+                  if (value && value.trim().length === 0) {
+                    return Promise.reject(new Error('Class name cannot be only spaces'));
+                  }
+                  return Promise.resolve();
+                },
+              },
+            ]}
             className="w-full"
           >
             <Input size="large" placeholder="Enter class name" />

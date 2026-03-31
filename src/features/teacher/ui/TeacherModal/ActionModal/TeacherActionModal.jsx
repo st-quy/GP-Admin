@@ -1,5 +1,5 @@
 import { Modal, Button, Input, message, Form, Switch } from 'antd';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import * as Yup from 'yup';
 import {
   useCreateTeacher,
@@ -18,49 +18,154 @@ const yupSync = (schema) => ({
 });
 
 const accountSchema = Yup.object().shape({
-  firstName: Yup.string().required('First name is required'),
-  lastName: Yup.string().required('Last name is required'),
-  email: Yup.string().email('Invalid email').required('Email is required'),
-  teacherCode: Yup.string().required('Teacher Code is required'),
+  firstName: Yup.string()
+    .required('First name is required')
+    .max(50, 'First name must not exceed 50 characters')
+    .transform((value) => value?.trim())
+    .test('not-only-spaces', 'First name cannot be only spaces', (value) => {
+      return !value || value.trim().length > 0;
+    }),
+  lastName: Yup.string()
+    .required('Last name is required')
+    .max(50, 'Last name must not exceed 50 characters')
+    .transform((value) => value?.trim())
+    .test('not-only-spaces', 'Last name cannot be only spaces', (value) => {
+      return !value || value.trim().length > 0;
+    }),
+  email: Yup.string()
+    .email('Invalid email')
+    .required('Email is required')
+    .max(100, 'Email must not exceed 100 characters')
+    .transform((value) => value?.trim()),
+  teacherCode: Yup.string()
+    .required('Teacher Code is required')
+    .max(20, 'Teacher Code must not exceed 20 characters')
+    .transform((value) => value?.trim())
+    .test('not-only-spaces', 'Teacher Code cannot be only spaces', (value) => {
+      return !value || value.trim().length > 0;
+    }),
   password: Yup.string()
     .transform((value) => (value === '' ? undefined : value))
     .min(6, 'Password must be at least 6 characters')
+    .max(50, 'Password must not exceed 50 characters')
+    .notRequired(),
+  phone: Yup.string()
+    .transform((value) => {
+      const trimmedValue = value?.trim();
+      return trimmedValue === '' ? undefined : trimmedValue;
+    })
+    .matches(/^\d{10}$/, 'Phone number must be exactly 10 digits')
     .notRequired(),
 });
 
-const TeacherActionModal = ({ initialData = null }) => {
+const TeacherActionModal = ({
+  initialData = null,
+  open: controlledOpen,
+  onClose,
+  hideTrigger = false,
+}) => {
   const [form] = Form.useForm();
   const [open, setOpen] = useState(false);
   const [passwordValue, setPasswordValue] = useState('');
 
   const isEdit = initialData !== null;
+  const isControlled = typeof controlledOpen === 'boolean';
+  const isModalOpen = isControlled ? controlledOpen : open;
   // @ts-ignore
   const { mutate: teacherAction, isPending: isOnAction } = isEdit
     ? useUpdateTeacher()
     : useCreateTeacher();
 
+  const applyBackendFieldErrors = (messages = []) => {
+    const normalizedMessages = messages
+      .filter(Boolean)
+      .map((backendMessage) =>
+        String(backendMessage)
+          .replace(/^Error updating user:\s*/i, '')
+          .replace(/^Validation Error:\s*/i, '')
+          .trim()
+      );
+    const fieldErrorMap = {
+      email: [],
+      teacherCode: [],
+      phone: [],
+    };
+
+    normalizedMessages.forEach((backendMessage) => {
+      const messageText = backendMessage.toLowerCase();
+
+      if (messageText.includes('email')) {
+        fieldErrorMap.email.push(backendMessage);
+      } else if (messageText.includes('teacher code')) {
+        fieldErrorMap.teacherCode.push(backendMessage);
+      } else if (messageText.includes('phone')) {
+        fieldErrorMap.phone.push(backendMessage);
+      }
+    });
+
+    const fields = Object.entries(fieldErrorMap)
+      .filter(([, errors]) => errors.length > 0)
+      .map(([name, errors]) => ({
+        name,
+        errors,
+      }));
+
+    if (fields.length > 0) {
+      form.setFields(fields);
+      return true;
+    }
+
+    return false;
+  };
+
+  useEffect(() => {
+    form.resetFields();
+    form.setFieldsValue({
+      firstName: isEdit ? initialData?.firstName : '',
+      lastName: isEdit ? initialData?.lastName : '',
+      email: isEdit ? initialData?.email : '',
+      teacherCode: isEdit ? initialData?.teacherCode : '',
+      password: '',
+      status: isEdit ? initialData?.status : true,
+      phone: isEdit ? initialData?.phone : '',
+    });
+    setPasswordValue('');
+  }, [form, initialData, isEdit, isModalOpen]);
+
   const showModal = () => {
-    setOpen(true);
+    if (!isControlled) {
+      setOpen(true);
+    }
   };
 
   const handleCancel = () => {
-    setOpen(false);
+    if (!isControlled) {
+      setOpen(false);
+    }
+    onClose?.();
     form.resetFields();
+    setPasswordValue('');
   };
 
   // @ts-ignore
   const onAction = async (values) => {
     try {
+      form.setFields([
+        { name: 'email', errors: [] },
+        { name: 'teacherCode', errors: [] },
+        { name: 'phone', errors: [] },
+      ]);
+
       const data = {
         ID: isEdit ? initialData?.ID : undefined,
-        firstName: values.firstName,
-        lastName: values.lastName,
-        email: values.email,
-        teacherCode: values.teacherCode,
+        firstName: values.firstName?.trim(),
+        lastName: values.lastName?.trim(),
+        email: values.email?.trim(),
+        teacherCode: values.teacherCode?.trim(),
         password: !isEdit ? passwordValue || `Greenwich@123` : undefined,
         role: 'teacher',
         status: values.status,
-        phone: values.phone ? values.phone : undefined,
+        phone: values.phone?.trim() || undefined,
       };
       // @ts-ignore
       teacherAction(data, {
@@ -71,11 +176,41 @@ const TeacherActionModal = ({ initialData = null }) => {
           handleCancel();
         },
         onError: (error) => {
-          message.error(
-            // @ts-ignore
-            error?.response?.data?.message ||
-              `Failed to ${isEdit ? 'update' : 'create'} account.`
+          const backendErrors = error?.response?.data?.errors;
+          // @ts-ignore
+          const backendMessage = error?.response?.data?.message;
+          const normalizedMessages = Array.isArray(backendErrors)
+            ? backendErrors
+            : backendMessage
+              ? [backendMessage]
+              : [];
+
+          const hasInlineFieldError = applyBackendFieldErrors(
+            normalizedMessages
           );
+
+          const fallbackMessage =
+            normalizedMessages.length > 0
+              ? normalizedMessages
+                  .map((item) =>
+                    String(item)
+                      .replace(/^Error updating user:\s*/i, '')
+                      .replace(/^Validation Error:\s*/i, '')
+                      .trim()
+                  )
+                  .join(', ')
+              : `Failed to ${isEdit ? 'update' : 'create'} account.`;
+
+          message.error(fallbackMessage);
+
+          if (!hasInlineFieldError) {
+            form.setFields([
+              {
+                name: 'email',
+                errors: [fallbackMessage],
+              },
+            ]);
+          }
         },
       });
     } catch (error) {
@@ -88,25 +223,29 @@ const TeacherActionModal = ({ initialData = null }) => {
 
   return (
     <>
-      {isEdit ? (
-        <EditOutlined
-          onClick={showModal}
-          className='text-primaryColor text-[20px]'
-        />
-      ) : (
-        <Button
-          icon={<PlusCircleOutlined />}
-          onClick={showModal}
-          className='bg-primaryColor text-white py-6 rounded-full px-4 text-base border-none'
-        >
-          Create new account
-        </Button>
-      )}
+      {!hideTrigger &&
+        (isEdit ? (
+          <EditOutlined
+            onClick={showModal}
+            className='text-primaryColor text-[20px]'
+          />
+        ) : (
+          <Button
+            icon={<PlusCircleOutlined />}
+            onClick={showModal}
+            className='bg-primaryColor text-white py-6 rounded-full px-4 text-base border-none'
+          >
+            Create new account
+          </Button>
+        ))}
       <Modal
-        open={open}
+        open={isModalOpen}
         okText={isEdit ? 'Update' : 'Create'}
         // onOk={onAction}
-        closable={false}
+        closable={true}
+        destroyOnClose
+        keyboard={true}
+        maskClosable={true}
         confirmLoading={isOnAction}
         width={{
           xs: '90%',
@@ -214,6 +353,7 @@ const TeacherActionModal = ({ initialData = null }) => {
                 label={<span className='text-[16px]'>Phone Number</span>}
                 // @ts-ignore
                 name='phone'
+                rules={[yupSync(accountSchema)]}
               >
                 <Input className='h-[46px]' placeholder='Phone Number' />
               </Form.Item>

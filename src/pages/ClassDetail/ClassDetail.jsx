@@ -33,9 +33,14 @@ const ClassDetail = () => {
 
   // Render class details and session table
   return (
-    <div className="pb-12 p-8">
-      <ClassInfo data={classDetail} />
-      <SessionManager data={classDetail} isLoading={isLoading} />
+    <div className="figma-page-container">
+      <div className="figma-content-wrapper">
+        <div className="py-8">
+          <ClassInfo data={classDetail} />
+          <div className="my-10 h-[0px] w-full border-[0.3px] border-[rgba(0,0,0,0.5)]"></div>
+          <SessionManager data={classDetail} isLoading={isLoading} />
+        </div>
+      </div>
     </div>
   );
 };
