@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Card,
   Row,
@@ -6,17 +6,15 @@ import {
   Spin,
   Typography,
   Tabs,
-  Select,
-  Descriptions,
   Tag,
   Dropdown,
   Space,
   Button,
   Empty,
-  Table,
+  Descriptions,
+  message,
 } from "antd";
 import {
-  UserOutlined,
   BookOutlined,
   FileTextOutlined,
   ClockCircleOutlined,
@@ -27,22 +25,16 @@ import { StatCard } from "../../features/dashboard/components/StatCard";
 import { RecentActivities } from "../../features/dashboard/components/RecentActivities";
 import { SessionChart } from "../../features/dashboard/components/SessionChart";
 import { fetchStudents } from "../../features/dashboard/services/userService";
+import axiosInstance from "@shared/config/axios";
+import { statusOptions } from "@features/classDetail/constant/statusEnum";
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [sessions, setSessions] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedSession, setSelectedSession] = useState(null);
-  const [sessionStats, setSessionStats] = useState({
-    totalStudents: 0,
-    ongoingSessions: 0,
-    upcomingSessions: 0,
-    completedSessions: 0,
-    totalSubmissions: 0,
-    pendingRequests: 0,
-  });
 
   useEffect(() => {
     fetchInitialData();
@@ -51,60 +43,28 @@ const Dashboard = () => {
   const fetchInitialData = async () => {
     try {
       setLoading(true);
-      await Promise.all([fetchSessions(), fetchStudentsData()]);
-    } finally {
-      setLoading(false);
-    }
-  };
+      const [sessionsRes, studentsData] = await Promise.all([
+        axiosInstance.get("/sessions/all"),
+        fetchStudents()
+      ]);
 
-  const fetchSessions = async () => {
-    try {
-      const response = await fetch(
-        "https://dev-api-greenprep.onrender.com/api/sessions/all"
-      );
-      const data = await response.json();
-      if (data.status === 200) {
-        setSessions(data.data);
-        if (data.data.length > 0) {
-          setSelectedSession(data.data[0]);
+      if (sessionsRes.data.status === 200) {
+        const sessionData = sessionsRes.data.data;
+        setSessions(sessionData);
+        if (sessionData.length > 0) {
+          setSelectedSession(sessionData[0]);
         }
       }
-    } catch (error) {
-      console.error("Error fetching sessions:", error);
-    }
-  };
-
-  const fetchStudentsData = async () => {
-    try {
-      const studentsData = await fetchStudents();
+      
       if (Array.isArray(studentsData)) {
         setStudents(studentsData);
       }
     } catch (error) {
-      console.error("Error fetching students:", error);
+      console.error("Error fetching dashboard data:", error);
+      message.error("Failed to load dashboard statistics");
+    } finally {
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    if (selectedSession) {
-      calculateSessionStats();
-    }
-  }, [selectedSession, sessions]);
-
-  const calculateSessionStats = () => {
-    const sessionsByStatus = sessions.reduce((acc, session) => {
-      acc[session.status] = (acc[session.status] || 0) + 1;
-      return acc;
-    }, {});
-
-    setSessionStats({
-      totalStudents: students.length,
-      ongoingSessions: sessionsByStatus["ON_GOING"] || 0,
-      upcomingSessions: sessionsByStatus["NOT_STARTED"] || 0,
-      completedSessions: sessionsByStatus["COMPLETE"] || 0,
-      totalSubmissions: Math.floor(Math.random() * 100) + 50,
-      pendingRequests: Math.floor(Math.random() * 10) + 1,
-    });
   };
 
   const handleSessionChange = (sessionId) => {
@@ -117,7 +77,7 @@ const Dashboard = () => {
     label: (
       <div className="py-2 px-4 hover:bg-gray-100">
         <div className="font-medium">{session.sessionName}</div>
-        <div className="text-sm text-gray-500">{session.Classes?.className}</div>
+        <div className="text-sm text-gray-500">{session.Classes?.className || "No Class"}</div>
       </div>
     ),
     onClick: () => handleSessionChange(session.ID),
@@ -125,10 +85,10 @@ const Dashboard = () => {
 
   const selectedSessionLabel = selectedSession ? (
     <Space>
-      <div>
+      <div className="text-left">
         <div className="font-medium">{selectedSession.sessionName}</div>
         <div className="text-sm text-gray-500">
-          {selectedSession.Classes?.className}
+          {selectedSession.Classes?.className || "No Class"}
         </div>
       </div>
     </Space>
@@ -136,49 +96,26 @@ const Dashboard = () => {
     "Select a session"
   );
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "NOT_STARTED":
-        return "blue";
-      case "ON_GOING":
-        return "green";
-      case "COMPLETE":
-        return "purple";
-      default:
-        return "default";
-    }
-  };
-
-  const sessionChartData = React.useMemo(() => {
-    if (!sessions || !Array.isArray(sessions)) return [];
-
+  const sessionChartData = useMemo(() => {
     const counts = {
-      Ongoing: 0,
+      "Ongoing": 0,
       "Not Started": 0,
-      Completed: 0,
+      "Completed": 0,
     };
 
     sessions.forEach((session) => {
-      switch (session.status) {
-        case "ON_GOING":
-          counts["Ongoing"]++;
-          break;
-        case "NOT_STARTED":
-          counts["Not Started"]++;
-          break;
-        case "COMPLETE":
-          counts["Completed"]++;
-          break;
-      }
+      if (session.status === "ON_GOING") counts["Ongoing"]++;
+      else if (session.status === "NOT_STARTED") counts["Not Started"]++;
+      else if (session.status === "COMPLETE") counts["Completed"]++;
     });
 
     return Object.entries(counts)
-      .map(([type, value]) => ({
-        type,
-        value,
-      }))
+      .map(([type, value]) => ({ type, value }))
       .filter((item) => item.value > 0);
   }, [sessions]);
+
+  const ongoingCount = useMemo(() => sessions.filter(s => s.status === "ON_GOING").length, [sessions]);
+  const completedCount = useMemo(() => sessions.filter(s => s.status === "COMPLETE").length, [sessions]);
 
   if (loading) {
     return (
@@ -200,26 +137,21 @@ const Dashboard = () => {
             <Dropdown menu={{ items: dropdownItems }} trigger={["click"]}>
               <Button
                 style={{
-                  width: "300px",
+                  minWidth: "300px",
                   height: "auto",
-                  padding: "8px 12px",
-                  textAlign: "left",
-                  whiteSpace: "normal",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
+                  padding: "8px 16px",
                   borderRadius: "8px",
                   border: "1px solid #DFE4EA",
                   boxShadow: "0px 4px 4px rgba(0, 0, 0, 0.05)"
                 }}
+                className="flex items-center justify-between"
               >
                 {selectedSessionLabel}
-                <DownOutlined />
+                <DownOutlined className="ml-4 text-gray-400" />
               </Button>
             </Dropdown>
           </div>
 
-          {/* Statistics Cards */}
           <Row gutter={[30, 30]} className="mb-10">
             <Col xs={24} sm={12} md={8} lg={6}>
               <StatCard
@@ -234,7 +166,7 @@ const Dashboard = () => {
               <StatCard
                 icon={<BookOutlined />}
                 title="Session Status"
-                value={selectedSession?.status || "N/A"}
+                value={statusOptions[selectedSession?.status]?.label || "N/A"}
                 subtitle="Current Status"
                 color="#22AD5C"
               />
@@ -244,7 +176,7 @@ const Dashboard = () => {
                 icon={<ClockCircleOutlined />}
                 title="Total Sessions"
                 value={sessions.length}
-                subtitle={`${sessionChartData.find(d => d.type === 'Ongoing')?.value || 0} Ongoing`}
+                subtitle={`${ongoingCount} Ongoing`}
                 color="#F2994A"
               />
             </Col>
@@ -252,14 +184,13 @@ const Dashboard = () => {
               <StatCard
                 icon={<FileTextOutlined />}
                 title="Completed"
-                value={sessionChartData.find(d => d.type === 'Completed')?.value || 0}
+                value={completedCount}
                 subtitle="Sessions finished"
                 color="#9B51E0"
               />
             </Col>
           </Row>
 
-          {/* Charts and Activity Sections */}
           <Row gutter={[30, 30]}>
             <Col xs={24} lg={16}>
               <Card 
@@ -283,7 +214,9 @@ const Dashboard = () => {
                       key: "2",
                       label: "Recent Activities",
                       children: (
-                        <RecentActivities sessionId={selectedSession?.ID} />
+                        <div className="p-4">
+                          <RecentActivities sessionId={selectedSession?.ID} />
+                        </div>
                       ),
                     },
                   ]}
@@ -299,21 +232,21 @@ const Dashboard = () => {
                 {selectedSession ? (
                   <Descriptions bordered column={1} size="small">
                     <Descriptions.Item label="Topic">
-                      {selectedSession.Topic?.Name}
+                      {selectedSession.Topic?.Name || "N/A"}
                     </Descriptions.Item>
                     <Descriptions.Item label="Session Key">
                       {selectedSession.sessionKey}
                     </Descriptions.Item>
                     <Descriptions.Item label="Status">
-                      <Tag color={getStatusColor(selectedSession.status)}>
-                        {selectedSession.status}
+                      <Tag color={statusOptions[selectedSession.status]?.text === "#1C3FB7" ? "blue" : statusOptions[selectedSession.status]?.text === "#1A8245" ? "green" : "default"}>
+                        {statusOptions[selectedSession.status]?.label || selectedSession.status}
                       </Tag>
                     </Descriptions.Item>
                     <Descriptions.Item label="Start">
-                      {new Date(selectedSession.startTime).toLocaleDateString()}
+                      {new Date(selectedSession.startTime).toLocaleString()}
                     </Descriptions.Item>
                     <Descriptions.Item label="End">
-                      {new Date(selectedSession.endTime).toLocaleDateString()}
+                      {new Date(selectedSession.endTime).toLocaleString()}
                     </Descriptions.Item>
                   </Descriptions>
                 ) : (

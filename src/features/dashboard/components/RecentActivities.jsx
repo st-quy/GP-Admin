@@ -1,81 +1,82 @@
 import React, { useEffect, useState } from "react";
-import { List, Avatar, Tag, Spin } from "antd";
-import { fetchRecentActivities } from "../services/dashboardService";
+import { List, Avatar, Tag, Spin, Empty } from "antd";
+import axiosInstance from "@shared/config/axios";
 import {
   UserOutlined,
-  BookOutlined,
-  FileTextOutlined,
+  ClockCircleOutlined,
 } from "@ant-design/icons";
 import PropTypes from "prop-types";
-
-const getActivityIcon = (type) => {
-  switch (type) {
-    case "user":
-      return <UserOutlined />;
-    case "class":
-      return <BookOutlined />;
-    case "submission":
-      return <FileTextOutlined />;
-    default:
-      return <UserOutlined />;
-  }
-};
-
-const getStatusColor = (status) => {
-  switch (status) {
-    case "success":
-      return "success";
-    case "warning":
-      return "warning";
-    case "error":
-      return "error";
-    default:
-      return "default";
-  }
-};
 
 export const RecentActivities = ({ sessionId }) => {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadActivities();
-  }, []);
+    if (sessionId) {
+      loadActivities();
+    } else {
+      setLoading(false);
+    }
+  }, [sessionId]);
 
   const loadActivities = async () => {
     try {
       setLoading(true);
-      const data = await fetchRecentActivities();
-      setActivities(data);
+      // We use session-participants as a proxy for activity since the /activities endpoint is missing
+      const response = await axiosInstance.get(`/session-participants/${sessionId}`);
+      
+      if (response.data.status === 200) {
+        const participants = response.data.data.data || [];
+        const mappedActivities = participants.map(p => ({
+          id: p.ID,
+          title: `${p.User?.fullName || 'A student'} joined the session`,
+          type: "user",
+          status: "success",
+          timestamp: p.createdAt
+        }));
+        setActivities(mappedActivities);
+      }
     } catch (error) {
       console.error("Error loading activities:", error);
+      setActivities([]);
     } finally {
       setLoading(false);
     }
   };
 
   if (loading) {
-    return <Spin />;
+    return (
+      <div className="flex justify-center p-8">
+        <Spin />
+      </div>
+    );
+  }
+
+  if (!sessionId) {
+    return <Empty description="Select a session to view activities" />;
   }
 
   return (
-    <div>
-      <List
-        itemLayout="horizontal"
-        dataSource={activities}
-        renderItem={(item) => (
-          <List.Item>
-            <List.Item.Meta
-              avatar={<Avatar icon={getActivityIcon(item.type)} />}
-              title={item.title}
-              description={new Date(item.timestamp).toLocaleString()}
-            />
-            <Tag color={getStatusColor(item.status)}>{item.status}</Tag>
-          </List.Item>
-        )}
-      />
-      Recent activities for session: {sessionId}
-    </div>
+    <List
+      itemLayout="horizontal"
+      dataSource={activities}
+      locale={{ emptyText: "No recent activity found for this session" }}
+      renderItem={(item) => (
+        <List.Item>
+          <List.Item.Meta
+            avatar={<Avatar icon={<UserOutlined />} className="bg-blue-100 text-blue-600" />}
+            title={<span className="font-medium">{item.title}</span>}
+            description={
+              <div className="flex items-center gap-2 text-gray-400">
+                <ClockCircleOutlined size={12} />
+                {new Date(item.timestamp).toLocaleString()}
+              </div>
+            }
+          />
+          <Tag color="success">Active</Tag>
+        </List.Item>
+      )}
+    />
   );
 };
 
