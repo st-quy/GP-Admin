@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Table, message, Pagination } from "antd";
+import { Table, message, Pagination, Select } from "antd";
 import CheckCircleIcon from "@/assets/icons/check-circle.svg";
 import CloseCircleIcon from "@/assets/icons/close-circle.svg";
 import ConfirmationModal from "@shared/Modal/ConfirmationModal";
@@ -55,9 +55,12 @@ const StudentMonitoring = ({
   }, [dataSource]);
   const filteredData = useMemo(() => {
     // BUG_CM030/CM031: Proactive validation and limit
-    const cleanKeyword = (searchKeyword || '')
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .replace(/\s{2,}/g, ' ')
+    const cleanKeyword = (searchKeyword || "")
+      .replace(
+        /[^a-zA-Z0-9\s]/.test(searchKeyword) ? /[^a-zA-Z0-9\s]/g : "",
+        "",
+      )
+      .replace(/\s{2,}/g, " ")
       .slice(0, 50)
       .toLowerCase();
 
@@ -174,29 +177,24 @@ const StudentMonitoring = ({
     },
   ];
 
-  const onShowSizeChange = (current, size) => {
-    setCurrentPage(current);
-    setPageSize(size);
-  };
-
-  const startItem =
-    filteredData?.length === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, filteredData?.length || 0);
+  const total = filteredData?.length || 0;
+  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, total);
 
   return (
     <div className="w-full">
       <div className="flex items-center min-h-[32px] mb-2">
         {selectedRowKeys.length > 0 && (
-          <div className="flex">
+          <div className="flex items-center gap-2">
             <div
-              className="text-primaryTextColor rounded-none md:text-sm text-[10px] h-8 px-3 hover:font-bold hover:text-[#22AD5C] hover:underline hover:cursor-pointer"
+              className="text-[#003087] font-medium md:text-sm text-[10px] h-8 px-3 hover:underline hover:cursor-pointer"
               onClick={() => handleBulkAction("approve")}
             >
               Approve
             </div>
-            <div>|</div>
+            <div className="text-[#DFE4EA]">|</div>
             <div
-              className="text-primaryTextColor rounded-none md:text-sm text-[10px] h-8 px-3 hover:font-bold hover:text-[#F23030] hover:underline hover:cursor-pointer"
+              className="text-[#F23030] font-medium md:text-sm text-[10px] h-8 px-3 hover:underline hover:cursor-pointer"
               onClick={() => handleBulkAction("reject")}
             >
               Reject
@@ -204,60 +202,98 @@ const StudentMonitoring = ({
           </div>
         )}
       </div>
-      <Table
-        scroll={{ y: 5 * 70 }}
-        rowSelection={rowSelection}
-        // @ts-ignore
-        columns={columns}
-        loading={isLoading}
-        dataSource={filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize)}
-        pagination={false}
-        className="border border-gray-200 rounded-lg overflow-hidden"
-        rowClassName="hover:bg-gray-50"
-        components={{
-          header: {
-            wrapper: (props) => (
-              <thead
-                {...props}
-                className="bg-tableHeadColor text-[10px] font-[700] md:text-[16px] text-primaryTextColor uppercase"
-              />
-            ),
-            cell: (props) => (
-              <th
-                {...props}
-                className="tracking-wider text-center py-4 px-0 whitespace-nowrap"
-              />
-            ),
-          },
-          body: {
-            cell: (props) => (
-              <td
-                {...props}
-                className="font-[500] tracking-wider text-center py-4 px-0 whitespace-nowrap text-[10px] md:text-[14px] text-primaryTextColor"
-              />
-            ),
-          },
-        }}
-      />
-      <div className='flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm'>
-        <div className='text-gray-600 font-medium'>
-          {filteredData?.length > 0 
-            ? `Showing ${startItem}-${endItem} of ${filteredData?.length} entries` 
-            : 'No entries found'}
-        </div>
-        <Pagination
-          current={currentPage}
-          pageSize={pageSize}
-          total={filteredData?.length || 0}
-          onChange={(page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          }}
-          showSizeChanger
-          pageSizeOptions={['5', '10', '15', '20']}
-          className='ant-pagination-custom'
+
+      <div className="figma-table-card figma-table-overrides w-full">
+        <Table
+          scroll={{ y: 5 * 70 }}
+          rowSelection={rowSelection}
+          // @ts-ignore
+          columns={columns}
+          loading={isLoading}
+          dataSource={filteredData.slice(
+            (currentPage - 1) * pageSize,
+            currentPage * pageSize,
+          )}
+          pagination={false}
+          className="w-full"
         />
       </div>
+
+      <div className="figma-pagination-wrapper">
+        <div className="figma-pagination-box">
+          <div className="figma-pagination-text whitespace-nowrap">
+            {total === 0
+              ? "No entries found"
+              : `Showing ${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")} of ${total}`}
+          </div>
+
+          <div className="figma-pagination-nav-group">
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={total}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+              itemRender={(page, type, original) => {
+                if (type === "page") {
+                  const isActive = currentPage === page;
+                  return (
+                    <button
+                      className={`figma-page-btn ${isActive ? "active" : ""}`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                if (type === "prev") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u2039"}
+                    </button>
+                  );
+                }
+                if (type === "next") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u203A"}
+                    </button>
+                  );
+                }
+                if (type === "jump-prev" || type === "jump-next") {
+                  return (
+                    <span
+                      className="text-[#637381] px-1"
+                      style={{ fontSize: "16px", lineHeight: "25px" }}
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return original;
+              }}
+            />
+          </div>
+
+          <div className="figma-page-size-container">
+            <Select
+              value={pageSize}
+              onChange={(val) => {
+                setPageSize(val);
+                setCurrentPage(1);
+              }}
+              bordered={false}
+              className="figma-page-size-select"
+              options={[
+                { value: 5, label: "05 / pages" },
+                { value: 10, label: "10 / pages" },
+                { value: 20, label: "20 / pages" },
+                { value: 50, label: "50 / pages" },
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+
       <ConfirmationModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
