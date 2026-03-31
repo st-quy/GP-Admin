@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Table, Input, Select, message } from "antd";
+import { Table, Input, Select, message, Pagination } from "antd";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import { SearchOutlined } from "@ant-design/icons";
 
@@ -15,24 +15,28 @@ const SessionTable = ({ data, columns, isLoading }) => {
 
     // 1. Proactively handle special characters/emojis (BUG_CM013)
     if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
-      message.warning('Special characters and emojis are not allowed in search.');
-      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+      message.warning(
+        "Special characters and emojis are not allowed in search.",
+      );
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, "");
     }
 
     // 2. Proactively handle multiple spaces (BUG_CM014)
     if (/\s{2,}/.test(cleanValue)) {
-      message.info('Multiple spaces are not allowed; collapsed to a single space.');
-      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+      message.info(
+        "Multiple spaces are not allowed; collapsed to a single space.",
+      );
+      cleanValue = cleanValue.replace(/\s{2,}/g, " ");
     }
 
     // 3. Proactively handle length overflow (BUG_CM012)
     if (cleanValue.length > 50) {
-      message.error('Search limit reached (max 50 characters).');
+      message.error("Search limit reached (max 50 characters).");
       cleanValue = cleanValue.slice(0, 50);
     }
 
     // 4. Block leading spaces
-    cleanValue = cleanValue.replace(/^\s+/, '');
+    cleanValue = cleanValue.replace(/^\s+/, "");
 
     setSearchText(cleanValue);
     setCurrentPage(1);
@@ -43,13 +47,13 @@ const SessionTable = ({ data, columns, isLoading }) => {
     ([value, info]) => ({
       value,
       label: info.label,
-    })
+    }),
   );
 
   const handleSearch = (value) => {
     const trimmedValue = value.trim();
     if (trimmedValue.length > 50) {
-      message.error('Search query is too long');
+      message.error("Search query is too long");
       return;
     }
     setSearchText(trimmedValue);
@@ -61,7 +65,7 @@ const SessionTable = ({ data, columns, isLoading }) => {
     const searchValue = searchText.toLowerCase().trim();
     const matchesSearch = searchValue
       ? Object.values(item).some((value) =>
-          String(value).toLowerCase().includes(searchValue)
+          String(value).toLowerCase().includes(searchValue),
         )
       : true;
 
@@ -114,73 +118,73 @@ const SessionTable = ({ data, columns, isLoading }) => {
 
       <div className="figma-pagination-wrapper">
         <div className="figma-pagination-box">
-          <div className="figma-pagination-text">
-            {total > 0
-              ? `Showing ${start}-${end} of ${total}`
-              : "No entries found"}
+          <div className="figma-pagination-text whitespace-nowrap">
+            {total === 0
+              ? "No entries found"
+              : `Showing ${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")} of ${total}`}
           </div>
 
           <div className="figma-pagination-nav-group">
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
-              className="figma-page-btn"
-            >
-              <img src="/src/assets/icons/chevron-left.svg" alt="prev" style={{ display: 'none' }} />
-              {"<"}
-            </button>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={total}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+              itemRender={(page, type, original) => {
+                if (type === "page") {
+                  const isActive = currentPage === page;
+                  return (
+                    <button className={`figma-page-btn ${isActive ? "active" : ""}`}>
+                      {page}
+                    </button>
+                  );
+                }
+                if (type === "prev") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u2039"}
+                    </button>
+                  );
+                }
+                if (type === "next") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u203A"}
+                    </button>
+                  );
+                }
+                if (type === "jump-prev" || type === "jump-next") {
+                  return (
+                    <span
+                      className="text-[#637381] px-1"
+                      style={{ fontSize: "16px", lineHeight: "25px" }}
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return original;
+              }}
+            />
+          </div>
 
-            {[...Array(Math.ceil(total / pageSize))].map((_, i) => {
-              const page = i + 1;
-              // Simple pagination logic for brevity, can be expanded
-              if (
-                page === 1 ||
-                page === Math.ceil(total / pageSize) ||
-                (page >= currentPage - 1 && page <= currentPage + 1)
-              ) {
-                return (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`figma-page-btn ${currentPage === page ? "active" : ""}`}
-                  >
-                    {page}
-                  </button>
-                );
-              }
-              if (page === currentPage - 2 || page === currentPage + 2) {
-                return <span key={page} className="text-[#637381]">...</span>;
-              }
-              return null;
-            })}
-
-            <button
-              onClick={() =>
-                setCurrentPage((p) => Math.min(Math.ceil(total / pageSize), p + 1))
-              }
-              disabled={currentPage === Math.ceil(total / pageSize)}
-              className="figma-page-btn"
-            >
-              {">"}
-            </button>
-
-            <div className="figma-page-size-container">
-              <Select
-                value={pageSize}
-                onChange={(size) => {
-                  setPageSize(size);
-                  setCurrentPage(1);
-                }}
-                options={[
-                  { value: 5, label: "5 / pages" },
-                  { value: 10, label: "10 / pages" },
-                  { value: 15, label: "15 / pages" },
-                  { value: 20, label: "20 / pages" },
-                ]}
-                variant="borderless"
-                className="figma-page-size-select w-[110px]"
-              />
-            </div>
+          <div className="figma-page-size-container">
+            <Select
+              value={pageSize}
+              onChange={(val) => {
+                setPageSize(val);
+                setCurrentPage(1);
+              }}
+              bordered={false}
+              className="figma-page-size-select"
+              options={[
+                { value: 5, label: "05 / pages" },
+                { value: 10, label: "10 / pages" },
+                { value: 15, label: "15 / pages" },
+                { value: 20, label: "20 / pages" },
+              ]}
+            />
           </div>
         </div>
       </div>
