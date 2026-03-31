@@ -85,6 +85,7 @@ const TeacherActionModal = ({
     ? useUpdateTeacher()
     : useCreateTeacher();
 
+  // Fetch all teachers for unique validation
   const { data: allTeachersData } = useFetchTeachers({ page: 1, limit: 1000 });
   const allTeachers = allTeachersData?.data?.teachers || [];
 
@@ -128,8 +129,7 @@ const TeacherActionModal = ({
   };
 
   const handlePhoneChange = (e) => {
-    const value =
-      typeof e.target.value === 'string' ? e.target.value.trimStart() : e.target.value;
+    const value = typeof e.target.value === 'string' ? e.target.value.trimStart() : e.target.value;
     form.setFieldsValue({ phone: value });
   };
 
@@ -232,7 +232,6 @@ const TeacherActionModal = ({
       form.setFields(errors);
       return false;
     }
-
     return true;
   };
 
@@ -245,13 +244,26 @@ const TeacherActionModal = ({
         { name: 'phone', errors: [] },
       ]);
 
-      const isValid = validateUniqueEmailAndTeacherCode(
-        values.email?.trim(),
-        values.teacherCode?.trim(),
-        isEdit ? initialData?.ID : null
-      );
-      if (!isValid) {
-        return;
+      // Validate unique email and teacher code
+      if (isEdit) {
+        const isValid = validateUniqueEmailAndTeacherCode(
+          values.email?.trim(),
+          values.teacherCode?.trim(),
+          initialData?.ID
+        );
+        if (!isValid) {
+          return;
+        }
+      } else {
+        // For create, also check uniqueness
+        const isValid = validateUniqueEmailAndTeacherCode(
+          values.email?.trim(),
+          values.teacherCode?.trim(),
+          null
+        );
+        if (!isValid) {
+          return;
+        }
       }
 
       const data = {
