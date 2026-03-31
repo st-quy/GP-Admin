@@ -18,6 +18,7 @@ import {
   TeamOutlined,
   SearchOutlined,
   CheckCircleOutlined,
+  FileTextOutlined,
 } from "@ant-design/icons";
 import { StatCard } from "../../features/dashboard/components/StatCard";
 import { RecentActivities } from "../../features/dashboard/components/RecentActivities";
@@ -36,12 +37,16 @@ const Dashboard = () => {
     activeTesting: 0,
     gradingQueue: 0,
     totalSessions: 0,
+    totalClasses: 0,
+    totalExams: 0,
+    totalQuestionBank: 0,
   });
   const [selectedSessionId, setSelectedSessionId] = useState(null);
+  const [searchValue, setSearchValue] = useState("");
 
-  const selectedSession = useMemo(() => 
-    sessions.find(s => s.ID === selectedSessionId), 
-    [sessions, selectedSessionId]
+  const selectedSession = useMemo(
+    () => sessions.find((s) => s.ID === selectedSessionId),
+    [sessions, selectedSessionId],
   );
 
   useEffect(() => {
@@ -53,7 +58,7 @@ const Dashboard = () => {
       setLoading(true);
       const [statsData, sessionsRes] = await Promise.all([
         fetchDashboardStats(),
-        axiosInstance.get("/sessions/all?limit=9999")
+        axiosInstance.get("/sessions/all?limit=9999"),
       ]);
 
       setStats(statsData);
@@ -73,11 +78,30 @@ const Dashboard = () => {
     }
   };
 
+  const handleSearch = (value) => {
+    let cleanValue = value;
+
+    if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, "");
+    }
+
+    if (/\s{2,}/.test(cleanValue)) {
+      cleanValue = cleanValue.replace(/\s{2,}/g, " ");
+    }
+
+    if (cleanValue.length > 50) {
+      cleanValue = cleanValue.slice(0, 50);
+    }
+
+    cleanValue = cleanValue.replace(/^\s+/, "");
+    setSearchValue(cleanValue);
+  };
+
   const sessionChartData = useMemo(() => {
     const counts = {
-      "Ongoing": 0,
+      Ongoing: 0,
       "Not Started": 0,
-      "Completed": 0,
+      Completed: 0,
     };
 
     sessions.forEach((session) => {
@@ -106,39 +130,42 @@ const Dashboard = () => {
           <div className="mb-10 flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
               <h4 className="figma-title">Admin Command Center</h4>
-              <p className="figma-subtitle">High-level oversight of platform activity and testing status.</p>
+              <p className="figma-subtitle">
+                High-level oversight of platform activity and testing status.
+              </p>
             </div>
             <div className="w-full md:w-[400px]">
-              <Text className="block mb-2 text-gray-500 font-medium text-[14px]">Quick Session Lookup</Text>
+              <Text className="block mb-2 text-gray-500 font-medium text-[14px]">
+                Quick Session Lookup
+              </Text>
               <Select
                 showSearch
                 placeholder="Search by session or class name..."
                 className="w-full h-[48px] figma-search-input-select"
+                options={sessions.map((s) => ({
+                  value: s.ID,
+                  label: `${s.sessionName} (${s.Classes?.className || "No Class"})`,
+                }))}
                 onChange={setSelectedSessionId}
+                onSearch={handleSearch}
+                searchValue={searchValue}
                 value={selectedSessionId}
                 allowClear
                 filterOption={(input, option) =>
-                  (option?.children?.[0] || "").toLowerCase().includes(input.toLowerCase()) ||
-                  (option?.children?.[2] || "").toLowerCase().includes(input.toLowerCase())
+                  option.label.toLowerCase().includes(input.toLowerCase())
                 }
-              >
-                {sessions.map(s => (
-                  <Select.Option key={s.ID} value={s.ID}>
-                    {s.sessionName} ({s.Classes?.className || 'No Class'})
-                  </Select.Option>
-                ))}
-              </Select>
+              />
             </div>
           </div>
 
-          {/* Global Platform Stats */}
-          <Row gutter={[30, 30]} className="mb-10">
+          {/* Platform Stats Row 1 */}
+          <Row gutter={[30, 30]} className="mb-8">
             <Col xs={24} sm={12} md={8} lg={6}>
               <StatCard
                 icon={<TeamOutlined />}
                 title="Total Students"
                 value={stats.studentCount}
-                subtitle="Platform base"
+                subtitle="All registered students"
                 color="#003087"
               />
             </Col>
@@ -147,7 +174,7 @@ const Dashboard = () => {
                 icon={<ClockCircleOutlined />}
                 title="Active Testing"
                 value={stats.activeTesting}
-                subtitle="Sessions ON_GOING"
+                subtitle="Currently active sessions"
                 color="#22AD5C"
               />
             </Col>
@@ -156,7 +183,7 @@ const Dashboard = () => {
                 icon={<BookOutlined />}
                 title="Grading Queue"
                 value={stats.gradingQueue}
-                subtitle="Needs publishing"
+                subtitle="Exams awaiting review"
                 color="#F2994A"
               />
             </Col>
@@ -165,7 +192,47 @@ const Dashboard = () => {
                 icon={<CheckCircleOutlined />}
                 title="Total Sessions"
                 value={stats.totalSessions}
-                subtitle="Platform usage"
+                subtitle="All-time sessions"
+                color="#9B51E0"
+              />
+            </Col>
+          </Row>
+
+          {/* Platform Stats Row 2 */}
+          <Row gutter={[30, 30]} className="mb-10">
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<BookOutlined />}
+                title="Total Classes"
+                value={stats.totalClasses}
+                subtitle="Active classes"
+                color="#003087"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<FileTextOutlined />}
+                title="Total Exams"
+                value={stats.totalExams}
+                subtitle="Exam papers"
+                color="#22AD5C"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<SearchOutlined />}
+                title="Question Bank"
+                value={stats.totalQuestionBank}
+                subtitle="Pools"
+                color="#F2994A"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={6}>
+              <StatCard
+                icon={<ClockCircleOutlined />}
+                title="Coming Soon"
+                value="---"
+                subtitle="Historical data"
                 color="#9B51E0"
               />
             </Col>
@@ -173,10 +240,14 @@ const Dashboard = () => {
 
           <Row gutter={[30, 30]}>
             <Col xs={24} lg={14}>
-              <Card 
-                title={<span className="text-[18px] font-bold">Platform Overview</span>}
+              <Card
+                title={
+                  <span className="text-[18px] font-bold">
+                    Platform Overview
+                  </span>
+                }
                 className="h-full rounded-[5px] border-none shadow-[0px_1px_3px_rgba(166,175,195,0.4)]"
-                bodyStyle={{ padding: '20px' }}
+                bodyStyle={{ padding: "20px" }}
               >
                 <Tabs
                   defaultActiveKey="1"
@@ -189,7 +260,7 @@ const Dashboard = () => {
                         <div className="p-4 flex flex-col items-center">
                           <SessionChart data={sessionChartData} />
                           <div className="mt-4 text-center text-gray-500">
-                            Distribution of sessions by their current operational state.
+                            Distribution of sessions by their current status.
                           </div>
                         </div>
                       ),
@@ -208,26 +279,56 @@ const Dashboard = () => {
               </Card>
             </Col>
             <Col xs={24} lg={10}>
-              <Card 
-                title={<span className="text-[18px] font-bold">Session Detail Deep-Dive</span>} 
+              <Card
+                title={
+                  <span className="text-[18px] font-bold">
+                    Session Overview
+                  </span>
+                }
                 className="h-full rounded-[5px] border-none shadow-[0px_1px_3px_rgba(166,175,195,0.4)]"
-                bodyStyle={{ padding: '20px' }}
+                bodyStyle={{ padding: "20px" }}
               >
                 {selectedSession ? (
                   <div className="flex flex-col gap-6">
-                    <Descriptions bordered column={1} size="small" className="figma-descriptions">
-                      <Descriptions.Item label="Session">{selectedSession.sessionName}</Descriptions.Item>
-                      <Descriptions.Item label="Class">{selectedSession.Classes?.className || "N/A"}</Descriptions.Item>
-                      <Descriptions.Item label="Key"><span className="font-mono font-bold text-blue-700">{selectedSession.sessionKey}</span></Descriptions.Item>
+                    <Descriptions
+                      bordered
+                      column={1}
+                      size="small"
+                      className="figma-descriptions"
+                    >
+                      <Descriptions.Item label="Session">
+                        {selectedSession.sessionName}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Class">
+                        {selectedSession.Classes?.className || "N/A"}
+                      </Descriptions.Item>
+                      <Descriptions.Item label="Key">
+                        <span className="font-mono font-bold text-blue-700">
+                          {selectedSession.sessionKey}
+                        </span>
+                      </Descriptions.Item>
                       <Descriptions.Item label="Status">
-                        <Tag color={statusOptions[selectedSession.status]?.text === "#1C3FB7" ? "blue" : statusOptions[selectedSession.status]?.text === "#1A8245" ? "green" : "default"}>
-                          {statusOptions[selectedSession.status]?.label || selectedSession.status}
+                        <Tag
+                          color={
+                            statusOptions[selectedSession.status]?.text ===
+                            "#1C3FB7"
+                              ? "blue"
+                              : statusOptions[selectedSession.status]?.text ===
+                                  "#1A8245"
+                                ? "green"
+                                : "default"
+                          }
+                        >
+                          {statusOptions[selectedSession.status]?.label ||
+                            selectedSession.status}
                         </Tag>
                       </Descriptions.Item>
-                      <Descriptions.Item label="Start">{new Date(selectedSession.startTime).toLocaleString()}</Descriptions.Item>
+                      <Descriptions.Item label="Start">
+                        {new Date(selectedSession.startTime).toLocaleString()}
+                      </Descriptions.Item>
                     </Descriptions>
-                    <Button 
-                      type="primary" 
+                    <Button
+                      type="primary"
                       className="figma-primary-btn w-full"
                       href={`/class/${selectedSession.ClassID}/session/${selectedSession.ID}`}
                     >
@@ -236,8 +337,13 @@ const Dashboard = () => {
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-[300px] text-gray-400 gap-4">
-                    <SearchOutlined style={{ fontSize: '48px', opacity: 0.2 }} />
-                    <p>Select a session from the lookup tool to see specific data.</p>
+                    <SearchOutlined
+                      style={{ fontSize: "48px", opacity: 0.2 }}
+                    />
+                    <p>
+                      Select a session from the lookup tool to see specific
+                      data.
+                    </p>
                   </div>
                 )}
               </Card>

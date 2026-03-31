@@ -22,9 +22,8 @@ export const SessionChart = ({ data }) => {
       lineWidth: 0,
     },
     label: {
-      type: "inner",
-      offset: "-50%",
-      content: (data) => `${data.value}`,
+      text: "value",
+      position: "inside",
       style: {
         fill: "#fff",
         fontSize: 14,
