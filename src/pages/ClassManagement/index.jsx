@@ -1,23 +1,20 @@
 import React, { useState } from 'react';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined, ExportOutlined, ImportOutlined } from '@ant-design/icons';
 import {
   useGetAllClass,
   handleImportClick,
-  handleFileChange,
   fileInputRef,
   handleExportExcel,
   handlePreviewFile,
 } from '@features/classManagement/hooks';
 import CreateClassModal from '@features/classManagement/ui/Modal/CreateClass';
 import TableSearch from '@shared/ui/TableSearch';
-import { Button, Typography } from 'antd';
+import { Button, Tooltip } from 'antd';
 import { Link } from 'react-router-dom';
 import UpdateClassModal from '@features/classManagement/ui/Modal/UpdateClass';
 import DeleteClassModal from '@features/classManagement/ui/Modal/DeleteClass';
 import { useSelector } from 'react-redux';
-import { useQueryClient } from '@tanstack/react-query';
 import PreviewExam from '@shared/ui/PreviewExam';
-import HeaderInfo from '@app/components/HeaderInfo';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
@@ -25,15 +22,26 @@ const ClassManagement = () => {
   const [fileData, setFileData] = useState(null);
   const [importLoading, setImportLoading] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
-  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState('');
   const [dataClass, setClassData] = useState(null);
+  
+  // Server-side pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   // @ts-ignore
   const { userId, user } = useSelector((state) => state.auth);
 
-  const { data: classList, isLoading } = useGetAllClass(
-    user?.role.includes('admin') ? null : userId
-  );
+  const teacherId = user?.role.includes('admin') ? null : userId;
+  
+  const { data: response, isLoading } = useGetAllClass({
+    teacherId,
+    page: currentPage,
+    limit: pageSize
+  });
+
+  const classList = response?.data || [];
+  const totalItems = response?.total || 0;
 
   const handleExport = async () => {
     setExportLoading(true);
@@ -51,25 +59,34 @@ const ClassManagement = () => {
     setClassData(record);
   };
 
+  const onParamsChange = (params) => {
+    if (params.page !== undefined) setCurrentPage(params.page);
+    if (params.pageSize !== undefined) {
+      setPageSize(params.pageSize);
+      setCurrentPage(1);
+    }
+  };
+
   const columns = [
     {
       title: 'CLASS NAME',
       dataIndex: 'className',
       key: 'className',
-      align: 'center',
-
+      align: 'left',
       render: (text, record) => (
-        <Link to={`${record.ID}`} className='underline'>
-          {text}
-        </Link>
-      ), // Render class name as a link
+        <Tooltip title={text}>
+          <Link to={`/class/${record.ID}`} className='figma-class-link font-medium'>
+            {text}
+          </Link>
+        </Tooltip>
+      ),
     },
     {
       title: 'NUMBER OF SESSIONS',
       dataIndex: 'numberOfSessions',
       key: 'numberOfSessions',
       align: 'center',
-      render: (text) => <div className='flex justify-center'>{text}</div>, // Render number of sessions
+      render: (text) => <span className='text-[#637381]'>{text}</span>,
     },
     {
       title: 'ACTIONS',
@@ -78,20 +95,23 @@ const ClassManagement = () => {
       align: 'center',
       render: (_, record) => (
         <div className='flex gap-4 justify-center items-center'>
-          <Button
-            className='text-xl !text-primaryColor'
-            type='link'
-            icon={<EditOutlined />}
-            onClick={handleUpdateClass(record)}
-          />
-          {/* Edit button */}
+          <Tooltip title="Edit">
+            <button 
+              className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+              onClick={handleUpdateClass(record)}
+            >
+              <EditOutlined style={{ fontSize: '20px', color: '#003087' }} />
+            </button>
+          </Tooltip>
           {record.numberOfSessions <= 0 && (
-            <Button
-              className='text-xl'
-              type='link'
-              icon={<DeleteOutlined className='text-red-500' />}
-              onClick={handleDeleteClass(record)}
-            />
+            <Tooltip title="Delete">
+              <button 
+                className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+                onClick={handleDeleteClass(record)}
+              >
+                <DeleteOutlined style={{ fontSize: '20px', color: '#FF4D4F' }} />
+              </button>
+            </Tooltip>
           )}
         </div>
       ),
@@ -99,29 +119,33 @@ const ClassManagement = () => {
   ];
 
   return (
-    <>
-      <HeaderInfo
-        title='Class Management'
-        subtitle='Manage and organize both classes and individual sessions.'
-        SubAction={
-          <div className='flex flex-col sm:flex-row gap-3 sm:gap-4 sm:space-x-0'>
+    <div className='figma-page-container'>
+      <div className='figma-content-wrapper'>
+        <div className='figma-header-section'>
+          <div>
+            <h1 className='figma-title'>Class Management</h1>
+            <p className='figma-subtitle'>Manage and organize both classes and individual sessions.</p>
+          </div>
+          
+          <div className='flex items-center gap-3 pt-4'>
             <Button
-              type='primary'
-              className='min-w-[140px] md:min-w-[160px] h-[50px] rounded-full bg-primaryColor hover:!bg-[#002A6B] border-none font-medium'
+              className='figma-outline-btn'
               onClick={handleExport}
               loading={exportLoading}
+              icon={<ExportOutlined />}
             >
-              Export to Excel
+              Export
             </Button>
 
             <Button
-              type='primary'
-              className='min-w-[140px] md:min-w-[160px] h-[50px] rounded-full bg-primaryColor hover:!bg-[#002A6B] border-none font-medium'
+              className='figma-outline-btn'
               onClick={handleImportClick}
               loading={importLoading}
+              icon={<ImportOutlined />}
             >
-              Import from Excel
+              Import
             </Button>
+            
             <input
               type='file'
               accept='.xlsx, .xls'
@@ -136,54 +160,65 @@ const ClassManagement = () => {
               }}
               style={{ display: 'none' }}
             />
+
             <Button
-              type='primary'
-              className='min-w-[140px] md:min-w-[160px] h-[50px] rounded-full bg-primaryColor hover:!bg-[#002A6B] border-none font-medium'
+              className='figma-primary-btn'
               onClick={() => setIsOpen('Create')}
+              icon={<PlusOutlined />}
             >
               Create new class
             </Button>
           </div>
-        }
-      />
-      <div className='p-4'>
-        {classList && (
-          <TableSearch
-            data={classList}
-            columns={columns}
-            isLoading={isLoading}
-          />
-        )}
-        <CreateClassModal
-          isOpen={isOpen === 'Create' ? true : false}
-          onClose={() => setIsOpen(null)}
-        />
-        {dataClass && (
-          <UpdateClassModal
-            isOpen={isOpen === 'Update' ? true : false}
-            onClose={() => {
-              setClassData(null);
-              setIsOpen(null);
-            }}
-            data={dataClass}
-          />
-        )}
-        <DeleteClassModal
-          isOpen={isOpen === 'Delete' ? true : false}
-          onClose={() => setIsOpen(null)}
-          classId={dataClass?.ID}
-        />
-        {isModalOpen && (
-          <PreviewExam
-            isModalOpen={isModalOpen}
-            setIsModalOpen={setIsModalOpen}
-            dataExam={dataExam}
-            fileData={fileData}
-            setDataExam={setDataExam}
-          />
-        )}
+        </div>
       </div>
-    </>
+      
+      <div className='figma-content-wrapper'>
+        <TableSearch
+          data={classList}
+          total={totalItems}
+          columns={columns}
+          isLoading={isLoading}
+          placeholder="Search by class name"
+          isFigmaRedesign={true}
+          serverSide={true}
+          onParamsChange={onParamsChange}
+          currentPage={currentPage}
+          pageSize={pageSize}
+        />
+      </div>
+        
+      <CreateClassModal
+        isOpen={isOpen === 'Create'}
+        onClose={() => setIsOpen(null)}
+      />
+      
+      {dataClass && (
+        <UpdateClassModal
+          isOpen={isOpen === 'Update'}
+          onClose={() => {
+            setClassData(null);
+            setIsOpen(null);
+          }}
+          data={dataClass}
+        />
+      )}
+      
+      <DeleteClassModal
+        isOpen={isOpen === 'Delete'}
+        onClose={() => setIsOpen(null)}
+        classId={dataClass?.ID}
+      />
+      
+      {isModalOpen && (
+        <PreviewExam
+          isModalOpen={isModalOpen}
+          setIsModalOpen={setIsModalOpen}
+          dataExam={dataExam}
+          fileData={fileData}
+          setDataExam={setDataExam}
+        />
+      )}
+    </div>
   );
 };
 

@@ -29,7 +29,8 @@ const DropdownBlankOptions = () => {
                   {(optionFields, optionHelpers) => (
                     <div className='flex flex-col gap-2'>
                       {optionFields.map((opt, idx) => {
-                        const optionId = `${blankData.key}-${idx}`;
+                        const optionId =
+                          options?.[idx]?.id || `${blankData.key}-${idx}`;
 
                         return (
                           <Space
@@ -73,8 +74,12 @@ const DropdownBlankOptions = () => {
                                   message: 'Option text is required',
                                 },
                               ]}
+                              getValueFromEvent={(e) =>
+                                e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
+                              }
                             >
                               <Input
+                                maxLength={255}
                                 placeholder='Enter option text'
                                 onChange={() => {
                                   form.setFieldValue(
@@ -94,7 +99,20 @@ const DropdownBlankOptions = () => {
 
                             {/* Remove Option */}
                             <CloseOutlined
-                              onClick={() => optionHelpers.remove(opt.name)}
+                              onClick={() => {
+                                if (correctAnswer === optionId) {
+                                  form.setFieldValue(
+                                    [
+                                      'part1',
+                                      'blanks',
+                                      blank.name,
+                                      'correctAnswer',
+                                    ],
+                                    ''
+                                  );
+                                }
+                                optionHelpers.remove(opt.name);
+                              }}
                               style={{ cursor: 'pointer', color: '#888' }}
                             />
                           </Space>
@@ -107,7 +125,9 @@ const DropdownBlankOptions = () => {
                         icon={<PlusOutlined />}
                         onClick={() =>
                           optionHelpers.add({
-                            id: `${blankData.key}-${options.length}`,
+                            id: `${blankData.key}-${Date.now()}-${Math.random()
+                              .toString(36)
+                              .slice(2, 8)}`,
                             value: '',
                           })
                         }

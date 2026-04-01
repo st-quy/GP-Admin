@@ -16,7 +16,7 @@ import {
   EyeOutlined,
   ExclamationCircleFilled,
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 
 import { useDeleteSection, useGetSections } from '@features/sections/hooks';
@@ -32,21 +32,41 @@ const SKILL_OPTIONS = [
   { value: 'GRAMMAR AND VOCABULARY', label: 'Grammar & Vocabulary' },
 ];
 
+const validSkills = new Set([
+  'SPEAKING',
+  'LISTENING',
+  'READING',
+  'WRITING',
+  'GRAMMAR AND VOCABULARY',
+]);
+
 const QuestionBank = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const queryParams = new URLSearchParams(location.search);
+  const skillFromQuery = queryParams.get('skillName')?.trim().toUpperCase();
 
   // --- Filter & pagination state ---
-  const [selectedSkill, setSelectedSkill] = useState('');
+  const [selectedSkill, setSelectedSkill] = useState(
+    validSkills.has(skillFromQuery) ? skillFromQuery : ''
+  );
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null); // null = bulk, or single record
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSkill, searchText]);
+
+  useEffect(() => {
+    if (validSkills.has(skillFromQuery) && skillFromQuery !== selectedSkill) {
+      setSelectedSkill(skillFromQuery);
+    }
+  }, [skillFromQuery, selectedSkill]);
 
   // --- API ---
   const sectionParams = useMemo(
@@ -99,7 +119,7 @@ const QuestionBank = () => {
       ellipsis: { showTitle: false },
       render: (text) => (
         <Tooltip title={text}>
-          <span className='font-medium text-[#1F2937]'>{text}</span>
+          <span className='font-semibold text-[#1F2937]'>{text}</span>
         </Tooltip>
       ),
     },
@@ -226,11 +246,15 @@ const QuestionBank = () => {
           <div>
             <Text className='block text-[#374151] font-medium mb-2'>Search</Text>
             <Input
+              maxLength={255}
               size='large'
               placeholder='Search question...'
               prefix={<SearchOutlined className='text-gray-400' />}
               value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '');
+                setSearchText(sanitized);
+              }}
             />
           </div>
           <div className='flex items-end'>

@@ -3,14 +3,19 @@ import { useSelector } from 'react-redux';
 
 const RedirectByRole = () => {
   // @ts-ignore
-  const { user } = useSelector((state) => state.auth);
+  const { user, role } = useSelector((state) => state.auth);
+  const currentRoles = Array.isArray(user?.role)
+    ? user.role
+    : Array.isArray(role)
+      ? role
+      : [];
 
-  if (user?.role?.includes('admin')) {
+  if (currentRoles.includes('admin')) {
     return <Navigate to='/dashboard' replace />;
   }
 
-  if (user?.role?.includes('teacher')) {
-    return <Navigate to='/class' />;
+  if (currentRoles.includes('teacher')) {
+    return <Navigate to='/class' replace />;
   }
 
   // Mặc định fallback nếu role không khớp

@@ -69,8 +69,14 @@ const PrivateRoute = [
         element: <TeacherAccountManagement />,
       },
       {
+        path: 'teacher/edit/:id',
+        role: ['admin'],
+        breadcrumb: 'Teacher',
+        element: <TeacherAccountManagement />,
+      },
+      {
         path: 'class',
-        role: ['teacher'],
+        role: ['teacher', 'admin'],
         breadcrumb: 'Class Management',
         children: [
           {
