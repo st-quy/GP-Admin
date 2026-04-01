@@ -1,5 +1,6 @@
 import { Card } from "antd";
 import AudioPlayers from "./AudioPlayer";
+import CorrectAnswerSection from "./CorrectAnswerSection";
 
 export const QuestionAnswer = ({
   quesntionsAnswerData = {},
@@ -93,6 +94,24 @@ export const QuestionAnswer = ({
         <div className="font-bold mb-2">Student answer:</div>
         {studentAnswers()}
       </div>
+
+      <CorrectAnswerSection
+        answerContent={
+          speakingPartFour?.length > 0
+            ? speakingPartFour[0]?.AnswerContent
+            : quesntionsAnswerData?.AnswerContent
+        }
+        questionType={
+          speakingPartFour?.length > 0
+            ? speakingPartFour[0]?.Type
+            : quesntionsAnswerData?.Type
+        }
+        subContent={
+          speakingPartFour?.length > 0
+            ? speakingPartFour[0]?.SubContent
+            : quesntionsAnswerData?.SubContent
+        }
+      />
     </Card>
   );
 };

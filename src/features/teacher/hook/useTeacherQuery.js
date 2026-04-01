@@ -35,8 +35,6 @@ export const useCreateTeacher = () => {
     },
   });
 };
-
-// Update teacher
 export const useUpdateTeacher = () => {
   const queryClient = useQueryClient();
   return useMutation({

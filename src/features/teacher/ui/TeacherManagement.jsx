@@ -24,12 +24,11 @@ const TeacherManagement = () => {
     typeof editingTeacherId === 'string' ? Number(editingTeacherId) : null;
   const { openConfirmModal, ModalComponent } = useConfirm();
   const { mutateAsync: deleteTeacher } = useDeleteTeacher();
-  
   // Escape special SQL-like characters for search
   const escapeSearchTerm = (term) => {
     return term.replace(/([%_\\])/g, '\\$1');
   };
-  
+
   const debouncedSearchTerm = useDebouncedValue(escapeSearchTerm(searchTerm), 500);
   const { data: teachersData, isLoading, refetch } = useFetchTeachers({
     page: currentPage,
@@ -137,7 +136,6 @@ const TeacherManagement = () => {
       title: 'ACTIONS',
       key: 'actions',
       width: '150px',
-      // fixed: "right",
       render: (_, record) => (
         <Space size='small' className='bg-white rounded-lg px-1'>
           <TeacherActionModal initialData={record} />
@@ -253,7 +251,7 @@ const TeacherManagement = () => {
           },
           itemRender: (page, type, original) => {
             if (type === 'page') {
-              const isActive = currentPage === page; // FIX: phải dùng currentPage, không dùng pagination.page
+              const isActive = currentPage === page;
 
               return (
                 <button

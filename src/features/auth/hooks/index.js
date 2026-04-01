@@ -33,21 +33,21 @@ export const useLogin = () => {
 
       const roles = Array.isArray(decoded?.roles) ? decoded.roles : [];
 
-      // Điều hướng theo role
-      if (roles.length > 0 && roles.includes('student')) {
-        return navigate('/unauthorized');
-      } else if (roles.includes('teacher')) {
-        return navigate('/class');
-      } else if (roles.includes('admin')) {
-        navigate('/admin/dashboard');
-      }
-
       // Lưu token
       setStorageData(ACCESS_TOKEN, accessToken);
       setStorageData(REFRESH_TOKEN, refreshToken);
 
       // Update redux
       dispatch(login());
+
+      // Điều hướng theo role
+      if (roles.length > 0 && roles.includes('student')) {
+        return navigate('/unauthorized');
+      } else if (roles.includes('teacher')) {
+        return navigate('/class');
+      } else if (roles.includes('admin')) {
+        return navigate('/admin/dashboard');
+      }
 
       return data.data;
     },
@@ -119,30 +119,31 @@ export const useGetProfile = () => {
     queryKey: ['profile', userId],
     queryFn: async () => {
       try {
-        const data = await AuthApi.getProfile(userId);
+        const response = await AuthApi.getProfile(userId);
+        const data = response.data; // Correctly access nested data
 
         dispatch(
           updateUser({
-            userId: data.data.ID,
-            role: data.data.roles,
-            lastName: data.data.lastName,
-            firstName: data.data.firstName,
-            email: data.data.email,
-            phone: data.data.phone,
-            class: data.data.class,
-            studentCode: data.data.studentCode,
-            teacherCode: data.data.teacherCode,
-            address: data.data.address,
-            dob: data.data.dob,
+            userId: data.ID,
+            role: data.roles,
+            lastName: data.lastName,
+            firstName: data.firstName,
+            email: data.email,
+            phone: data.phone,
+            class: data.class,
+            studentCode: data.studentCode,
+            teacherCode: data.teacherCode,
+            address: data.address,
+            dob: data.dob,
           })
         );
-        if (!data.data.status) {
+        if (!data.status) {
           message.error('Your account has been blocked');
           localStorage.clear();
           window.location.href = `${window.location.origin}/unauthorized`;
         }
 
-        return data.data;
+        return data; // Return data directly
       } catch (error) {
         message.error(
           error.response?.data?.message || 'Failed to fetch profile'

@@ -351,7 +351,6 @@ const TeacherActionModal = ({
       <Modal
         open={isModalOpen}
         okText={isEdit ? 'Update' : 'Create'}
-        // onOk={onAction}
         closable={true}
         destroyOnClose
         keyboard={true}
