@@ -1,52 +1,27 @@
-import axios from "axios";
-
-const API_URL = "https://dev-api-greenprep.onrender.com/api";
-
-export const fetchTotalUsers = async () => {
-  try {
-    const response = await axios.get("/users/count");
-    return response.data.count;
-  } catch (error) {
-    console.error("Error fetching total users:", error);
-    return 0;
-  }
-};
-
-export const fetchUserGrowth = async () => {
-  try {
-    const response = await axios.get("/users/growth");
-    return response.data.map((item) => ({
-      date: item.date,
-      growth: item.growth,
-    }));
-  } catch (error) {
-    console.error("Error fetching user growth:", error);
-    return [];
-  }
-};
+import axiosInstance from "@shared/config/axios";
 
 export const fetchStudents = async () => {
   try {
-    const response = await axios.get(`${API_URL}/users/students`);
+    const response = await axiosInstance.get("/users/students");
     if (response.data.status === 200) {
       return response.data.data.students;
     }
-    throw new Error("Failed to fetch students");
+    return [];
   } catch (error) {
     console.error("Error fetching students:", error);
-    throw error;
+    return [];
   }
 };
 
 export const fetchTeachers = async () => {
   try {
-    const response = await axios.get(`${API_URL}/users/teachers`);
+    const response = await axiosInstance.get("/users/teachers");
     if (response.data.status === 200) {
       return response.data.data.teachers;
     }
-    throw new Error("Failed to fetch teachers");
+    return [];
   } catch (error) {
     console.error("Error fetching teachers:", error);
-    throw error;
+    return [];
   }
 };
