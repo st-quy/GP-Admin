@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
 import { Table, Input, Select, Space, Tag, message } from 'antd';
 import { SearchOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useFetchTeacherById, useFetchTeachers } from '../hook/useTeacherQuery';
+import {
+  useDeleteTeacher,
+  useFetchTeacherById,
+  useFetchTeachers,
+} from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
-import { useNavigate, useParams } from 'react-router-dom';
-import { deleteTeachers } from '../api/teacherAPI';
+import { useNavigate } from 'react-router-dom';
 const { Option } = Select;
 
 const TeacherManagement = () => {
@@ -19,6 +23,7 @@ const TeacherManagement = () => {
   const editingTeacherIdNumber =
     typeof editingTeacherId === 'string' ? Number(editingTeacherId) : null;
   const { openConfirmModal, ModalComponent } = useConfirm();
+  const { mutateAsync: deleteTeacher } = useDeleteTeacher();
   
   // Escape special SQL-like characters for search
   const escapeSearchTerm = (term) => {
@@ -62,7 +67,7 @@ const TeacherManagement = () => {
       okButtonColor: '#ff4d4f',
       onConfirm: async () => {
         try {
-          await deleteTeachers(record.ID);
+          await deleteTeacher(record.ID);
           message.success('Teacher deleted successfully!');
           refetch();
         } catch (error) {
@@ -82,13 +87,12 @@ const TeacherManagement = () => {
       width: '200px',
       render: (text, record) => (
         <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
-          <button
-            type='button'
+          <Link
+            to={`/teacher/edit/${record.ID}`}
             className='bg-transparent border-none p-0 cursor-pointer text-[10px] md:text-[14px] underline hover:opacity-80'
-            onClick={() => navigate(`/teacher/edit/${record.ID}`)}
           >
             {`${record.firstName} ${record.lastName}` || 'Unknown'}
-          </button>
+          </Link>
         </div>
       ),
     },
@@ -179,7 +183,7 @@ const TeacherManagement = () => {
   };
 
   const selectedTeacher =
-    teacherDetailData?.data ||
+    teacherDetailData ||
     teachersData?.data?.teachers?.find(
       (teacher) => teacher.ID === editingTeacherIdNumber
     ) ||
