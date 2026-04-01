@@ -42,53 +42,57 @@ export const fetchDashboardStats = async () => {
   }
 };
 
-export const fetchGlobalRecentActivities = async () => {
+export const fetchGlobalRecentActivities = async (offset = 0, limit = 15) => {
   try {
-    const [sessionsRes, studentsRes, classesRes, topicsRes] = await Promise.all([
-      axiosInstance.get("/sessions/all?limit=5"),
-      axiosInstance.get("/users/students?limit=5"),
-      axiosInstance.get("/classes?limit=5"),
-      axiosInstance.get("/topics?limit=5"),
-    ]);
+    const response = await axiosInstance.get(`/activities/recent?limit=${limit}&offset=${offset}`);
+    const activities = response.data?.data || [];
+    const pagination = response.data?.pagination || { total: 0, hasMore: false };
 
-    const sessions = (sessionsRes.data?.data || []).map(s => ({
-      id: s.ID,
-      title: `New Session: ${s.sessionName}`,
-      type: "session",
-      timestamp: s.createdAt,
-      status: "success"
-    }));
+    const actionLabels = {
+      create: "Created",
+      update: "Updated",
+      delete: "Deleted",
+    };
 
-    const students = (studentsRes.data?.data?.students || []).map(s => ({
-      id: s.ID,
-      title: `New Student: ${s.firstName} ${s.lastName}`,
-      type: "user",
-      timestamp: s.createdAt,
-      status: "success"
-    }));
+    const typeMap = {
+      class: "class",
+      session: "session",
+      topic: "exam",
+      question: "question",
+      part: "part",
+      section: "section",
+    };
 
-    const classes = (classesRes.data || []).map(c => ({
-      id: c.ID,
-      title: `New Class: ${c.className}`,
-      type: "class",
-      timestamp: c.createdAt,
-      status: "success"
-    }));
+    const entityLabels = {
+      class: "Class",
+      session: "Session",
+      topic: "Exam Set",
+      question: "Question",
+      part: "Part",
+      section: "Section",
+    };
 
-    const topics = (topicsRes.data?.data || []).map(t => ({
-      id: t.ID,
-      title: `New Exam Set: ${t.Name}`,
-      type: "exam",
-      timestamp: t.createdAt,
-      status: "success"
-    }));
+    const data = activities.map((a) => {
+      const action = actionLabels[a.action] || a.action;
+      const entityLabel = entityLabels[a.entityType] || a.entityType;
+      const title = a.details
+        ? `${a.user || "Unknown"} ${action}: ${a.details}`
+        : `${a.user || "Unknown"} ${action} ${entityLabel}: ${a.entityName || ""}`;
 
-    return [...sessions, ...students, ...classes, ...topics]
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-      .slice(0, 15);
+      return {
+        id: a.ID,
+        title,
+        type: typeMap[a.entityType] || "user",
+        status: action,
+        timestamp: a.createdAt,
+        details: a.details || "",
+      };
+    });
+
+    return { data, pagination };
   } catch (error) {
-    console.error("Error fetching global activities:", error);
-    return [];
+    console.error("Error fetching recent activities:", error);
+    return { data: [], pagination: { total: 0, hasMore: false } };
   }
 };
 
