@@ -69,7 +69,7 @@ const ProfilePage = () => {
   );
 
   return (
-    <div className='p-8 space-y-6 max-w-[1920px] mx-auto'>
+    <div className='figma-content-wrapper py-8 space-y-6'>
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
         <div className='w-full sm:w-auto'>
           <Title level={3} className='m-0 font-bold text-black'>
@@ -137,7 +137,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <div className='bg-white rounded-lg border border-gray-200 border-l-4 border-l-primaryColor w-full mx-auto'>
+      <div className='bg-white rounded-lg border border-gray-200 border-l-4 border-l-primaryColor'>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6 sm:p-8'>
           <InfoField label='First Name' value={user?.firstName} />
           <InfoField label='Last Name' value={user?.lastName} />
@@ -163,7 +163,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
-      <div className='bg-white rounded-lg border border-gray-200 border-l-4 border-l-primaryColor w-full mx-auto'>
+      <div className='bg-white rounded-lg border border-gray-200 border-l-4 border-l-primaryColor'>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-6 sm:p-8'>
           <InfoField
             label='Code'
