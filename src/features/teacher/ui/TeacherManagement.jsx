@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Table, Input, Select, Space, Tag, message } from 'antd';
+import { Table, Input, Select, Space, Tag, message, Pagination } from 'antd';
 import {
   useDeleteTeacher,
   useFetchTeacherById,
@@ -20,7 +20,6 @@ const TeacherManagement = () => {
   const [pageSize, setPageSize] = useState(10);
   const navigate = useNavigate();
   const { id: editingTeacherId } = useParams();
-  const editingTeacherIdNumber = editingTeacherId;
   const { openConfirmModal, ModalComponent } = useConfirm();
   const { mutateAsync: deleteTeacher } = useDeleteTeacher();
 
@@ -197,27 +196,73 @@ const TeacherManagement = () => {
           onClose={handleCloseEditModal}
         />
       )}
-      <div className='flex justify-between items-center mb-10'>
+      
+      <div className='flex items-center justify-between mb-10'>
         <div className='flex items-center gap-4'>
           <SearchInput
             placeholder="Search by name, ID"
             value={searchTerm}
             onSearchChange={onSearchChange}
             isFigmaRedesign={true}
+            style={{ margin: 0 }}
           />
           <Select
-            placeholder='Select STATUS'
+            placeholder="Select STATUS"
             onChange={handleStatusFilter}
-            className='h-[48px] w-[180px] !border-[#DFE4EA] !shadow-[0px_4px_4px_rgba(0,0,0,0.1)]'
+            className="figma-status-select-sync"
+            options={[
+              { value: 'All', label: 'All' },
+              { value: 'Active', label: 'Active' },
+              { value: 'Inactive', label: 'Inactive' },
+            ]}
             allowClear
-          >
-            <Select.Option value='All'>All</Select.Option>
-            <Select.Option value='Active'>Active</Select.Option>
-            <Select.Option value='Inactive'>Inactive</Select.Option>
-          </Select>
+          />
         </div>
         <TeacherActionModal />
       </div>
+
+      <style>{`
+        /* --- HIGH SPECIFICITY ALIGNMENT FIX --- */
+        
+        /* 1. Force the Select to match the Search bar height exactly */
+        .figma-status-select-sync.ant-select {
+          width: 180px !important;
+          height: 48px !important;
+          margin: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+
+        /* 2. Target the internal AntD selector which actually has the border/shadow */
+        .figma-status-select-sync.ant-select .ant-select-selector {
+          height: 48px !important;
+          min-height: 48px !important;
+          display: flex !important;
+          align-items: center !important;
+          border: 1px solid #DFE4EA !important;
+          border-radius: 6px !important;
+          box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1) !important;
+          background-color: #ffffff !important;
+          padding: 0 12px !important;
+        }
+
+        /* 3. Center the placeholder and selected text vertically */
+        .figma-status-select-sync.ant-select .ant-select-selection-search,
+        .figma-status-select-sync.ant-select .ant-select-selection-item,
+        .figma-status-select-sync.ant-select .ant-select-selection-placeholder {
+          display: flex !important;
+          align-items: center !important;
+          height: 100% !important;
+          line-height: 1 !important;
+          inset-inline-start: 12px !important;
+        }
+
+        /* 4. Ensure the Search bar also has no extra margins that could cause offsets */
+        .figma-search-input {
+          margin: 0 !important;
+          vertical-align: middle !important;
+        }
+      `}</style>
 
       <div className="figma-table-card figma-table-overrides w-full">
         <Table
