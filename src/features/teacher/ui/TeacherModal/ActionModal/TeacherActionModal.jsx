@@ -335,15 +335,17 @@ const TeacherActionModal = ({
     <>
       {!hideTrigger &&
         (isEdit ? (
-          <EditOutlined
+          <button
             onClick={showModal}
-            className='text-primaryColor text-[20px]'
-          />
+            className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+          >
+            <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
+          </button>
         ) : (
           <Button
             icon={<PlusCircleOutlined />}
             onClick={showModal}
-            className='bg-primaryColor text-white py-6 rounded-full px-4 text-base border-none'
+            className="!h-[50px] !w-[236px] !rounded-[50px] !bg-primaryColor !text-white font-[500] leading-[24px] hover:!opacity-90"
           >
             Create new account
           </Button>

@@ -4,6 +4,7 @@ import {
   createTeachers,
   updateTeachers,
   getTeacherById,
+  deleteTeachers,
 } from "../api/teacherAPI";
 
 // Fetch teachers
@@ -34,12 +35,20 @@ export const useCreateTeacher = () => {
     },
   });
 };
-
-// Update teacher
 export const useUpdateTeacher = () => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data) => updateTeachers(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+    },
+  });
+};
+
+export const useDeleteTeacher = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (teacherId) => deleteTeachers(teacherId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
     },
