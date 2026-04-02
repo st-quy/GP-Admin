@@ -27,6 +27,22 @@ import { useDeleteSection, useGetSections } from '@features/sections/hooks';
 
 const { Text } = Typography;
 
+const resolveSectionDescription = (record) => {
+  const candidates = [
+    record?.Description,
+    record?.description,
+    record?.Parts?.[0]?.SubContent,
+    record?.Parts?.[0]?.Questions?.[0]?.GroupContent,
+    record?.Parts?.[0]?.Questions?.[0]?.Content,
+  ];
+
+  const resolved = candidates.find(
+    (value) => typeof value === 'string' && value.trim()
+  );
+
+  return resolved?.trim() || '—';
+};
+
 const QuestionBank = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -42,16 +58,13 @@ const QuestionBank = () => {
     'GRAMMAR AND VOCABULARY',
   ]);
 
-  // --- Filter & pagination state ---
   const [selectedSkill, setSelectedSkill] = useState(
     validSkills.has(skillFromQuery) ? skillFromQuery : 'SPEAKING'
   );
   const [searchText, setSearchText] = useState('');
-
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  // Khi skill hoặc searchText đổi → reset page về 1
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedSkill, searchText]);
@@ -62,9 +75,6 @@ const QuestionBank = () => {
     }
   }, [skillFromQuery, selectedSkill]);
 
-  /* =========================================================
-      LOAD SECTION LIST TỪ API (CÓ PHÂN TRANG)
-     ========================================================= */
   const sectionParams = useMemo(
     () => ({
       skillName: selectedSkill || undefined,
@@ -92,9 +102,6 @@ const QuestionBank = () => {
     totalItems === 0 ? 0 : (pagination.page - 1) * pagination.pageSize + 1;
   const endItem = Math.min(pagination.page * pagination.pageSize, totalItems);
 
-  /* =========================================================
-      TABLE COLUMNS
-     ========================================================= */
   const columns = [
     {
       title: 'Section Name',
@@ -112,7 +119,7 @@ const QuestionBank = () => {
       align: 'left',
       ellipsis: { showTitle: false },
       render: (_, record) => {
-        const description = record?.Description ?? '—';
+        const description = resolveSectionDescription(record);
 
         return (
           <Tooltip title={description}>
@@ -181,7 +188,6 @@ const QuestionBank = () => {
                 }}
               />
             </Tooltip>
-
           )}
         </Space>
       ),
@@ -221,7 +227,6 @@ const QuestionBank = () => {
 
       <div className='p-4'>
         <Card className='shadow-sm rounded-xl h-[calc(100vh-200px)]'>
-          {/* ==================== TABS FILTER ==================== */}
           <Tabs
             type='card'
             tabBarGutter={32}
@@ -241,7 +246,6 @@ const QuestionBank = () => {
             ]}
           />
 
-          {/* ==================== SEARCH BAR ==================== */}
           <div className='flex flex-col gap-3 sm:flex-row sm:items-center py-4'>
             <Input
               maxLength={255}
@@ -251,13 +255,15 @@ const QuestionBank = () => {
               className='w-full sm:w-[260px] lg:w-[320px]'
               value={searchText}
               onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
-                setSearchText(sanitized)
+                const sanitized = e.target.value.replace(
+                  /[^a-zA-Z0-9 ,.\-_:()"':]/g,
+                  ''
+                );
+                setSearchText(sanitized);
               }}
             />
           </div>
 
-          {/* ==================== TABLE ==================== */}
           <div className='w-full'>
             <Table
               rowKey='ID'
@@ -270,12 +276,11 @@ const QuestionBank = () => {
             />
           </div>
 
-          {/* ==================== PAGINATION ==================== */}
           <div className='flex flex-col md:flex-row justify-between items-center p-6 border-t border-gray-100 gap-4'>
             <Text className='text-gray-500'>
               {totalItems === 0
                 ? 'No data found'
-                : `Showing ${startItem}–${endItem} of ${totalItems} items`}
+                : `Showing ${startItem}-${endItem} of ${totalItems} items`}
             </Text>
 
             <Pagination
@@ -294,9 +299,10 @@ const QuestionBank = () => {
                   return (
                     <button
                       className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-                        ${isActive
-                          ? 'bg-[#003087] text-white border-[#003087]'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
+                        ${
+                          isActive
+                            ? 'bg-[#003087] text-white border-[#003087]'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
                         }
                       `}
                     >

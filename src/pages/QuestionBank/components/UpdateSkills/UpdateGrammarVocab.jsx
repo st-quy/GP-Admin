@@ -17,6 +17,10 @@ import {
 } from '@features/questions/hooks';
 import GrammarMatchingEditorForm from '../CreateSkills/GrammarAndVocabulary/multiple-choice/GrammarMatchingEditorForm';
 import { DeleteOutlined } from '@ant-design/icons';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { Panel } = Collapse;
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -258,12 +262,10 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Section Name' required>
           <Input
             value={sectionName}
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
-            }
-            }
+              setSectionName(sanitizeQuestionInput(e.target.value));
+            }}
           />
         </Form.Item>
       </Card>
@@ -280,11 +282,11 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Part Name' required>
           <Input
             value={part1Name}
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
-            }} />
+              setPart1Name(sanitizeQuestionInput(e.target.value));
+            }}
+          />
         </Form.Item>
 
         <Collapse accordion>
@@ -309,10 +311,10 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={q.instruction}
-                  maxLength={255}
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
 
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                    const sanitized = sanitizeQuestionInput(e.target.value);
                     setPart1((prev) =>
                       prev.map((x) =>
                         x.id === q.id
@@ -337,9 +339,9 @@ const UpdateGrammarVocab = () => {
 
                   <Input
                     value={o.value}
-                    maxLength={255}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
                     onChange={(e) => {
-                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                      const sanitized = sanitizeQuestionInput(e.target.value);
                       setPart1((prev) =>
                         prev.map((x) =>
                           x.id === q.id
@@ -454,10 +456,9 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Part Name' required>
           <Input
             value={part2Name}
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
+              setPart2Name(sanitizeQuestionInput(e.target.value));
             }}
           />
         </Form.Item>
@@ -479,10 +480,11 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={g.content}
-                  maxLength={255}
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                    setSectionName(sanitized)
+                    updateGroupState(idx, {
+                      content: sanitizeQuestionInput(e.target.value),
+                    });
                   }}
                 />
               </Form.Item>

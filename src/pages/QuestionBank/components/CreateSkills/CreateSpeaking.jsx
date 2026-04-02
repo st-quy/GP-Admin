@@ -9,6 +9,10 @@ import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
 import { yupSync } from '@shared/lib/utils';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const CreateSpeaking = () => {
   const navigate = useNavigate();
@@ -51,11 +55,15 @@ const CreateSpeaking = () => {
         <Form.Item
           label='Part Name'
           name={['parts', key, 'name']}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[yupSync(createSpeakingSchema, ['parts', key, 'name'])]}
           validateTrigger={['onChange', 'onBlur']}
           required
         >
-          <Input placeholder='Enter part name' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='Enter part name'
+          />
         </Form.Item>
 
         {/* UPLOAD FIELD WITH VALIDATION */}
@@ -113,6 +121,9 @@ const CreateSpeaking = () => {
                     {...field}
                     className='w-full'
                     name={[field.name, 'value']}
+                    getValueFromEvent={(e) =>
+                      sanitizeQuestionInput(e.target.value)
+                    }
                     rules={[
                       yupSync(createSpeakingSchema, [
                         'parts',
@@ -124,7 +135,10 @@ const CreateSpeaking = () => {
                     ]}
                     validateTrigger={['onChange', 'onBlur']}
                   >
-                    <Input placeholder='Enter question' />
+                    <Input
+                      maxLength={MAX_QUESTION_INPUT_LENGTH}
+                      placeholder='Enter question'
+                    />
                   </Form.Item>
 
                   {field.name >= 3 && (
@@ -170,9 +184,13 @@ const CreateSpeaking = () => {
         <Form.Item
           label='Name'
           name='sectionName'
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='Enter section name' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='Enter section name'
+          />
         </Form.Item>
       </Card>
 
