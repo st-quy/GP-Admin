@@ -80,9 +80,9 @@ const CreateExamPage = () => {
 
     const [selectedSkill, setSelectedSkill] = useState("SPEAKING");
     const [openModal, setOpenModal] = useState(false);
-    const [selectedParts, setSelectedParts] = useState([]);
-    const [selectedSectionBySkill, setSelectedSectionBySkill] = useState({});
-    const [instructions, setInstructions] = useState([]);
+    const [selectedParts, setSelectedParts] = useState([]); 
+    const [selectedSectionBySkill, setSelectedSectionBySkill] = useState({}); 
+    const [instructions, setInstructions] = useState([]); 
     const [previewOpen, setPreviewOpen] = useState(false);
     const [previewData, setPreviewData] = useState(null);
     const { openConfirmModal, ModalComponent } = useConfirm();
@@ -102,11 +102,16 @@ const CreateExamPage = () => {
     const { mutateAsync: updateTopic } = useUpdateTopic();
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
     const { role, user } = useSelector((state) => state.auth);
+    
+    // Surgical Fix: Reset modal on navigation to resolve persistence bug
+    useEffect(() => {
+        setOpenModal(false);
+    }, [location.key]);
 
     // Robust check for admin role
-    const isAdmin = Array.isArray(role)
-        ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
-        : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
+    const isAdmin = Array.isArray(role) 
+      ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
+      : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
 
     const handleApprove = async () => {
         openConfirmModal({
@@ -156,8 +161,70 @@ const CreateExamPage = () => {
         }
     }, [isDirty, isViewMode, navigate]);
 
+    const handleSaveExam = async () => {
+        try {
+            const values = await form.validateFields(['name']);
+            let topicResponse;
+            if (topicId) {
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'draft' } });
+                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
+                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
+            } else {
+                topicResponse = await createExam({ Name: values.name, Status: 'draft' });
+                const savedTopicId = topicResponse.ID || topicResponse._ID;
+                if (!savedTopicId) return message.error("Cannot get topic ID");
+                for (const sectionId of selectedParts) {
+                    await createTopicSection({ topicId: savedTopicId, sectionId });
+                }
+            }
+            message.success("Topic saved successfully!");
+            setIsDirty(false);
+            navigate("/exam");
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to save topic");
+        }
+    };
 
+    const handleSubmitExam = async () => {
+        if (instructions.length < 5) {
+            message.warning("Please select all skills before submitting");
+            return;
+        }
+        try {
+            const values = await form.validateFields();
+            let topicResponse;
+            if (topicId) {
+                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'submited' } });
+                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
+                await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
+            } else {
+                topicResponse = await createExam({ Name: values.name, Status: 'submited' });
+                const savedTopicId = topicResponse.ID || topicResponse._ID;
+                if (!savedTopicId) return message.error("Cannot get topic ID");
+                for (const sectionId of selectedParts) {
+                    await createTopicSection({ topicId: savedTopicId, sectionId });
+                }
+            }
+            message.success("Topic submitted successfully!");
+            setIsDirty(false);
+            navigate("/exam");
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to submit topic");
+        }
+    };
 
+    const saveDraftAndLeave = async () => {
+        await handleSaveExam();
+        setLeaveConfirmOpen(false);
+    };
+
+    const discardAndLeave = () => {
+        setIsDirty(false);
+        setLeaveConfirmOpen(false);
+        navigate(pendingPath.current || '/exam');
+    };
 
     const handlePartSelect = (sections) => {
         setIsDirty(true);
@@ -202,132 +269,37 @@ const CreateExamPage = () => {
                 Parts: found.section.Parts || [],
             };
         });
+
+        const data = topicData?.data ? topicData.data : topicData;
+
         const previewExamData = {
-            ID: topicData?.ID,
+            ID: topicId,
             Name: form.getFieldValue("name"),
             Skills: skills,
-            createdAt: topicData?.createdAt || new Date().toISOString(),
-            updatedAt: topicData?.updatedAt || new Date().toISOString(),
+            createdAt: data?.createdAt || new Date().toISOString(),
+            updatedAt: data?.updatedAt || new Date().toISOString(),
         };
         setPreviewData(previewExamData);
         setPreviewOpen(true);
     };
 
-    const handleSaveExam = async () => {
-        try {
-            const values = form.getFieldsValue();
-            if (!values.name || !values.name.trim()) return message.error("Exam name is required");
-
-            const finalScores = { ...questionScores };
-            instructions.forEach(({ skill, section }) => {
-                const sectionQuestions = [];
-                (section.Parts || []).forEach(p => {
-                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
-                });
-                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
-                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
-                if (total > maxAllowed) {
-                    const ratio = maxAllowed / total;
-                    sectionQuestions.forEach(qid => {
-                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
-                    });
-                }
-            });
-
-            let topicResponse;
-            if (topicId) {
-                topicResponse = await updateTopic({
-                    id: topicId,
-                    data: { Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
-                });
-                await updateTopicSection({
-                    topicId: topicResponse.ID || topicId,
-                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
-                });
-            } else {
-                topicResponse = await createExam({
-                    Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers
-                });
-                await updateTopicSection({
-                    topicId: topicResponse.ID,
-                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
-                });
-            }
-            setIsDirty(false);
-            message.success("Topic saved successfully!");
-            navigate("/exam");
-        } catch (error) {
-            message.error("Failed to save topic");
-        }
-    };
-
-    const handleSubmitExam = async () => {
-        if (instructions.length < 5) return message.warning("Please select all 5 skills before submitting");
-        try {
-            const values = form.getFieldsValue();
-            const finalScores = { ...questionScores };
-            instructions.forEach(({ skill, section }) => {
-                const sectionQuestions = [];
-                (section.Parts || []).forEach(p => {
-                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
-                });
-                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
-                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
-                if (total > maxAllowed) {
-                    const ratio = maxAllowed / total;
-                    sectionQuestions.forEach(qid => {
-                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
-                    });
-                }
-            });
-
-            await updateTopic({
-                id: topicId,
-                data: { Name: values.name.trim(), Status: 'submited', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
-            });
-            await updateTopicSection({
-                topicId,
-                data: { sectionIds: selectedParts, scoreConfig: finalScores }
-            });
-            setIsDirty(false);
-            message.success("Topic submitted successfully!");
-            navigate("/exam");
-        } catch (error) {
-            message.error("Failed to submit topic");
-        }
-    };
-
-    const handleScoreChange = (questionId, score) => {
-        setQuestionScores(prev => ({ ...prev, [questionId]: score }));
-        setIsDirty(true);
-    };
-
-    const discardAndLeave = () => {
-        setIsDirty(false);
-        setLeaveConfirmOpen(false);
-        navigate(pendingPath.current);
-    };
-
-    const saveDraftAndLeave = async () => {
-        await handleSaveExam();
-        setLeaveConfirmOpen(false);
-    };
-
-    const renderInstructionContent = () => {
-        const found = instructions.find((i) => i.skill === selectedSkill);
-        if (!found) {
+    const renderSelectedSectionUI = () => {
+        const data = instructions.find(ins => ins.skill === selectedSkill);
+        if (!data) {
             return (
                 <div style={{ width: "100%", height: 180, border: "2px dashed #D1D5DB", borderRadius: 12, display: "flex", justifyContent: "center", alignItems: "center", color: "#9CA3AF", fontSize: 16, fontWeight: 500 }}>
                     + Instruction
                 </div>
             );
         }
-        const { section } = found;
+        const { section } = data;
         return (
             <div style={{ width: "100%" }}>
                 <Card style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }} bodyStyle={{ padding: 16 }}>
-                    <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
-                    <br />
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                        <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
+                        {!isViewMode && <Button type="link" danger onClick={(e) => { e.stopPropagation(); handlePartSelect([]); }}>Remove</Button>}
+                    </div>
                     <Text type="secondary">{section.Description}</Text>
                     <div style={{ marginTop: 16 }}>
                         {(section.Parts || []).map((part) => (
@@ -397,15 +369,20 @@ const CreateExamPage = () => {
 
     useEffect(() => {
         if (!topicData) return;
-        form.setFieldsValue({ name: topicData.Name, duration: topicData.Duration });
-        setShuffleQuestions(!!topicData.ShuffleQuestions);
-        setShuffleAnswers(!!topicData.ShuffleAnswers);
+        
+        // [STABILITY]: Normalize data to handle both nested { data: { ... } } and flat { ... } responses
+        const data = topicData.data ? topicData.data : topicData;
+        
+        if (!data || !data.Name) return;
 
+        form.setFieldsValue({ name: data.Name });
+        
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
-        (topicData.Sections || []).forEach(section => {
-            const skill = section.Skill.Name;
+        (data.Sections || []).forEach(section => {
+            const skill = section.Skill?.Name;
+            if (!skill) return;
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
             instructionsData.push({ skill, section });
@@ -418,8 +395,6 @@ const CreateExamPage = () => {
 
     return (
         <>
-            <ModalComponent />
-
             <HeaderInfo
                 title={isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
                 subtitle={isViewMode ? "Preview the exam information and structure. Editing is disabled." : topicId ? "Modify exam information, structure, and skill-based questions." : "Set up exam details, structure, and choose skill-based questions."}
@@ -427,154 +402,135 @@ const CreateExamPage = () => {
                     <div style={{ display: "flex", gap: "12px" }}>
                         <Button icon={<LeftOutlined />} onClick={() => navigate("/exam")}>Back</Button>
                         <Button icon={<EyeOutlined />} onClick={handlePreviewExam}>Preview</Button>
-                        {isViewMode && topicData?.Status === 'submited' && isAdmin && (
-                            <>
-                                <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
-                                <Button danger type="primary" onClick={handleReject}>Reject</Button>
-                            </>
-                        )}
+                        {(() => {
+                            const data = topicData?.data ? topicData.data : topicData;
+                            return isViewMode && data?.Status === 'submited' && isAdmin && (
+                                <>
+                                    <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
+                                    <Button danger type="primary" onClick={handleReject}>Reject</Button>
+                                </>
+                            );
+                        })()}
                     </div>
                 }
+
             />
 
-            <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-                <Spin spinning={isLoading}>
-                    <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
+            <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)} >
+                <div style={{ padding: 24 }}>
+                    <Card style={{ marginBottom: 24 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                            <Title level={4} style={{ margin: 0 }}>Exam Information</Title>
+                            {(() => {
+                                const data = topicData?.data ? topicData.data : topicData;
+                                return isViewMode && isAdmin && data?.Status === "submited" && (
+                                    <Space>
+                                        <Button type="primary" style={{ background: "#52c41a" }} onClick={handleApprove}>Approve</Button>
+                                        <Button danger type="primary" onClick={handleReject}>Reject</Button>
+                                    </Space>
+                                );
+                            })()}
+                        </div>
 
-                        <Card title="Settings" style={{ marginBottom: 24, borderRadius: 12 }}>
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item label="Exam Name" name="name" rules={[{ required: true }]}>
-                                        <Input placeholder="Exam name..." size="large" disabled={isViewMode} />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={6}>
-                                    <Form.Item label="Duration (minutes)" name="duration">
-                                        <InputNumber min={1} max={999} disabled={isViewMode} size="large" style={{ width: '100%' }} />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
+                        <Form.Item label="Exam Name" name="name" getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '')} rules={[{ required: true }]}>
+                            <Input maxLength={255} placeholder="Enter exam name" disabled={isViewMode} />
+                        </Form.Item>
+                        <Form.Item label={"Creator"} name="creator"><Input disabled /></Form.Item>
+                        <Form.Item label={"Last Edited By"} name="editor"><Input placeholder="None" disabled /></Form.Item>
+                        <Form.Item label="Duration" name="duration" rules={[{ required: true }]}>
+                            <RangePicker showTime={{ format: 'HH:mm' }} format="YYYY-MM-DD HH:mm" disabled={isViewMode} />
+                        </Form.Item>
+                    </Card>
 
+                    <div style={{ borderRadius: 12, background: "#F5F6FA", border: "1px solid #E5E7EB", marginBottom: 20, boxShadow: "0 2px 6px rgba(0,0,0,0.04)" }}>
+                        <div style={{ display: "flex", height: 40 }}>
+                            {SKILL_TABS.map((tab) => {
+                                const active = selectedSkill === tab.key;
+                                return (
+                                    <div key={tab.key} onClick={() => setSelectedSkill(tab.key)} style={{ padding: "8px 18px", cursor: "pointer", display: "flex", alignItems: "center", gap: 8, background: active ? "#1677FF" : "white", color: active ? "white" : "#4B5563", border: active ? "1px solid #1677FF" : "1px solid #E5E7EB", boxShadow: active ? "0 2px 6px rgba(0,0,0,0.15)" : "none", transition: "0.2s" }}>
+                                        {React.cloneElement(tab.icon, { style: { color: active ? "white" : "#6B7280" } })}
+                                        <span style={{ fontWeight: 600 }}>{tab.label}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        <div 
+                            style={{ padding: "24px 24px 40px", background: "white", borderBottom: "1px solid #E5E7EB", cursor: isViewMode ? "default" : "pointer" }} 
+                            onClick={() => { if (!isViewMode) setOpenModal(true) }}
+                        >
+                            {renderSelectedSectionUI()}
+                        </div>
+                    </div>
+                    <Divider />
+
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 24 }}>
+                        <Button type="primary" onClick={handlePreviewExam}>Start Exam Preview</Button>
+                        <Space>
+                            <Button onClick={() => handleNavigateAway('/exam')}>Cancel</Button>
                             {!isViewMode && (
-                                <div style={{ padding: '16px', background: '#f0f5ff', borderRadius: 8 }}>
-                                    <Title level={5}><SwapOutlined /> Randomization Settings</Title>
-                                    <Row gutter={48}>
-                                        <Col>
-                                            <Space>
-                                                <Switch
-                                                    checked={ShuffleQuestions}
-                                                    onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
-                                                    disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"}
-                                                />
-                                                <Text strong>Shuffle Questions</Text>
-                                            </Space>
-                                        </Col>
-                                        <Col>
-                                            <Space>
-                                                <Switch
-                                                    checked={ShuffleAnswers}
-                                                    onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
-                                                    disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)}
-                                                />
-                                                <Text strong>Shuffle Answers</Text>
-                                            </Space>
-                                        </Col>
-                                    </Row>
-                                </div>
+                                <>
+                                    <div style={{ padding: '16px', background: '#f0f5ff', borderRadius: 8 }}>
+                                        <Title level={5}><SwapOutlined /> Randomization Settings</Title>
+                                        <Row gutter={48}>
+                                            <Col>
+                                                <Space>
+                                                    <Switch
+                                                        checked={ShuffleQuestions}
+                                                        onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
+                                                        disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"}
+                                                    />
+                                                    <Text strong>Shuffle Questions</Text>
+                                                </Space>
+                                            </Col>
+                                            <Col>
+                                                <Space>
+                                                    <Switch
+                                                        checked={ShuffleAnswers}
+                                                        onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
+                                                        disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)}
+                                                    />
+                                                    <Text strong>Shuffle Answers</Text>
+                                                </Space>
+                                            </Col>
+                                        </Row>
+                                    </div>
+                                    <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
+                                    <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
+                                </>
                             )}
-
-                            <Form.Item label="Creator" name="creator">
-                                <Input disabled />
-                            </Form.Item>
-
-                            <Form.Item label="Last Edited By" name="editor">
-                                <Input disabled />
-                            </Form.Item>
-
-                            <Form.Item label="Duration Time" name="timeRange" rules={[{ required: true }]}>
-                                <RangePicker showTime={{ format: 'HH:mm' }} format="YYYY-MM-DD HH:mm" disabled={isViewMode} />
-                            </Form.Item>
-                        </Card>
-
-                        <div style={{ borderRadius: 12, background: "#F5F6FA", border: "1px solid #E5E7EB", marginBottom: 20 }}>
-                            <div style={{ display: "flex", height: 40 }}>
-                                {SKILL_TABS.map((tab) => {
-                                    const active = selectedSkill === tab.key;
-                                    return (
-                                        <div
-                                            key={tab.key}
-                                            onClick={() => setSelectedSkill(tab.key)}
-                                            style={{
-                                                padding: "8px 18px",
-                                                cursor: "pointer",
-                                                background: active ? "#1677FF" : "white",
-                                                color: active ? "white" : "#4B5563"
-                                            }}
-                                        >
-                                            {tab.label}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div
-                                style={{ padding: "24px", background: "white" }}
-                                onClick={() => { if (!isViewMode) setOpenModal(true) }}
-                            >
-                                {renderInstructionContent()}
-                            </div>
-                        </div>
-
-                        <Divider />
-
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <Button type="primary" onClick={handlePreviewExam}>Start Exam Preview</Button>
-
-                            <Space>
-                                <Button onClick={() => handleNavigateAway('/exam')}>Cancel</Button>
-
-                                {!isViewMode && (
-                                    <>
-                                        <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
-                                        <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
-                                    </>
-                                )}
-                            </Space>
-                        </div>
-
-                    </Form>
-                </Spin>
-            </Content>
-
-            <ChooseSectionModal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
-                skillName={selectedSkill}
-                onSelect={handlePartSelect}
-                selectedSectionId={selectedSectionBySkill[selectedSkill]}
-            />
-
-            <PreviewExam
-                isModalOpen={previewOpen}
-                setIsModalOpen={setPreviewOpen}
-                dataExam={previewData}
-                fileData={null}
-                setDataExam={setPreviewData}
-            />
-
-            <Modal
-                title="You have unsaved changes"
-                open={leaveConfirmOpen}
-                onCancel={() => setLeaveConfirmOpen(false)}
-                footer={[
-                    <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
-                    <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save as Draft & Leave</Button>,
-                    <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay on Page</Button>,
-                ]}
-            >
-                <p>Would you like to save your work as a draft before leaving?</p>
-            </Modal>
+                        </Space>
+                    </div>
+                    <ChooseSectionModal 
+                        open={openModal} 
+                        onClose={() => setOpenModal(false)} 
+                        skillName={selectedSkill} 
+                        onSelect={handlePartSelect} 
+                        selectedSectionId={selectedSectionBySkill[selectedSkill]} 
+                    />
+                </div>
+                <PreviewExam 
+                    isModalOpen={previewOpen} 
+                    setIsModalOpen={setPreviewOpen} 
+                    dataExam={previewData} 
+                    fileData={null} 
+                    setDataExam={setPreviewData} 
+                />
+                <ModalComponent />
+                <Modal 
+                    title="You have unsaved changes" 
+                    open={leaveConfirmOpen} 
+                    onCancel={() => setLeaveConfirmOpen(false)} 
+                    footer={[
+                        <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
+                        <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save as Draft & Leave</Button>,
+                        <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay on Page</Button>,
+                    ]}
+                >
+                    <p>Would you like to save your work as a draft before leaving?</p>
+                </Modal>
+            </Form>
         </>
     );
-}
+};
+
 export default CreateExamPage;

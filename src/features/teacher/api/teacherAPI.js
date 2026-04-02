@@ -7,6 +7,10 @@ export const createTeachers = async (data) => {
 export const updateTeachers = async (data) => {
   return await axiosInstance.put(`/users/${data.ID}`, data);
 };
+export const getTeacherById = async (id) => {
+  const res = await axiosInstance.get(`/users/${id}`);
+  return res.data;
+};
 export const getTeachers = async (data) => {
   const res = await axiosInstance.get(`/users/teachers`, {
     params: data,
@@ -14,5 +18,5 @@ export const getTeachers = async (data) => {
   return res.data;
 };
 export const deleteTeachers = async (id) => {
-  return await axiosInstance.delete(`/users/${id}`);
+  return await axiosInstance.delete(`/users/delete/${id}`);
 };

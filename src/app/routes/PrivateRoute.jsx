@@ -35,6 +35,7 @@ import WaitingForApproval from '@features/welcome/ui/waiting-for-approval.jsx';
 import SubmissionPage from '@pages/MockTest/submission-page.jsx';
 import SectionDetail from '@pages/Section/detail/index.jsx';
 const QuestionBank = lazy(() => import('@pages/QuestionBank/index.jsx'));
+const ImportQuestionList = lazy(() => import('@pages/QuestionBank/ImportQuestionList.jsx'));
 const QuestionDetail = lazy(() => import('@pages/QuestionBank/QuestionDetail'));
 const TeacherResultPage = lazy(
   () => import('@pages/TeacherManagement/TeacherResultPage.jsx')
@@ -76,7 +77,7 @@ const PrivateRoute = [
       },
       {
         path: 'class',
-        role: ['teacher'],
+        role: ['teacher', 'admin'],
         breadcrumb: 'Class Management',
         children: [
           {
@@ -171,6 +172,12 @@ const PrivateRoute = [
           {
             index: true,
             element: <QuestionBank />,
+          },
+          {
+            path: 'import',
+            element: <ImportQuestionList />,
+            breadcrumb: 'Import Question List',
+            role: ['teacher', 'admin', 'superadmin'],
           },
           {
             path: ':id',

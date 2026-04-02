@@ -96,6 +96,22 @@ export const useDeleteTopic = () => {
   });
 };
 
+export const useDeleteTopicSection = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id) => TopicApi.removeTopicSection(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+      queryClient.invalidateQueries({ queryKey: ["topicSections"] });
+    },
+    onError: (error) => {
+      console.error("Error deleting TopicSection:", error);
+      message.error("Failed to remove section");
+    },
+  });
+};
+
 export const useDeleteTopicSectionByTopicId = () => {
   const queryClient = useQueryClient();
 
