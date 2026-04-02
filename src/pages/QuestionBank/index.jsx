@@ -15,6 +15,7 @@ import {
   DeleteOutlined,
   EyeOutlined,
   ExclamationCircleFilled,
+  ImportOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
@@ -220,14 +221,24 @@ const QuestionBank = () => {
             Manage and organize all your exam questions
           </Text>
         </div>
-        <Button
-          type='primary'
-          size='large'
-          onClick={() => navigate('create/speaking')}
-          className='!rounded-full !bg-[#003087] hover:!bg-[#002060] !border-none !font-medium !h-[48px] !px-8'
-        >
-          Create New Question
-        </Button>
+        <div className='flex gap-3'>
+          <Button
+            size='large'
+            icon={<ImportOutlined />}
+            onClick={() => navigate('import')}
+            className='!rounded-full !border-[#003087] !text-[#003087] !font-medium !h-[48px] !px-6'
+          >
+            Import Questions
+          </Button>
+          <Button
+            type='primary'
+            size='large'
+            onClick={() => navigate('create/speaking')}
+            className='!rounded-full !bg-[#003087] hover:!bg-[#002060] !border-none !font-medium !h-[48px] !px-8'
+          >
+            Create New Question
+          </Button>
+        </div>
       </div>
 
       {/* ===== FILTERS ===== */}
