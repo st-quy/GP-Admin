@@ -354,7 +354,7 @@ const GradingPage = () => {
     );
 
   return (
-    <div className="p-8">
+    <div className="p-8 w-[90%] mx-auto">
       <ScrollToTop />
       {/* Student Information Card */}
       <StudentInfoCard

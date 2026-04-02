@@ -100,6 +100,7 @@ const StudentSessionTable = ({
       dataIndex: "GrammarVocab",
       key: "GrammarVocab",
       width: "240px",
+      align: "center",
       render: (text) => <span>{text || text === 0 ? text : "-"}</span>,
     },
     {
@@ -107,6 +108,7 @@ const StudentSessionTable = ({
       dataIndex: "Listening",
       key: "Listening",
       width: "120px",
+      align: "center",
       render: (text, record) => (
         <span>
           {text || text === 0
@@ -120,6 +122,7 @@ const StudentSessionTable = ({
       dataIndex: "Reading",
       key: "Reading",
       width: "120px",
+      align: "center",
       render: (text, record) => (
         <span>
           {text || text === 0
@@ -133,6 +136,7 @@ const StudentSessionTable = ({
       dataIndex: "Speaking",
       key: "Speaking",
       width: "120px",
+      align: "center",
       render: (text, record) =>
         type === TableType.SESSION && status !== StatusType.PUBLISHED ? (
           <a
@@ -160,6 +164,7 @@ const StudentSessionTable = ({
       dataIndex: "Writing",
       key: "Writing",
       width: "120px",
+      align: "center",
       render: (text, record) =>
         type === TableType.SESSION && status !== StatusType.PUBLISHED ? (
           <a
@@ -187,6 +192,7 @@ const StudentSessionTable = ({
       width: "90px",
       dataIndex: "Total",
       key: "Total",
+      align: "center",
       render: (text) => <span>{text || text === 0 ? text : "-"}</span>,
     },
     {
@@ -195,6 +201,7 @@ const StudentSessionTable = ({
       key: "Level",
       fixed: "right",
       width: "90px",
+      align: "center",
       render: (level, record) =>
         type === TableType.SESSION && !isPublished ? (
           <Select
@@ -235,6 +242,7 @@ const StudentSessionTable = ({
           dataIndex: ["User", "fullName"],
           key: "fullName",
           width: "260px",
+          align: "center",
           render: (text, record) =>
             text ? (
               <a
@@ -256,13 +264,11 @@ const StudentSessionTable = ({
           dataIndex: ["Session", "sessionName"],
           key: "SessionID",
           width: "260px",
+          align: "center",
           render: (text, record) => (
             <a
               onClick={() => {
-                // record.ID là ID của SessionParticipant (dùng để gọi API getParticipantDetail)
-                // Điều hướng đến trang kết quả
                 navigate(`result/${record.ID}`);
-                // LƯU Ý: Đường dẫn trong navigate phải khớp với route bạn đã khai báo trong PrivateRoute.jsx
               }}
               className="cursor-pointer underline underline-offset-4 hover:opacity-80 text-[#003087] font-medium"
             >
