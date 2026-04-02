@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { Table, Input, Pagination, Select, message } from "antd";
+import { Table, Input, Select, message, Pagination } from "antd";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
-
-const { Search } = Input;
+import { SearchOutlined } from "@ant-design/icons";
 
 const SessionTable = ({ data, columns, isLoading }) => {
   const [searchText, setSearchText] = useState("");
@@ -16,24 +15,28 @@ const SessionTable = ({ data, columns, isLoading }) => {
 
     // 1. Proactively handle special characters/emojis (BUG_CM013)
     if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
-      message.warning('Special characters and emojis are not allowed in search.');
-      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+      message.warning(
+        "Special characters and emojis are not allowed in search.",
+      );
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, "");
     }
 
     // 2. Proactively handle multiple spaces (BUG_CM014)
     if (/\s{2,}/.test(cleanValue)) {
-      message.info('Multiple spaces are not allowed; collapsed to a single space.');
-      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+      message.info(
+        "Multiple spaces are not allowed; collapsed to a single space.",
+      );
+      cleanValue = cleanValue.replace(/\s{2,}/g, " ");
     }
 
     // 3. Proactively handle length overflow (BUG_CM012)
     if (cleanValue.length > 50) {
-      message.error('Search limit reached (max 50 characters).');
+      message.error("Search limit reached (max 50 characters).");
       cleanValue = cleanValue.slice(0, 50);
     }
 
     // 4. Block leading spaces
-    cleanValue = cleanValue.replace(/^\s+/, '');
+    cleanValue = cleanValue.replace(/^\s+/, "");
 
     setSearchText(cleanValue);
     setCurrentPage(1);
@@ -44,13 +47,13 @@ const SessionTable = ({ data, columns, isLoading }) => {
     ([value, info]) => ({
       value,
       label: info.label,
-    })
+    }),
   );
 
   const handleSearch = (value) => {
     const trimmedValue = value.trim();
     if (trimmedValue.length > 50) {
-      message.error('Search query is too long');
+      message.error("Search query is too long");
       return;
     }
     setSearchText(trimmedValue);
@@ -62,7 +65,7 @@ const SessionTable = ({ data, columns, isLoading }) => {
     const searchValue = searchText.toLowerCase().trim();
     const matchesSearch = searchValue
       ? Object.values(item).some((value) =>
-          String(value).toLowerCase().includes(searchValue)
+          String(value).toLowerCase().includes(searchValue),
         )
       : true;
 
@@ -84,49 +87,105 @@ const SessionTable = ({ data, columns, isLoading }) => {
 
   return (
     <div className="mt-4">
-      <div className="flex items-center gap-4 mb-6">
-        <Search
+      <div className="mb-6 flex items-center gap-4">
+        <Input
           placeholder="Search sessions..."
           value={searchText}
           onChange={handleSearchChange}
-          className="w-full max-w-[300px]"
+          className="figma-search-input"
+          prefix={<SearchOutlined className="text-[#9CA3AF]" />}
           allowClear
-          enterButton
         />
         <Select
-          className="w-[180px] h-[40px]"
+          className="h-[48px] w-[180px] !border-[#DFE4EA] !shadow-[0px_4px_4px_rgba(0,0,0,0.1)]"
           placeholder="Filter by status"
           onChange={handleStatusFilterChange}
           allowClear
           options={statusFilterOptions}
         />
       </div>
-      <div className="w-full">
+      <div className="figma-table-card figma-table-overrides w-full">
         <Table
           columns={columns}
           dataSource={paginatedData}
           rowKey="ID"
           pagination={false}
           scroll={{ x: "max-content" }}
-          className="w-full custom-table"
+          className="w-full"
           loading={isLoading}
         />
-        <div className="flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm">
-          <div className="text-gray-600 font-medium">
-            {total > 0 ? `Showing ${start}-${end} of ${total} entries` : 'No entries found'}
+      </div>
+
+      <div className="figma-pagination-wrapper">
+        <div className="figma-pagination-box">
+          <div className="figma-pagination-text whitespace-nowrap">
+            {total === 0
+              ? "No entries found"
+              : `Showing ${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")} of ${total}`}
           </div>
-          <Pagination
-            current={currentPage}
-            pageSize={pageSize}
-            total={total}
-            onChange={(page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            }}
-            showSizeChanger
-            pageSizeOptions={["5", "10", "15", "20"]}
-            className="ant-pagination-custom"
-          />
+
+          <div className="figma-pagination-nav-group">
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={total}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+              itemRender={(page, type, original) => {
+                if (type === "page") {
+                  const isActive = currentPage === page;
+                  return (
+                    <button className={`figma-page-btn ${isActive ? "active" : ""}`}>
+                      {page}
+                    </button>
+                  );
+                }
+                if (type === "prev") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u2039"}
+                    </button>
+                  );
+                }
+                if (type === "next") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u203A"}
+                    </button>
+                  );
+                }
+                if (type === "jump-prev" || type === "jump-next") {
+                  return (
+                    <span
+                      className="text-[#637381] px-1"
+                      style={{ fontSize: "16px", lineHeight: "25px" }}
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return original;
+              }}
+            />
+          </div>
+
+          <div className="figma-page-size-container">
+            <Select
+              value={pageSize}
+              onChange={(val) => {
+                setPageSize(val);
+                setCurrentPage(1);
+              }}
+              bordered={false}
+              className="figma-page-size-select"
+              options={[
+                { value: 5, label: "05 / pages" },
+                { value: 10, label: "10 / pages" },
+                { value: 15, label: "15 / pages" },
+                { value: 20, label: "20 / pages" },
+              ]}
+            />
+          </div>
         </div>
       </div>
     </div>

@@ -1,17 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { Modal, Checkbox, Spin, Typography, Card } from "antd";
+import { Modal, Checkbox, Spin, Typography, Card, Button } from "antd";
 import { DownOutlined, RightOutlined } from "@ant-design/icons";
-import { useGetSections } from "@features/section/hooks";
+import { useGetSections } from "@features/sections/hooks"; // Use working plural hooks
 
 const { Title, Text } = Typography;
 
-const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectionId }) => {
+const ChooseSectionModal = ({ open, onCancel, skillName, onSelect, selectedSectionId }) => {
   const [selectedSectionsBySkill, setSelectedSectionsBySkill] = useState({}); 
   const [expanded, setExpanded] = useState([]); 
 
-  const { data: sections = [], isLoading } = useGetSections(skillName, {
+  // Fix: Pass as object to match useGetSections({ skillName })
+  const { data: response, isLoading } = useGetSections({
+    skillName: skillName,
     enabled: open,
   });
+
+  const sections = response?.data || [];
 
   const toggleSelect = (section) => {
     setSelectedSectionsBySkill((prev) => {
@@ -32,12 +36,9 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
   };
 
   const handleSubmit = () => {
-    const sectionsSelected = (selectedSectionsBySkill[skillName] || []).map((item) =>
-      sections.find((section) => section.ID === item.ID) || item
-    );
-    onSelect(sectionsSelected);
-    console.log(sectionsSelected)
-    onClose();
+    const selected = selectedSectionsBySkill[skillName] || [];
+    onSelect(selected);
+    onCancel();
   };
 
   const selectedSections = selectedSectionsBySkill[skillName] || [];
@@ -59,15 +60,16 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
     <Modal
       title={<Title level={4} style={{ margin: 0 }}>Section Selection</Title>}
       open={open}
-      onCancel={onClose}
+      onCancel={onCancel}
       footer={[
-        <button key="cancel" onClick={onClose} style={{ padding: "6px 20px", border: "1px solid #d0d0d0", background: "white", borderRadius: 8, cursor: "pointer" }}>Cancel</button>,
-        <button key="submit" onClick={handleSubmit} style={{ padding: "6px 28px", background: "#002B7F", color: "white", borderRadius: 8, cursor: "pointer", border: "none" }}>Select</button>,
+        <Button key="cancel" onClick={onCancel}>Cancel</Button>,
+        <Button key="submit" type="primary" onClick={handleSubmit} style={{ background: "#002B7F", borderColor: "#002B7F" }}>Select</Button>,
       ]}
       width={750}
+      destroyOnClose
     >
       {isLoading ? (
-        <Spin style={{ width: "100%", display: "flex", justifyContent: "center" }} />
+        <Spin style={{ width: "100%", display: "flex", justifyContent: "center", padding: "40px 0" }} />
       ) : (
         <div style={{ maxHeight: 450, overflowY: "auto", paddingRight: 10 }}>
           {sections.map((section) => {
@@ -84,12 +86,11 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
                 }}
                 bodyStyle={{ padding: 16 }}
               >
-                {/* HEADER */}
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={() => toggleSelect(section)}>
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                     <Checkbox
                       checked={checked}
-                      onClick={(e) => {
+                      onChange={(e) => {
                         e.stopPropagation();
                         toggleSelect(section);
                       }}
@@ -108,65 +109,17 @@ const ChooseSectionModal = ({ open, onClose, skillName, onSelect, selectedSectio
                 {isExpanded && (
                   <div style={{ marginTop: 16, paddingLeft: 36 }}>
                     {(section.Parts || []).map((part) => (
-                      <div
-                                    key={part.ID}
-                                    style={{
-                                        marginBottom: 12,
-                                        padding: 12,
-                                        border: "1px solid #E5E7EB",
-                                        borderRadius: 8,
-                                        background: "white",
-                                    }}
-                                >
-
-                                    <Text strong>{part.Content}</Text>
-                                    {!(skillName === "READING" || skillName === "WRITING") && (
-                                        <>
-                                            <br />
-                                            <Text type="secondary">{part.SubContent}</Text>
-                                        </>
-                                    )}
-
-                                    {!(skillName === "READING" || skillName === "WRITING") && (
-                                        <div style={{ marginTop: 8 }}>
-                                            {(part.Questions || []).map((q, index) => (
-                                                <div
-                                                    key={q.ID}
-                                                    style={{
-                                                        display: "flex",
-                                                        alignItems: "flex-start",
-                                                        gap: 12,
-                                                        marginBottom: 10,
-                                                    }}
-                                                >
-                                                    <div
-                                                        style={{
-                                                            width: 28,
-                                                            height: 28,
-                                                            borderRadius: "50%",
-                                                            background: "#0a2a79",
-                                                            color: "white",
-                                                            display: "flex",
-                                                            alignItems: "center",
-                                                            justifyContent: "center",
-                                                            fontWeight: 600,
-                                                            fontSize: 14,
-                                                            flexShrink: 0,
-                                                        }}
-                                                    >
-                                                        {(skillName === "SPEAKING" && part.Content === "Part 4")
-                                                            ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span>
-                                                            : (index + 1)}
-                                                    </div>
-
-                                                    <Text style={{ fontSize: 15, lineHeight: "20px" }}>
-                                                        {q.Content}
-                                                    </Text>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
+                      <div key={part.ID} style={{ marginBottom: 12, padding: 12, border: "1px solid #E5E7EB", borderRadius: 8, background: "white" }}>
+                        <Text strong>{part.Content}</Text>
+                        <div style={{ marginTop: 8 }}>
+                          {(part.Questions || []).map((q, index) => (
+                            <div key={q.ID} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
+                              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0a2a79", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14 }}>{index + 1}</div>
+                              <Text style={{ fontSize: 15, lineHeight: "20px" }}>{q.Content}</Text>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 )}

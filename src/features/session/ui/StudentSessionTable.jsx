@@ -39,8 +39,8 @@ const StudentSessionTable = ({
       setLevels(
         processedData.reduce(
           (acc, cur) => ({ ...acc, [cur.ID]: cur.Level }),
-          {}
-        )
+          {},
+        ),
       );
     }
   }, [processedData]);
@@ -80,7 +80,7 @@ const StudentSessionTable = ({
       "Listening",
     ];
     return requiredScores.every(
-      (key) => result[key] !== null && result[key] !== undefined
+      (key) => result[key] !== null && result[key] !== undefined,
     );
   };
   const onLevelChange = (key, value) => {
@@ -90,7 +90,7 @@ const StudentSessionTable = ({
       {
         id: key,
         value,
-      }
+      },
     );
   };
 
@@ -100,15 +100,15 @@ const StudentSessionTable = ({
       dataIndex: "GrammarVocab",
       key: "GrammarVocab",
       width: "240px",
-      render: (text) => (
-        <span>{text || text === 0 ? text : "-"}</span>
-      ),
+      align: "center",
+      render: (text) => <span>{text || text === 0 ? text : "-"}</span>,
     },
     {
       title: "LISTENING",
       dataIndex: "Listening",
       key: "Listening",
       width: "120px",
+      align: "center",
       render: (text, record) => (
         <span>
           {text || text === 0
@@ -122,9 +122,12 @@ const StudentSessionTable = ({
       dataIndex: "Reading",
       key: "Reading",
       width: "120px",
+      align: "center",
       render: (text, record) => (
         <span>
-          {text || text === 0 ? text + " | " + (record.ReadingLevel || "-") : "-"}
+          {text || text === 0
+            ? text + " | " + (record.ReadingLevel || "-")
+            : "-"}
         </span>
       ),
     },
@@ -133,6 +136,7 @@ const StudentSessionTable = ({
       dataIndex: "Speaking",
       key: "Speaking",
       width: "120px",
+      align: "center",
       render: (text, record) =>
         type === TableType.SESSION && status !== StatusType.PUBLISHED ? (
           <a
@@ -160,6 +164,7 @@ const StudentSessionTable = ({
       dataIndex: "Writing",
       key: "Writing",
       width: "120px",
+      align: "center",
       render: (text, record) =>
         type === TableType.SESSION && status !== StatusType.PUBLISHED ? (
           <a
@@ -170,10 +175,16 @@ const StudentSessionTable = ({
             }
             className="cursor-pointer underline underline-offset-4 hover:opacity-80"
           >
-            {text || text === 0 ? text + " | " + (record.WritingLevel || "Ungraded") : "Ungraded"}
+            {text || text === 0
+              ? text + " | " + (record.WritingLevel || "Ungraded")
+              : "Ungraded"}
           </a>
         ) : (
-          <span>{text || text === 0 ? text + " | " + (record.WritingLevel || "Ungraded") : "Ungraded"}</span>
+          <span>
+            {text || text === 0
+              ? text + " | " + (record.WritingLevel || "Ungraded")
+              : "Ungraded"}
+          </span>
         ),
     },
     {
@@ -181,6 +192,7 @@ const StudentSessionTable = ({
       width: "90px",
       dataIndex: "Total",
       key: "Total",
+      align: "center",
       render: (text) => <span>{text || text === 0 ? text : "-"}</span>,
     },
     {
@@ -189,12 +201,15 @@ const StudentSessionTable = ({
       key: "Level",
       fixed: "right",
       width: "90px",
+      align: "center",
       render: (level, record) =>
         type === TableType.SESSION && !isPublished ? (
           <Select
             value={levels[record.ID]}
             placeholder="Level"
-            disabled={!isAllScoresPresent(record) || record.IsPublished || isPublished}
+            disabled={
+              !isAllScoresPresent(record) || record.IsPublished || isPublished
+            }
             onChange={(value) => onLevelChange(record.ID, value)}
             className="p-0"
           >
@@ -227,6 +242,7 @@ const StudentSessionTable = ({
           dataIndex: ["User", "fullName"],
           key: "fullName",
           width: "260px",
+          align: "center",
           render: (text, record) =>
             text ? (
               <a
@@ -248,15 +264,11 @@ const StudentSessionTable = ({
           dataIndex: ["Session", "sessionName"],
           key: "SessionID",
           width: "260px",
+          align: "center",
           render: (text, record) => (
             <a
               onClick={() => {
-                // record.ID là ID của SessionParticipant (dùng để gọi API getParticipantDetail)
-                // Điều hướng đến trang kết quả
-                navigate(
-                  `result/${record.ID}`
-                );
-                // LƯU Ý: Đường dẫn trong navigate phải khớp với route bạn đã khai báo trong PrivateRoute.jsx
+                navigate(`result/${record.ID}`);
               }}
               className="cursor-pointer underline underline-offset-4 hover:opacity-80 text-[#003087] font-medium"
             >
@@ -275,56 +287,93 @@ const StudentSessionTable = ({
 
   return (
     <div>
-      <Table
-        // @ts-ignore
-        columns={columns}
-        dataSource={filteredData.map((item) => ({ ...item, key: item.ID }))}
-        pagination={false}
-        bordered
-        className="border border-gray-200 pagination w-full p-0 m-0 overflow-x-auto bg-none"
-        rowClassName="text-center"
-        scroll={{ x: 768 }}
-        components={{
-          header: {
-            wrapper: (props) => (
-              <thead
-                {...props}
-                className={`bg-tableHeadColor text-primaryTextColor`}
-              />
-            ),
-            cell: (props) => (
-              <th
-                {...props}
-                className={` bg-[#E6F0FA] text-[10px] font-[700] md:text-[16px] text-[#637381] tracking-wider text-center !py-4 px-0 whitespace-nowrap `}
-              />
-            ),
-          },
-          body: {
-            cell: (props) => (
-              <td
-                {...props}
-                className={`font-[500] tracking-wider text-center py-4 px-0 whitespace-nowrap text-[10px] md:text-[14px] text-[#637381] ${props.className || ""}`}
-              />
-            ),
-          },
-        }}
-      />
-      <div className='flex justify-between items-center mt-6 px-4 bg-gray-50 p-4 rounded-lg shadow-sm'>
-        <div className='text-gray-600 font-medium'>
-          {total > 0 ? `Showing ${start}-${end} of ${total} entries` : 'No entries found'}
-        </div>
-        <Pagination
-          current={currentPage}
-          pageSize={pageSize}
-          total={total}
-          onChange={(page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          }}
-          showSizeChanger
-          pageSizeOptions={['5', '10', '15', '20']}
-          className='ant-pagination-custom'
+      <div className="figma-table-card figma-table-overrides w-full">
+        <Table
+          // @ts-ignore
+          columns={columns}
+          dataSource={filteredData.map((item) => ({ ...item, key: item.ID }))}
+          pagination={false}
+          bordered
+          className="w-full"
+          rowClassName="text-center"
+          scroll={{ x: "max-content" }}
+          loading={isLoading}
         />
+      </div>
+
+      <div className="figma-pagination-wrapper">
+        <div className="figma-pagination-box">
+          <div className="figma-pagination-text whitespace-nowrap">
+            {total === 0
+              ? "No entries found"
+              : `Showing ${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")} of ${total}`}
+          </div>
+
+          <div className="figma-pagination-nav-group">
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={total}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+              itemRender={(page, type, original) => {
+                if (type === "page") {
+                  const isActive = currentPage === page;
+                  return (
+                    <button
+                      className={`figma-page-btn ${isActive ? "active" : ""}`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                if (type === "prev") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u2039"}
+                    </button>
+                  );
+                }
+                if (type === "next") {
+                  return (
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u203A"}
+                    </button>
+                  );
+                }
+                if (type === "jump-prev" || type === "jump-next") {
+                  return (
+                    <span
+                      className="text-[#637381] px-1"
+                      style={{ fontSize: "16px", lineHeight: "25px" }}
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return original;
+              }}
+            />
+          </div>
+
+          <div className="figma-page-size-container">
+            <Select
+              value={pageSize}
+              onChange={(val) => {
+                setPageSize(val);
+                setCurrentPage(1);
+              }}
+              bordered={false}
+              className="figma-page-size-select"
+              options={[
+                { value: 5, label: "05 / pages" },
+                { value: 10, label: "10 / pages" },
+                { value: 20, label: "20 / pages" },
+                { value: 50, label: "50 / pages" },
+              ]}
+            />
+          </div>
+        </div>
       </div>
     </div>
   );

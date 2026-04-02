@@ -3,6 +3,7 @@ import { yupSync } from "@shared/lib/utils";
 import { useNavigate } from "react-router-dom";
 import { LeftOutlined, MailOutlined } from "@ant-design/icons";
 import { useForgotPassword } from "@features/auth/hooks";
+import { ForgotPasswordImg } from "@assets/images";
 import { emailSchema } from "./schema";
 
 const { Title, Text } = Typography;
@@ -26,6 +27,14 @@ const ForgotPassword = () => {
   const handleEmailChange = (e) => {
     const value = e.target.value;
     form.setFieldsValue({ email: value });
+  };
+
+  const handleEmailBlur = () => {
+    const email = form.getFieldValue("email");
+    if (email) {
+      form.setFieldsValue({ email: email.trim() });
+      form.validateFields(["email"]);
+    }
   };
 
   return (
@@ -78,13 +87,9 @@ const ForgotPassword = () => {
                 size="large"
                 className="h-11 text-base rounded-lg"
                 suffix={<MailOutlined className="text-[#dadcdf]" />}
+                maxLength={255}
                 onChange={handleEmailChange}
-                onBlur={() => {
-                  const email = form.getFieldValue("email");
-                  if (email) {
-                    form.setFieldsValue({ email: email.trim() });
-                  }
-                }}
+                onBlur={handleEmailBlur}
               />
             </Form.Item>
 
@@ -105,18 +110,18 @@ const ForgotPassword = () => {
       </Col>
 
       <Col
-        xs={24}
-        sm={24}
-        md={24}
+        xs={0}
+        sm={0}
+        md={0}
         lg={12}
         xxl={12}
-        className="flex items-center lg:justify-start justify-center px-4 lg:pt-2 lg:pl-8 mt-8 lg:mt-0"
+        className="flex items-center lg:justify-start justify-center px-4 lg:pt-2 lg:pl-8"
       >
-        {/* <img
-          src={ForgotPasswordLion}
+        <img
+          src={ForgotPasswordImg}
           alt="ForgotPassword"
           className="w-full max-w-[500px] lg:max-w-[600px] h-auto object-contain"
-        /> */}
+        />
       </Col>
     </Row>
   );
