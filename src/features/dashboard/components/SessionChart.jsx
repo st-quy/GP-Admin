@@ -22,8 +22,9 @@ export const SessionChart = ({ data }) => {
       lineWidth: 0,
     },
     label: {
-      text: "value",
-      position: "inside",
+      type: "inner",
+      offset: "-50%",
+      content: "{value}",
       style: {
         fill: "#fff",
         fontSize: 14,
@@ -90,11 +91,7 @@ export const SessionChart = ({ data }) => {
           .toString(),
       },
     },
-    color: ({ type }) => {
-      if (type === 'Ongoing') return '#22AD5C';
-      if (type === 'Not Started') return '#003087';
-      return '#9B51E0'; // Completed
-    },
+    color: ["#52c41a", "#1890ff", "#722ed1"],
     interactions: [
       {
         type: "element-active",

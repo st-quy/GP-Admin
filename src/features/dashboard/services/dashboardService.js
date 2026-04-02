@@ -2,97 +2,40 @@ import axiosInstance from "@shared/config/axios";
 
 export const fetchDashboardStats = async () => {
   try {
-    const [studentsRes, sessionsRes, classesRes, topicsRes, sectionsRes] = await Promise.all([
-      axiosInstance.get("/users/students?limit=9999"),
-      axiosInstance.get("/sessions/all?limit=9999"),
-      axiosInstance.get("/classes?limit=9999"),
-      axiosInstance.get("/topics?limit=9999"),
-      axiosInstance.get("/sections?limit=9999"),
+    const [teachers, classes, sessions, answers, requests] = await Promise.all([
+      axiosInstance.get("/users/teachers"),
+      axiosInstance.get("/classes"),
+      axiosInstance.get("/sessions/all"),
+      axiosInstance.get("/student-answers"),
+      axiosInstance.get("/session-requests"),
     ]);
 
-    const students = studentsRes.data?.data?.students || [];
-    const sessions = sessionsRes.data?.data || [];
-    const classes = classesRes.data?.data || [];
-    const topics = topicsRes.data?.data || [];
-    const sections = sectionsRes.data?.data || [];
-
-    const activeTesting = sessions.filter(s => s.status === "ON_GOING").length;
-    const gradingQueue = sessions.filter(s => s.status === "COMPLETE" && !s.isPublished).length;
-
     return {
-      studentCount: students.length,
-      activeTesting,
-      gradingQueue,
-      totalSessions: sessions.length,
-      totalClasses: classes.length,
-      totalExams: topics.length,
-      totalQuestionBank: sections.length
+      teacherCount: teachers.data.length,
+      studentCount: 0, // Will be implemented
+      activeClasses: classes.data.filter((c) => c.status === "active").length,
+      ongoingSessions: sessions.data.filter((s) => s.status === "ongoing")
+        .length,
+      upcomingSessions: sessions.data.filter((s) => s.status === "upcoming")
+        .length,
+      completedSessions: sessions.data.filter((s) => s.status === "completed")
+        .length,
+      totalSubmissions: answers.data.length,
+      pendingRequests: requests.data.filter((r) => r.status === "pending")
+        .length,
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
     return {
+      teacherCount: 0,
       studentCount: 0,
-      activeTesting: 0,
-      gradingQueue: 0,
-      totalSessions: 0,
-      totalClasses: 0,
-      totalExams: 0,
-      totalQuestionBank: 0
+      activeClasses: 0,
+      ongoingSessions: 0,
+      upcomingSessions: 0,
+      completedSessions: 0,
+      totalSubmissions: 0,
+      pendingRequests: 0,
     };
-  }
-};
-
-export const fetchGlobalRecentActivities = async (offset = 0, limit = 15) => {
-  try {
-    const response = await axiosInstance.get(`/activities/recent?limit=${limit}&offset=${offset}`);
-    const activities = response.data?.data || [];
-    const pagination = response.data?.pagination || { total: 0, hasMore: false };
-
-    const actionLabels = {
-      create: "Created",
-      update: "Updated",
-      delete: "Deleted",
-    };
-
-    const typeMap = {
-      class: "class",
-      session: "session",
-      topic: "exam",
-      question: "question",
-      part: "part",
-      section: "section",
-    };
-
-    const entityLabels = {
-      class: "Class",
-      session: "Session",
-      topic: "Exam Set",
-      question: "Question",
-      part: "Part",
-      section: "Section",
-    };
-
-    const data = activities.map((a) => {
-      const action = actionLabels[a.action] || a.action;
-      const entityLabel = entityLabels[a.entityType] || a.entityType;
-      const title = a.details
-        ? `${a.user || "Unknown"} ${action}: ${a.details}`
-        : `${a.user || "Unknown"} ${action} ${entityLabel}: ${a.entityName || ""}`;
-
-      return {
-        id: a.ID,
-        title,
-        type: typeMap[a.entityType] || "user",
-        status: action,
-        timestamp: a.createdAt,
-        details: a.details || "",
-      };
-    });
-
-    return { data, pagination };
-  } catch (error) {
-    console.error("Error fetching recent activities:", error);
-    return { data: [], pagination: { total: 0, hasMore: false } };
   }
 };
 

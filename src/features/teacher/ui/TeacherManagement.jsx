@@ -1,67 +1,43 @@
-import React, { useState, useMemo } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
-import { Table, Input, Select, Space, Tag, message, Pagination } from 'antd';
+import React, { useState } from 'react';
+import { Table, Input, Select, Space, Tag, message } from 'antd';
 import {
   SearchOutlined,
   CheckCircleOutlined,
   StopOutlined,
   ExportOutlined,
   DeleteOutlined,
-  EditOutlined,
 } from '@ant-design/icons';
-import {
-  useDeleteTeacher,
-  useFetchTeacherById,
-  useFetchTeachers,
-  useUpdateTeacher,
-} from '../hook/useTeacherQuery';
+import { useFetchTeachers, useUpdateTeacher } from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
 import BulkActionToolbar from '@shared/components/BulkActionToolbar';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
-import SearchInput from "@/app/components/SearchInput.jsx";
+import { useNavigate, useParams } from 'react-router-dom';
+import { deleteTeachers } from '../api/teacherAPI';
+
+const { Option } = Select;
 
 const TeacherManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
-  
+  const [pageSize, setPageSize] = useState(5);
   const navigate = useNavigate();
   const { id: editingTeacherId } = useParams();
+  const editingTeacherIdNumber =
+    typeof editingTeacherId === 'string' ? Number(editingTeacherId) : null;
   const { openConfirmModal, ModalComponent } = useConfirm();
-  
-  const { mutateAsync: deleteTeacher } = useDeleteTeacher();
-  const updateTeacher = useUpdateTeacher();
 
-  const onSearchChange = (event) => {
-    const rawValue = event.target.value;
-    let cleanValue = rawValue;
-
-    if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
-      message.warning('Special characters and emojis are not allowed in search.');
-      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
-    }
-
-    if (/\s{2,}/.test(cleanValue)) {
-      message.info('Multiple spaces are not allowed; collapsed to a single space.');
-      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
-    }
-
-    if (cleanValue.length > 50) {
-      message.error('Search limit reached (max 50 characters).');
-      cleanValue = cleanValue.slice(0, 50);
-    }
-
-    cleanValue = cleanValue.replace(/^\s+/, '');
-    setSearchTerm(cleanValue);
-    setCurrentPage(1);
-    setSelectedRowKeys([]);
+  // Escape special SQL-like characters for search
+  const escapeSearchTerm = (term) => {
+    return term.replace(/([%_\\])/g, '\\$1');
   };
 
-  const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
-  
+  const debouncedSearchTerm = useDebouncedValue(escapeSearchTerm(searchTerm), 500);
+
+  // Row selection
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   const { data: teachersData, isLoading, refetch } = useFetchTeachers({
     page: currentPage,
     limit: pageSize,
@@ -69,22 +45,17 @@ const TeacherManagement = () => {
     ...(statusFilter !== null && { status: statusFilter }),
   });
 
-  const {
-    data: teacherDetailData,
-    isLoading: isTeacherDetailLoading,
-  } = useFetchTeacherById(editingTeacherId, {
-    enabled: Boolean(editingTeacherId),
-  });
+  const updateTeacher = useUpdateTeacher();
 
   const teachers = teachersData?.data?.teachers || [];
 
   const handleStatusFilter = (value) => {
-    if (value == null || value === 'All') {
+    if (value === 'All') {
       setStatusFilter(null);
     } else {
-      setStatusFilter(value === 'Active');
+      const fil = value === 'Active' ? true : false;
+      setStatusFilter(fil);
     }
-    setCurrentPage(1);
     setSelectedRowKeys([]);
   };
 
@@ -96,7 +67,7 @@ const TeacherManagement = () => {
       okButtonColor: '#ff4d4f',
       onConfirm: async () => {
         try {
-          await deleteTeacher(record.ID);
+          await deleteTeachers(record.ID);
           message.success('Teacher deleted successfully!');
           refetch();
         } catch (error) {
@@ -207,92 +178,110 @@ const TeacherManagement = () => {
      ========================================================= */
   const columns = [
     {
-      title: <span className="font-bold text-[#637381]">TEACHER NAME</span>,
-      dataIndex: 'fullname',
+      title: 'TEACHER NAME',
+      dataIndex: ['fullname'],
       key: 'name',
       width: '200px',
       render: (text, record) => (
         <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
-          <Link
-            to={`/teacher/edit/${record.ID}`}
-            className='bg-transparent border-none p-0 cursor-pointer font-medium text-primaryColor underline underline-offset-4 hover:opacity-80'
+          <a
+            className='cursor-pointer text-[10px] md:text-[14px] underline hover:opacity-80'
+            onClick={() => navigate(`/teacher/edit/${record.ID}`)}
           >
             {`${record.firstName} ${record.lastName}` || 'Unknown'}
-          </Link>
+          </a>
         </div>
       ),
     },
     {
-      title: <span className="font-bold text-[#637381]">TEACHER ID</span>,
+      title: 'TEACHER ID',
       dataIndex: 'teacherCode',
       key: 'id',
-      width: '120px',
-      align: 'center',
-      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
+      width: '100px',
     },
     {
-      title: <span className="font-bold text-[#637381]">EMAIL</span>,
+      title: 'EMAIL',
       dataIndex: 'email',
       key: 'email',
       width: '200px',
       ellipsis: true,
-      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
     },
     {
-      title: <span className="font-bold text-[#637381]">PHONE</span>,
+      title: 'PHONE',
       dataIndex: 'phone',
       key: 'phone',
-      width: '120px',
-      align: 'center',
-      render: (text) => <span className="font-medium text-primaryTextColor">{text || '---'}</span>
+      width: '100px',
     },
     {
-      title: <span className="font-bold text-[#637381]">STATUS</span>,
+      title: 'STATUS',
       dataIndex: 'status',
       key: 'status',
       width: '120px',
       align: 'center',
       render: (status) => (
         <Tag
-          className={`rounded-full font-semibold px-3 py-1 text-center border-none ${
+          className={`rounded-3xl font-[600] py-1 text-center ${
             status === true
               ? 'bg-[#DAF8E6] text-[#1A8245]'
               : 'bg-[#E5E7EB] text-[#374151]'
-          }`}
+          } border-none text-[10px] md:text-[14px]`}
         >
           {status === true ? 'Active' : 'Inactive'}
         </Tag>
       ),
     },
     {
-      title: <span className="font-bold text-[#637381]">ACTIONS</span>,
+      title: 'ACTIONS',
       key: 'actions',
       width: '150px',
-      align: 'center',
       render: (_, record) => (
-        <div className="flex items-center justify-center gap-4">
+        <Space size='small' className='bg-white rounded-lg px-1'>
           <TeacherActionModal initialData={record} />
-          <button
+          <DeleteOutlined
             onClick={() => handleDeleteTeacher(record)}
-            className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
-          >
-            <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
-          </button>
-        </div>
+            className='text-red-500 text-[18px] cursor-pointer hover:opacity-80'
+          />
+        </Space>
       ),
     },
   ];
 
-  const total = teachersData?.data?.pagination?.total || 0;
-  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const end = Math.min(currentPage * pageSize, total);
+  const tableComponents = {
+    header: {
+      cell: (props) => (
+        <th
+          {...props}
+          style={{
+            ...props.style,
+            backgroundColor: '#E6F0FA',
+            textAlign: 'center',
+          }}
+          className='text-primaryTextColor px-0 font-medium text-[10px] md:text-[14px] border-none'
+        />
+      ),
+    },
+    body: {
+      cell: (props) => (
+        <td
+          {...props}
+          style={{
+            ...props.style,
+            borderRightStyle: 'none',
+            textAlign: 'center',
+          }}
+          className='text-primaryTextColor px-0 font-medium text-[10px] md:text-[14px] border-none'
+        />
+      ),
+      row: (props) => (
+        <tr {...props} style={{ ...props.style, border: 'none' }} />
+      ),
+    },
+  };
 
   const selectedTeacher =
-    teacherDetailData ||
     teachersData?.data?.teachers?.find(
-      (teacher) => teacher.ID === editingTeacherId
-    ) ||
-    null;
+      (teacher) => teacher.ID === editingTeacherIdNumber
+    ) || null;
 
   const handleCloseEditModal = () => {
     navigate('/teacher');
@@ -309,158 +298,78 @@ const TeacherManagement = () => {
           onClose={handleCloseEditModal}
         />
       )}
-      
-      <div className='flex items-center justify-between mb-10'>
-        <div className='flex items-center gap-4'>
-          <SearchInput
-            placeholder="Search by name, ID"
+      <div className='flex justify-between items-center mb-4'>
+        <div className='flex flex-col md:flex-row md:items-center md:space-x-4 space-y-2 md:space-y-0'>
+          <Input
             value={searchTerm}
-            onSearchChange={onSearchChange}
-            isFigmaRedesign={true}
-            style={{ margin: 0 }}
+            placeholder='Search by name, ID'
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+              setSelectedRowKeys([]);
+            }}
+            className='w-full md:w-[200px]'
+            allowClear
+            suffix={<SearchOutlined className='text-[#9CA3AF]' />}
           />
           <Select
-            placeholder="Select STATUS"
-            onChange={handleStatusFilter}
-            className="figma-status-select-sync"
-            options={[
-              { value: 'All', label: 'All' },
-              { value: 'Active', label: 'Active' },
-              { value: 'Inactive', label: 'Inactive' },
-            ]}
+            placeholder='Select STATUS'
+            onChange={(value) => handleStatusFilter(value)}
+            className='w-full md:w-[150px]'
             allowClear
-          />
+          >
+            <Option value='All'>All</Option>
+            <Option value='Active'>Active</Option>
+            <Option value='Inactive'>Inactive</Option>
+          </Select>
         </div>
         <TeacherActionModal />
       </div>
+      <Table
+        // @ts-ignore
+        columns={columns}
+        dataSource={teachers}
+        rowKey={(record) => record.ID}
+        scroll={{ x: 600 }}
+        className='mb-4'
+        components={tableComponents}
+        loading={isLoading || !teachersData}
+        rowSelection={rowSelection}
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: teachersData?.data?.pagination?.total,
+          showSizeChanger: true,
+          pageSizeOptions: ['5', '10', '15', '20'],
+          showTotal: (total, range) =>
+            `Showing ${range[0]}-${range[1]} of ${total}`,
+          onChange: (page, size) => {
+            setCurrentPage(page);
+            setPageSize(size);
+          },
+          itemRender: (page, type, original) => {
+            if (type === 'page') {
+              const isActive = currentPage === page;
 
-      <style>{`
-        /* --- HIGH SPECIFICITY ALIGNMENT FIX --- */
-        
-        /* 1. Force the Select to match the Search bar height exactly */
-        .figma-status-select-sync.ant-select {
-          width: 180px !important;
-          height: 48px !important;
-          margin: 0 !important;
-          display: flex !important;
-          align-items: center !important;
-        }
+              return (
+                <button
+                  className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
+            ${
+              isActive
+                ? 'bg-[#003087] text-white border-[#003087]'
+                : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
+            }
+          `}
+                >
+                  {page}
+                </button>
+              );
+            }
 
-        /* 2. Target the internal AntD selector which actually has the border/shadow */
-        .figma-status-select-sync.ant-select .ant-select-selector {
-          height: 48px !important;
-          min-height: 48px !important;
-          display: flex !important;
-          align-items: center !important;
-          border: 1px solid #DFE4EA !important;
-          border-radius: 6px !important;
-          box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1) !important;
-          background-color: #ffffff !important;
-          padding: 0 12px !important;
-        }
-
-        /* 3. Center the placeholder and selected text vertically */
-        .figma-status-select-sync.ant-select .ant-select-selection-search,
-        .figma-status-select-sync.ant-select .ant-select-selection-item,
-        .figma-status-select-sync.ant-select .ant-select-selection-placeholder {
-          display: flex !important;
-          align-items: center !important;
-          height: 100% !important;
-          line-height: 1 !important;
-          inset-inline-start: 12px !important;
-        }
-
-        /* 4. Ensure the Search bar also has no extra margins that could cause offsets */
-        .figma-search-input {
-          margin: 0 !important;
-          vertical-align: middle !important;
-        }
-      `}</style>
-
-      <div className="figma-table-card figma-table-overrides w-full">
-        <Table
-          columns={columns}
-          dataSource={teachers}
-          rowKey={(record) => record.ID}
-          scroll={{ x: "max-content" }}
-          pagination={false}
-          loading={isLoading || isTeacherDetailLoading || !teachersData}
-          rowSelection={rowSelection}
-        />
-      </div>
-
-      <div className="figma-pagination-wrapper">
-        <div className="figma-pagination-box">
-          <div className="figma-pagination-text whitespace-nowrap">
-            {total === 0
-              ? "No entries found"
-              : `Showing ${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")} of ${total}`}
-          </div>
-
-          <div className="figma-pagination-nav-group">
-            <Pagination
-              current={currentPage}
-              pageSize={pageSize}
-              total={total}
-              onChange={(page) => setCurrentPage(page)}
-              showSizeChanger={false}
-              itemRender={(page, type, original) => {
-                if (type === "page") {
-                  const isActive = currentPage === page;
-                  return (
-                    <button className={`figma-page-btn ${isActive ? "active" : ""}`}>
-                      {page}
-                    </button>
-                  );
-                }
-                if (type === "prev") {
-                  return (
-                    <button className="figma-symbol-btn" type="button">
-                      {"\u2039"}
-                    </button>
-                  );
-                }
-                if (type === "next") {
-                  return (
-                    <button className="figma-symbol-btn" type="button">
-                      {"\u203A"}
-                    </button>
-                  );
-                }
-                if (type === "jump-prev" || type === "jump-next") {
-                  return (
-                    <span
-                      className="text-[#637381] px-1"
-                      style={{ fontSize: "16px", lineHeight: "25px" }}
-                    >
-                      ...
-                    </span>
-                  );
-                }
-                return original;
-              }}
-            />
-          </div>
-
-          <div className="figma-page-size-container">
-            <Select
-              value={pageSize}
-              onChange={(val) => {
-                setPageSize(val);
-                setCurrentPage(1);
-              }}
-              bordered={false}
-              className="figma-page-size-select"
-              options={[
-                { value: 5, label: "05 / pages" },
-                { value: 10, label: "10 / pages" },
-                { value: 20, label: "20 / pages" },
-                { value: 50, label: "50 / pages" },
-              ]}
-            />
-          </div>
-        </div>
-      </div>
+            return original;
+          },
+        }}
+      />
 
       {/* ==================== BULK ACTION TOOLBAR ==================== */}
       <BulkActionToolbar

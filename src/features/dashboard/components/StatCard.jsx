@@ -1,42 +1,51 @@
 import React from "react";
 import { Card, Typography } from "antd";
+import { ArrowUpOutlined, ArrowDownOutlined } from "@ant-design/icons";
 
-const { Text, Title } = Typography;
+const { Title, Text } = Typography;
+
+const getBackgroundColor = (color) => {
+  switch (color) {
+    case "#1890ff": // Blue
+      return "bg-[#1a5fb4] hover:bg-[#1552a0]";
+    case "#52c41a": // Green
+      return "bg-[#2ec27e] hover:bg-[#26a96c]";
+    case "#faad14": // Orange
+      return "bg-[#e66100] hover:bg-[#cc5500]";
+    case "#722ed1": // Purple
+      return "bg-[#813d9c] hover:bg-[#613583]";
+    default:
+      return "bg-[#1a5fb4] hover:bg-[#1552a0]";
+  }
+};
 
 export const StatCard = ({
   icon,
   title,
   value,
   subtitle = "",
-  color = "#003087",
+  color = "#1890ff",
+  trend = 0,
   className = "",
 }) => {
+  const bgColor = getBackgroundColor(color);
+
   return (
     <Card
-      className={`h-[164px] rounded-[5px] border-none bg-white shadow-[0px_1px_3px_rgba(166,175,195,0.4)] transition-all duration-300 ${className}`}
-      bodyStyle={{ padding: "20px" }}
+      className={`h-full rounded-3xl border-none ${bgColor} transition-all duration-300 ${className}`}
+      bodyStyle={{ padding: "1.5rem" }}
     >
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-[14px] mb-4">
-          <div 
-            className="flex h-[50px] w-[50px] items-center justify-center rounded-[3px]"
-            style={{ backgroundColor: `${color}14` }}
-          >
-            {React.cloneElement(icon, { 
-              style: { fontSize: '26px', color: color } 
-            })}
-          </div>
-          <Text className="text-[16px] font-medium leading-[24px] text-[#111928]">
-            {title}
-          </Text>
+      <div className="flex flex-col text-white">
+        <div className="flex items-center justify-between mb-4">
+          <Text className="text-white text-lg font-medium">{title}</Text>
+          <div className="flex-shrink-0 p-2 bg-white/20 rounded-xl">{icon}</div>
         </div>
-        
         <div className="flex flex-col gap-1">
-          <span className="text-[24px] font-bold leading-[30px] text-[#111928]">
+          <Title level={2} style={{ color: "white", margin: 0 }}>
             {value}
-          </span>
+          </Title>
           {subtitle && (
-            <Text className="text-[14px] font-normal text-[#637381]">{subtitle}</Text>
+            <Text className="text-white/80 text-sm">{subtitle}</Text>
           )}
         </div>
       </div>

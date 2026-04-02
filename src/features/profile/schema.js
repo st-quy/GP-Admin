@@ -9,10 +9,12 @@ export const ChangePasswordSchema = Yup.object().shape({
     .min(6, "New password must be at least 6 characters"),
 });
 
+
 export const UpdateProfileSchema = Yup.object().shape({
-  fullName: Yup.string().required("Full name is required"),
+  firstName: Yup.string().required("First name is required"),
+  lastName: Yup.string().required("Last name is required"),
   teacherCode: Yup.string().required("Code is required"),
-  dob: Yup.mixed().nullable(),
+  dob: Yup.string().nullable(),
   email: Yup.string()
     .email("Enter a valid email")
     .required("Email is required"),

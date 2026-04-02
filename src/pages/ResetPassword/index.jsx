@@ -57,121 +57,122 @@ const ResetPassword = () => {
   }, [searchParams.get("token"), navigate]);
 
   return (
-    <>
+    <Layout className="bg-[#f9f9f9]">
       <Toaster />
-      <Row className="!gap-0">
-        <Col
-          xs={24}
-          sm={24}
-          md={24}
-          lg={12}
-          xxl={12}
-          className="flex items-center lg:items-start lg:justify-end justify-center px-4 py-6 lg:py-8 lg:pr-8"
-        >
-          <Card className="w-full max-w-[550px] lg:max-w-[600px] shadow-lg pt-[16px] pb-[120px] px-6 lg:pt-[16px] lg:pb-[160px] lg:px-8">
-            <div className="mb-6">
-              <Title
-                level={1}
-                className="!text-[48px] !text-gray-900 !mb-3 !font-['Inter']"
-              >
-                Create new password
-              </Title>
-              <Text className="text-gray-500 text-lg">
-                Your previous password has been reseted. Please set a new
-                password for your account.
-              </Text>
-            </div>
-
-            <Form layout="vertical" onFinish={onFinish} className="space-y-8">
-              <Form.Item
-                name="password"
-                label={
-                  <span className="text-base mb-2">
-                    New password <span className="text-red-500">*</span>
-                  </span>
-                }
-                required={false}
-                rules={[yupSync(ResetPasswordSchema)]}
-              >
-                <Input.Password
-                  placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
-                  size="large"
-                  className="h-11 text-base rounded-lg"
-                  iconRender={(visible) =>
-                    visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
-                  }
-                  onCopy={(e) => e.preventDefault()}
-                />
-              </Form.Item>
-
-              <Form.Item
-                name="passwordConfirmation"
-                label={
-                  <span className="text-base mb-2">
-                    Confirm new password <span className="text-red-500">*</span>
-                  </span>
-                }
-                dependencies={["password"]}
-                required={false}
-                rules={[
-                  {
-                    required: true,
-                    message: "Please confirm your password",
-                  },
-                  ({ getFieldValue }) => ({
-                    validator(_, value) {
-                      if (!value || getFieldValue("password") === value) {
-                        return Promise.resolve();
-                      }
-                      return Promise.reject(
-                        new Error("The two passwords do not match")
-                      );
-                    },
-                  }),
-                ]}
-              >
-                <Input.Password
-                  placeholder="&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;&#8226;"
-                  size="large"
-                  className="h-11 text-base rounded-lg"
-                  iconRender={(visible) =>
-                    visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
-                  }
-                  onCopy={(e) => e.preventDefault()}
-                />
-              </Form.Item>
-
-              <Form.Item className="mb-8 flex justify-center">
-                <Button
-                  type="primary"
-                  htmlType="submit"
-                  size="large"
-                  className="!w-[250px] !h-[50px] text-base font-medium !bg-[#003087] hover:!bg-[#003087]/90 rounded-full"
-                  loading={isPending}
+      <Layout.Content className="max-w-[1200px] mx-auto w-full">
+        <Row gutter={0} className="h-full">
+          <Col
+            xs={{ span: 24 }}
+            md={{ span: 12 }}
+            className="flex items-center justify-center p-4"
+          >
+            <Card className="w-full max-w-xl shadow-lg p-4 sm:p-8 min-h-[600px]">
+              <div className="mt-[30px] w-full">
+                <Title
+                  level={2}
+                  className="font-bold text-4xl lg:text-5xl text-[#111928] mb-2 text-center sm:text-left"
                 >
-                  Submit
-                </Button>
-              </Form.Item>
-            </Form>
-          </Card>
-        </Col>
+                  Create new password
+                </Title>
+                <Text className="font-normal text-base text-primaryTextColor block text-center sm:text-left mt-4 mb-8">
+                  Your previous password has been reseted. Please set a new
+                  password for your account.
+                </Text>
 
-        <Col
-          xs={0}
-          sm={0}
-          md={0}
-          lg={12}
-          xxl={12}
-          className="flex items-center lg:justify-start justify-center px-4 lg:pt-2 lg:pl-8"
-        >
-          <img
-            src={ForgotPasswordImg}
-            alt="ResetPassword"
-            className="w-full max-w-[500px] lg:max-w-[600px] h-auto object-contain"
-          />
-        </Col>
-      </Row>
-    </>
+                <Form layout="vertical" onFinish={onFinish} className="w-full">
+                  <div className="grid grid-cols-1 gap-4 w-full">
+                    <Form.Item
+                      name="password"
+                      label={
+                        <span className="text-base lg:text-lg font-medium">
+                          Password <span className="text-red-500">*</span>
+                        </span>
+                      }
+                      required={false}
+                      rules={[yupSync(ResetPasswordSchema)]}
+                    >
+                      <Input.Password
+                        placeholder="Password"
+                        size="large"
+                        className="h-12 text-base rounded-lg placeholder:text-[#9CA3AF]"
+                        iconRender={(visible) =>
+                          visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                        }
+                        onCopy={(e) => e.preventDefault()}
+                      />
+                    </Form.Item>
+
+                    <Form.Item
+                      name="passwordConfirmation"
+                      label={
+                        <span className="text-base lg:text-lg font-medium">
+                          Confirm Password{" "}
+                          <span className="text-red-500">*</span>
+                        </span>
+                      }
+                      dependencies={["password"]}
+                      required={false}
+                      rules={[
+                        {
+                          required: true,
+                          message: "Please confirm your password",
+                        },
+                        ({ getFieldValue }) => ({
+                          validator(_, value) {
+                            if (!value || getFieldValue("password") === value) {
+                              return Promise.resolve();
+                            }
+                            return Promise.reject(
+                              new Error("The two passwords do not match")
+                            );
+                          },
+                        }),
+                      ]}
+                    >
+                      <Input.Password
+                        placeholder="Confirm password"
+                        size="large"
+                        className="h-12 text-base rounded-lg placeholder:text-[#9CA3AF]"
+                        iconRender={(visible) =>
+                          visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                        }
+                        onCopy={(e) => e.preventDefault()}
+                      />
+                    </Form.Item>
+
+                    <Form.Item className="mt-2">
+                      <Button
+                        type="primary"
+                        htmlType="submit"
+                        size="large"
+                        className="w-full max-w-[250px] h-[50px] rounded-full px-7 py-3 bg-primaryColor mx-auto flex items-center justify-center"
+                        loading={isPending}
+                      >
+                        Submit
+                      </Button>
+                    </Form.Item>
+                  </div>
+                </Form>
+              </div>
+            </Card>
+          </Col>
+
+          <Col
+            xs={{ span: 0 }}
+            md={{ span: 12 }}
+            className="flex items-center justify-center"
+          >
+            <div className="text-center p-4">
+              <img
+                src={ForgotPasswordImg}
+                alt="ResetPassword"
+                className="max-w-full h-auto"
+              />
+            </div>
+          </Col>
+        </Row>
+      </Layout.Content>
+    </Layout>
   );
 };
 
