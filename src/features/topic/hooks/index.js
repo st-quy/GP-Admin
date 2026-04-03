@@ -166,3 +166,17 @@ export const useUpdateTopicSection = () => {
     },
   });
 };
+
+export const useDuplicateTopic = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => TopicApi.duplicateTopic(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onError: (error) => {
+      const msg = error?.response?.data?.message || "Failed to duplicate topic";
+      message.error(msg);
+    },
+  });
+};
