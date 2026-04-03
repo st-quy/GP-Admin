@@ -9,6 +9,10 @@ import {
 } from '@features/questions/hooks';
 import { buildWritingFullPayload } from '@features/questions/utils/buildQuestionPayload';
 import WritingEditor from '../CreateSkills/Writing/WritingEditor';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const UpdateWriting = () => {
   const [form] = Form.useForm();
@@ -135,9 +139,13 @@ const UpdateWriting = () => {
         <Form.Item
           label='Section Name'
           name='sectionName'
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='e.g., Fitness Club Writing Test' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='e.g., Fitness Club Writing Test'
+          />
         </Form.Item>
       </Card>
 

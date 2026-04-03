@@ -41,6 +41,22 @@ const validSkills = new Set([
   'GRAMMAR AND VOCABULARY',
 ]);
 
+const resolveSectionDescription = (record) => {
+  const candidates = [
+    record?.Description,
+    record?.description,
+    record?.Parts?.[0]?.SubContent,
+    record?.Parts?.[0]?.Questions?.[0]?.GroupContent,
+    record?.Parts?.[0]?.Questions?.[0]?.Content,
+  ];
+
+  const resolved = candidates.find(
+    (value) => typeof value === 'string' && value.trim()
+  );
+
+  return resolved?.trim() || '—';
+};
+
 const QuestionBank = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -48,7 +64,6 @@ const QuestionBank = () => {
   const queryParams = new URLSearchParams(location.search);
   const skillFromQuery = queryParams.get('skillName')?.trim().toUpperCase();
 
-  // --- Filter & pagination state ---
   const [selectedSkill, setSelectedSkill] = useState(
     validSkills.has(skillFromQuery) ? skillFromQuery : ''
   );
@@ -69,7 +84,6 @@ const QuestionBank = () => {
     }
   }, [skillFromQuery, selectedSkill]);
 
-  // --- API ---
   const sectionParams = useMemo(
     () => ({
       skillName: selectedSkill || undefined,
@@ -88,14 +102,12 @@ const QuestionBank = () => {
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
-  // --- Reset filters ---
   const handleResetFilters = () => {
     setSelectedSkill('');
     setSearchText('');
     setCurrentPage(1);
   };
 
-  // --- Delete ---
   const handleDeleteConfirm = () => {
     if (deleteTarget) {
       deleteSection(deleteTarget.ID);
@@ -112,7 +124,6 @@ const QuestionBank = () => {
     setDeleteModalOpen(true);
   };
 
-  // --- Table columns ---
   const columns = [
     {
       title: 'Topic',
@@ -143,11 +154,15 @@ const QuestionBank = () => {
       title: 'Question Text',
       dataIndex: 'Description',
       ellipsis: { showTitle: false },
-      render: (text) => (
-        <Tooltip title={text}>
-          <span className='text-[#4B5563]'>{text || '—'}</span>
-        </Tooltip>
-      ),
+      render: (_, record) => {
+        const description = resolveSectionDescription(record);
+
+        return (
+          <Tooltip title={description}>
+            <span className='text-[#4B5563]'>{description}</span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Last Updated',
@@ -201,7 +216,6 @@ const QuestionBank = () => {
     },
   ];
 
-  // --- Row selection ---
   const rowSelection = {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
@@ -211,7 +225,6 @@ const QuestionBank = () => {
 
   return (
     <div className='w-[90%] max-w-[1476px] mx-auto py-8 space-y-6'>
-      {/* ===== HEADER ===== */}
       <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
         <div>
           <Title level={3} className='!m-0 !font-bold !text-[#111928]'>
@@ -241,7 +254,6 @@ const QuestionBank = () => {
         </div>
       </div>
 
-      {/* ===== FILTERS ===== */}
       <div className='bg-white rounded-lg border border-gray-200 p-6'>
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end'>
           <div>
@@ -263,7 +275,10 @@ const QuestionBank = () => {
               prefix={<SearchOutlined className='text-gray-400' />}
               value={searchText}
               onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '');
+                const sanitized = e.target.value.replace(
+                  /[^a-zA-Z0-9 ,.\-_:()"':]/g,
+                  ''
+                );
                 setSearchText(sanitized);
               }}
             />
@@ -280,9 +295,7 @@ const QuestionBank = () => {
         </div>
       </div>
 
-      {/* ===== TABLE SECTION ===== */}
       <div className='space-y-4'>
-        {/* Selection info + Delete Selected */}
         <div className='flex justify-between items-center'>
           <Text className='text-[#4B5563] text-[14px]'>
             {selectedRowKeys.length > 0
@@ -301,7 +314,6 @@ const QuestionBank = () => {
           )}
         </div>
 
-        {/* Table */}
         <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
           <Table
             rowKey='ID'
@@ -324,7 +336,6 @@ const QuestionBank = () => {
           />
         </div>
 
-        {/* Pagination */}
         <div className='flex flex-col sm:flex-row justify-between items-center gap-4 pt-2'>
           <Text className='text-[#6B7280] text-[14px]'>
             {totalItems === 0
@@ -362,7 +373,6 @@ const QuestionBank = () => {
         </div>
       </div>
 
-      {/* ===== DELETE MODAL ===== */}
       <Modal
         open={deleteModalOpen}
         onCancel={() => {

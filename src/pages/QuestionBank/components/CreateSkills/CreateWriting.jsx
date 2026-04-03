@@ -7,6 +7,10 @@ import WritingEditor from './Writing/WritingEditor';
 import { WRITING_PART_TYPES } from '@features/questions/constant/writingType';
 import { useCreateQuestion } from '@features/questions/hooks';
 import { buildWritingFullPayload } from '@features/questions/utils/buildQuestionPayload';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const CreateWriting = () => {
   const [form] = Form.useForm();
@@ -66,9 +70,13 @@ const CreateWriting = () => {
         <Form.Item
           label='Section Name'
           name='sectionName'
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='e.g., Fitness Club Writing Test' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='e.g., Fitness Club Writing Test'
+          />
         </Form.Item>
       </Card>
 
