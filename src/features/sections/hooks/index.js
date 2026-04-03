@@ -33,11 +33,12 @@ export const useDeleteSection = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      message.success('Deleted section successfully');
+      message.success('Question deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['sections'] });
     },
     onError: ({ response }) => {
-      message.error("Can't delete this section because it has topic");
+      const errorMsg = response?.data?.message || 'Failed to delete question';
+      message.error(errorMsg);
     },
   });
 };
