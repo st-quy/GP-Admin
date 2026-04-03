@@ -48,4 +48,8 @@ export const TopicApi = {
   updateTopicSection: (TopicID, data) => {
     return axiosInstance.put(`/topicsections/topic/${TopicID}`, data);
   },
+
+  duplicateTopic: (id) => {
+    return axiosInstance.post(`/topics/${id}/duplicate`);
+  },
 };

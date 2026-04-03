@@ -27,6 +27,7 @@ import {
   PlusCircleOutlined,
   FileTextOutlined,
   FolderAddOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +37,7 @@ import {
   useDeleteTopic,
   useDeleteTopicSectionByTopicId,
   useUpdateTopic,
+  useDuplicateTopic,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
@@ -101,6 +103,7 @@ const TopicListPage = () => {
   const deleteTopic = useDeleteTopic();
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
   const { mutateAsync: updateTopic } = useUpdateTopic();
+  const { mutateAsync: duplicateTopic } = useDuplicateTopic();
 
   const counts = {
     Submited: data?.statusCounts?.submited || 0,
@@ -123,6 +126,24 @@ const TopicListPage = () => {
           refetch();
         } catch (error) {
           message.error('Failed to archive exam');
+        }
+      },
+    });
+  };
+
+  const handleDuplicateTopic = (topic) => {
+    openConfirmModal({
+      title: 'Duplicate Exam',
+      message: `Are you sure you want to duplicate "${topic.Name}"? This will create a new editable draft.`,
+      okText: 'Duplicate',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        try {
+          await duplicateTopic(topic.ID);
+          message.success(`Exam "${topic.Name}" duplicated successfully`);
+          refetch();
+        } catch (error) {
+          // Error message is handled in the hook
         }
       },
     });
@@ -377,6 +398,18 @@ const TopicListPage = () => {
                 <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
               </button>
             )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDuplicateTopic(record);
+              }}
+              className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+              title="Duplicate Topic"
+            >
+              <CopyOutlined style={{ fontSize: "20px", color: "#003087" }} />
+            </button>
+
             <button
               onClick={() => onStartHandler(record)}
               className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
