@@ -199,6 +199,7 @@ const CreateExamPage = () => {
                 Duration: values.duration
             };
 
+            let topicResponse;
             if (topicId) {
                 topicResponse = await updateTopic({ id: topicId, data: topicPayload });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
@@ -286,6 +287,46 @@ const CreateExamPage = () => {
         };
         setPreviewData(previewExamData);
         setPreviewOpen(true);
+    };
+
+    const onNameChange = (e) => {
+        let value = e.target.value;
+        
+        if (/[^a-zA-Z0-9\s]/.test(value)) {
+            message.warning('Special characters and emojis are not allowed in exam name.');
+            value = value.replace(/[^a-zA-Z0-9\s]/g, '');
+        }
+
+        if (/\s{2,}/.test(value)) {
+            message.info('Multiple spaces are not allowed; collapsed to a single space.');
+            value = value.replace(/\s{2,}/g, ' ');
+        }
+
+        if (value.length > 50) {
+            message.error('Exam name limit reached (max 50 characters).');
+            value = value.slice(0, 50);
+        }
+
+        value = value.replace(/^\s+/, '');
+        form.setFieldsValue({ name: value });
+        setIsDirty(true);
+    };
+
+    const onDurationChange = (e) => {
+        let value = e.target.value;
+        
+        if (/[^0-9]/.test(value)) {
+            message.warning('Only numbers are allowed for duration.');
+            value = value.replace(/[^0-9]/g, '');
+        }
+
+        if (value.length > 4) {
+            message.error('Max duration limit reached (9999 minutes).');
+            value = value.slice(0, 4);
+        }
+
+        form.setFieldsValue({ duration: value });
+        setIsDirty(true);
     };
 
     const renderSelectedSectionUI = () => {
@@ -439,7 +480,7 @@ const CreateExamPage = () => {
                             </p>
                         </div>
 
-                        <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
+                        <Form form={form} layout="vertical">
                             <Card 
                                 className="mb-8 border-[1px] border-[#E5E7EB] rounded-lg shadow-[0px_1px_2px_rgba(0,0,0,0.05)]"
                                 bodyStyle={{ padding: 25 }}
@@ -454,23 +495,28 @@ const CreateExamPage = () => {
                                         <Form.Item 
                                             label={<span className="text-[14px] font-medium text-[#374151]">Exam Name *</span>} 
                                             name="name" 
-                                            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '')} 
-                                            rules={[{ required: true }]}
+                                            rules={[{ required: true, message: 'Please enter exam name' }]}
                                         >
                                             <Input 
-                                                maxLength={255} 
+                                                maxLength={51} 
                                                 placeholder="e.g., IELTS Academic Practice Test 1" 
                                                 disabled={isViewMode}
+                                                onChange={onNameChange}
                                                 className="!h-[50px] border-[#D1D5DB]"
                                             />
                                         </Form.Item>
                                     </Col>
                                     <Col span={8}>
-                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Duration (minutes) *</span>} name="duration" rules={[{ required: true, message: 'Please enter duration' }]}>
+                                        <Form.Item 
+                                            label={<span className="text-[14px] font-medium text-[#374151]">Duration (minutes) *</span>} 
+                                            name="duration" 
+                                            rules={[{ required: true, message: 'Please enter duration' }]}
+                                        >
                                             <Input 
-                                                type="number"
+                                                type="text"
                                                 placeholder="e.g. 60" 
                                                 disabled={isViewMode} 
+                                                onChange={onDurationChange}
                                                 className="w-full !h-[50px] border-[#D1D5DB]"
                                             />
                                         </Form.Item>
