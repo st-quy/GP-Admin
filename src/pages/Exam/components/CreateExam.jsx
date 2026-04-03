@@ -157,14 +157,20 @@ const CreateExamPage = () => {
 
     const handleSaveExam = async () => {
         try {
-            const values = await form.validateFields(['name']);
+            const values = await form.validateFields(['name', 'duration']);
             let topicResponse;
+            const topicPayload = { 
+                Name: values.name.trim(), 
+                Status: 'draft',
+                Duration: values.duration
+            };
+
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'draft' } });
+                topicResponse = await updateTopic({ id: topicId, data: topicPayload });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
                 await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
             } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'draft' });
+                topicResponse = await createExam(topicPayload);
                 const savedTopicId = topicResponse.ID || topicResponse._ID;
                 if (!savedTopicId) return message.error("Cannot get topic ID");
                 for (const sectionId of selectedParts) {
@@ -187,13 +193,18 @@ const CreateExamPage = () => {
         }
         try {
             const values = await form.validateFields();
-            let topicResponse;
+            const topicPayload = { 
+                Name: values.name.trim(), 
+                Status: 'submited',
+                Duration: values.duration
+            };
+
             if (topicId) {
-                topicResponse = await updateTopic({ id: topicId, data: { Name: values.name.trim(), Status: 'submited' } });
+                topicResponse = await updateTopic({ id: topicId, data: topicPayload });
                 const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
                 await updateTopicSection({ topicId: savedTopicId, data: { sectionIds: selectedParts } });
             } else {
-                topicResponse = await createExam({ Name: values.name, Status: 'submited' });
+                topicResponse = await createExam(topicPayload);
                 const savedTopicId = topicResponse.ID || topicResponse._ID;
                 if (!savedTopicId) return message.error("Cannot get topic ID");
                 for (const sectionId of selectedParts) {
@@ -379,7 +390,12 @@ const CreateExamPage = () => {
         const data = topicData.data ? topicData.data : topicData;
         if (!data || !data.Name) return;
 
-        form.setFieldsValue({ name: data.Name });
+        form.setFieldsValue({ 
+            name: data.Name,
+            duration: data.Duration,
+            creator: data.creator ? `${data.creator.firstName} ${data.creator.lastName}` : "Unknown",
+            editor: data.updater ? `${data.updater.firstName} ${data.updater.lastName}` : "None"
+        });
         
         const sectionsBySkill = {};
         const instructionsData = [];
@@ -449,19 +465,24 @@ const CreateExamPage = () => {
                                             />
                                         </Form.Item>
                                     </Col>
-                                    <Col span={12}>
-                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Creator</span>} name="creator">
-                                            <Input disabled className="!h-[50px]" />
+                                    <Col span={8}>
+                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Duration (minutes) *</span>} name="duration" rules={[{ required: true, message: 'Please enter duration' }]}>
+                                            <Input 
+                                                type="number"
+                                                placeholder="e.g. 60" 
+                                                disabled={isViewMode} 
+                                                className="w-full !h-[50px] border-[#D1D5DB]"
+                                            />
                                         </Form.Item>
                                     </Col>
-                                    <Col span={12}>
-                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Duration</span>} name="duration" rules={[{ required: true }]}>
-                                            <RangePicker 
-                                                showTime={{ format: 'HH:mm' }} 
-                                                format="YYYY-MM-DD HH:mm" 
-                                                disabled={isViewMode} 
-                                                className="w-full !h-[50px]"
-                                            />
+                                    <Col span={8}>
+                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Creator</span>} name="creator">
+                                            <Input disabled className="!h-[50px] border-[#D1D5DB]" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={8}>
+                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Last Edited By</span>} name="editor">
+                                            <Input disabled className="!h-[50px] border-[#D1D5DB]" />
                                         </Form.Item>
                                     </Col>
                                 </Row>
@@ -559,12 +580,35 @@ const CreateExamPage = () => {
                 <ChooseSectionModal open={openModal} onCancel={() => setOpenModal(false)} skillName={selectedSkill} onSelect={handlePartSelect} selectedSectionId={selectedSectionBySkill[selectedSkill]} />
                 <PreviewExam isModalOpen={previewOpen} setIsModalOpen={setPreviewOpen} dataExam={previewData} fileData={null} setDataExam={setPreviewData} />
                 <ModalComponent />
-                <Modal title="You have unsaved changes" open={leaveConfirmOpen} onCancel={() => setLeaveConfirmOpen(false)} footer={[
-                    <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
-                    <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save as Draft & Leave</Button>,
-                    <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay on Page</Button>,
-                ]}>
-                    <p>Would you like to save your work as a draft before leaving?</p>
+                <Modal 
+                    title={<span className="text-[18px] font-semibold text-[#111827]">You have unsaved changes</span>} 
+                    open={leaveConfirmOpen} 
+                    onCancel={() => setLeaveConfirmOpen(false)} 
+                    centered
+                    footer={[
+                        <div className="flex justify-end gap-3 p-4 pt-0" key="footer">
+                            <Button 
+                                key="discard" 
+                                danger 
+                                onClick={discardAndLeave}
+                                className="!h-[50px] !px-6 !rounded-lg font-medium border-[#FF4D4F] text-[#FF4D4F]"
+                            >
+                                Leave without Saving
+                            </Button>
+                            <Button 
+                                key="save" 
+                                type="primary" 
+                                onClick={saveDraftAndLeave}
+                                className="!h-[50px] !px-6 !rounded-lg font-medium !bg-[#003087] !border-none shadow-none hover:opacity-90"
+                            >
+                                Save as Draft & Leave
+                            </Button>
+                        </div>
+                    ]}
+                >
+                    <p className="text-[#4B5563] text-[15px] leading-[22px]">
+                        You have unsaved changes in your exam structure. Would you like to save your work as a draft before leaving this page?
+                    </p>
                 </Modal>
             </div>
         </div>
