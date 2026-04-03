@@ -26,6 +26,7 @@ import {
   PlayCircleOutlined,
   PlusCircleOutlined,
   FileTextOutlined,
+  FolderAddOutlined,
 } from '@ant-design/icons';
 
 import { useNavigate } from 'react-router-dom';
@@ -106,6 +107,25 @@ const TopicListPage = () => {
     approved: data?.statusCounts?.approved || 0,
     Draft: data?.statusCounts?.draft || 0,
     Rejected: data?.statusCounts?.rejected || 0,
+    Archived: data?.statusCounts?.archived || 0,
+  };
+
+  const handleArchiveTopic = (topic) => {
+    openConfirmModal({
+      title: 'Archive Exam',
+      message: `Are you sure you want to archive "${topic.Name}"? Once archived, it cannot be edited.`,
+      okText: 'Archive',
+      okButtonColor: '#637381',
+      onConfirm: async () => {
+        try {
+          await updateTopic({ id: topic.ID, data: { Status: 'archived' } });
+          message.success('Exam archived successfully');
+          refetch();
+        } catch (error) {
+          message.error('Failed to archive exam');
+        }
+      },
+    });
   };
 
   const handleApproveTopic = (topic) => {
@@ -150,7 +170,7 @@ const TopicListPage = () => {
   const handleDeleteTopic = (topic) => {
     openConfirmModal({
       title: 'Are you sure you want to delete this topic?',
-      message: 'After deleting this topic it will no longer appear.',
+      message: `After deleting "${topic.Name}", it will no longer appear in the system.`,
       okText: 'Delete',
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
@@ -165,11 +185,11 @@ const TopicListPage = () => {
           await deleteTopicSectionsByTopicId.mutateAsync(topic.ID);
           await deleteTopic.mutateAsync(topic.ID);
 
-          message.success('Topic and its TopicSections deleted successfully');
+          message.success(`Exam set "${topic.Name}" deleted successfully`);
           refetch();
         } catch (error) {
           console.error(error);
-          message.error('Failed to delete topic or its Sections');
+          message.error(`Failed to delete exam set "${topic.Name}"`);
         }
       },
     });
@@ -190,8 +210,8 @@ const TopicListPage = () => {
   };
 
   const handleEditTopic = (topic) => {
-    if (['approved', 'submited'].includes(topic.Status)) {
-      message.error('Cannot edit topic with status Approved or Submited');
+    if (['approved', 'submited', 'archived'].includes(topic.Status)) {
+      message.error('Cannot edit topic with current status');
       return;
     }
     navigate(`/exam/edit/${topic.ID}`);
@@ -275,7 +295,11 @@ const TopicListPage = () => {
       render: (_, record) => {
         const isSubmitted = record.Status === 'submited';
         const isApproved = record.Status === 'approved';
-        const canModify = isSubmitted || isApproved;
+        const isRejected = record.Status === 'rejected';
+        const isArchived = record.Status === 'archived';
+        
+        const canEdit = !isSubmitted && !isApproved && !isArchived;
+        const canArchive = isApproved || isRejected;
         
         return (
           <div className="flex items-center justify-center gap-3">
@@ -315,30 +339,43 @@ const TopicListPage = () => {
               </>
             )}
 
-            {!canModify && (
-              <>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditTopic(record);
-                  }}
-                  className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
-                  title="Edit Topic"
-                >
-                  <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
-                </button>
+            {canArchive && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleArchiveTopic(record);
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Archive Topic"
+              >
+                <FolderAddOutlined style={{ fontSize: "20px", color: "#637381" }} />
+              </button>
+            )}
 
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteTopic(record);
-                  }}
-                  className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
-                  title="Delete Topic"
-                >
-                  <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
-                </button>
-              </>
+            {canEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditTopic(record);
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Edit Topic"
+              >
+                <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
+              </button>
+            )}
+
+            {(canEdit || isArchived || isRejected) && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteTopic(record);
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Delete Topic"
+              >
+                <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
+              </button>
             )}
             <button
               onClick={() => onStartHandler(record)}
@@ -377,8 +414,8 @@ const TopicListPage = () => {
             </Button>
           </div>
 
-          <Row gutter={[30, 30]} className="mb-10">
-            <Col xs={24} sm={12} md={8} lg={6}>
+          <Row gutter={[20, 20]} className="mb-10">
+            <Col xs={24} sm={12} md={8} lg={4.8}>
               <StatCard
                 icon={<ClockCircleOutlined />}
                 title="Submitted"
@@ -387,7 +424,7 @@ const TopicListPage = () => {
                 color="#003087"
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
               <StatCard
                 icon={<CheckCircleOutlined />}
                 title="Approved"
@@ -396,7 +433,7 @@ const TopicListPage = () => {
                 color="#22AD5C"
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
               <StatCard
                 icon={<ExclamationCircleOutlined />}
                 title="Draft"
@@ -405,13 +442,22 @@ const TopicListPage = () => {
                 color="#F2994A"
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={6}>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
               <StatCard
                 icon={<CloseCircleOutlined />}
                 title="Rejected"
                 value={counts.Rejected}
                 subtitle="Requires revision"
                 color="#FF4D4F"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
+              <StatCard
+                icon={<FileTextOutlined />}
+                title="Archived"
+                value={counts.Archived}
+                subtitle="Historical data"
+                color="#637381"
               />
             </Col>
           </Row>
@@ -440,6 +486,7 @@ const TopicListPage = () => {
                     { value: 'draft', label: 'Draft' },
                     { value: 'approved', label: 'Approved' },
                     { value: 'rejected', label: 'Rejected' },
+                    { value: 'archived', label: 'Archived' },
                   ]}
                 />
               </div>
