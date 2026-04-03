@@ -129,7 +129,7 @@ const Dashboard = () => {
         <div className="py-8">
           <div className="mb-10 flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
-              <h4 className="figma-title">Admin Command Center</h4>
+              <h4 className="figma-title">Admin Dashboard</h4>
               <p className="figma-subtitle">
                 High-level oversight of platform activity and testing status.
               </p>
