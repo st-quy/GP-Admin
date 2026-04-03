@@ -409,26 +409,18 @@ const CreateExamPage = () => {
                     }}
                 >
                     <div className="py-8">
-                        <div className="mb-10 flex items-center gap-4">
-                            <button 
-                                onClick={() => navigate('/exam')}
-                                className="cursor-pointer border-none bg-transparent hover:opacity-70 transition-all"
-                            >
-                                <LeftOutlined style={{ fontSize: '24px', color: '#111827' }} />
-                            </button>
-                            <div>
-                                <h4 className="figma-title">
-                                    {isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
-                                </h4>
-                                <p className="figma-subtitle">
-                                    {isViewMode 
-                                        ? "Preview the exam information and structure." 
-                                        : topicId 
-                                            ? "Modify exam information, structure, and skill-based questions." 
-                                            : "Set up exam details, structure, and choose skill-based questions."
-                                    }
-                                </p>
-                            </div>
+                        <div className="mb-10">
+                            <h4 className="figma-title">
+                                {isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
+                            </h4>
+                            <p className="figma-subtitle">
+                                {isViewMode 
+                                    ? "Preview the exam information and structure." 
+                                    : topicId 
+                                        ? "Modify exam information, structure, and skill-based questions." 
+                                        : "Set up exam details, structure, and choose skill-based questions."
+                                }
+                            </p>
                         </div>
 
                         <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>

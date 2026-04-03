@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Checkbox, Spin, Typography, Card, Button } from "antd";
 import { DownOutlined, RightOutlined } from "@ant-design/icons";
-import { useGetSections } from "@features/sections/hooks"; // Use working plural hooks
+import { useGetSections } from "@features/sections/hooks";
 
 const { Title, Text } = Typography;
 
@@ -9,7 +9,6 @@ const ChooseSectionModal = ({ open, onCancel, skillName, onSelect, selectedSecti
   const [selectedSectionsBySkill, setSelectedSectionsBySkill] = useState({}); 
   const [expanded, setExpanded] = useState([]); 
 
-  // Fix: Pass as object to match useGetSections({ skillName })
   const { data: response, isLoading } = useGetSections({
     skillName: skillName,
     enabled: open,
@@ -58,76 +57,131 @@ const ChooseSectionModal = ({ open, onCancel, skillName, onSelect, selectedSecti
 
   return (
     <Modal
-      title={<Title level={4} style={{ margin: 0 }}>Section Selection</Title>}
+      title={<span className="text-[18px] font-semibold text-[#111827]">Section Selection</span>}
       open={open}
       onCancel={onCancel}
       footer={[
-        <Button key="cancel" onClick={onCancel}>Cancel</Button>,
-        <Button key="submit" type="primary" onClick={handleSubmit} style={{ background: "#002B7F", borderColor: "#002B7F" }}>Select</Button>,
+        <div className="flex justify-end gap-3 p-4" key="footer">
+          <Button 
+            onClick={onCancel}
+            className="!h-[50px] !px-8 !rounded-lg font-medium border-[#D1D5DB] text-[#374151]"
+          >
+            Cancel
+          </Button>
+          <Button 
+            type="primary" 
+            onClick={handleSubmit} 
+            className="!h-[50px] !px-10 !rounded-lg font-medium !bg-[#003087] !border-none shadow-none hover:opacity-90"
+          >
+            Select
+          </Button>
+        </div>,
       ]}
-      width={750}
+      width={1200}
+      centered
       destroyOnClose
+      bodyStyle={{ padding: '24px' }}
     >
       {isLoading ? (
-        <Spin style={{ width: "100%", display: "flex", justifyContent: "center", padding: "40px 0" }} />
+        <Spin style={{ width: "100%", display: "flex", justifyContent: "center", padding: "60px 0" }} />
       ) : (
-        <div style={{ maxHeight: 450, overflowY: "auto", paddingRight: 10 }}>
-          {sections.map((section) => {
-            const checked = selectedSections.some((item) => item.ID === section.ID);
-            const isExpanded = expanded.includes(section.ID);
+        <div className="max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="flex flex-col gap-4">
+            {sections.map((section, idx) => {
+              const checked = selectedSections.some((item) => item.ID === section.ID);
+              const isExpanded = expanded.includes(section.ID);
 
-            return (
-              <Card
-                key={section.ID}
-                style={{
-                  marginBottom: 14,
-                  border: checked ? "2px solid #1E3A8A" : "1px solid #E5E7EB",
-                  background: checked ? "#F0F5FF" : "white",
-                }}
-                bodyStyle={{ padding: 16 }}
-              >
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer" }} onClick={() => toggleSelect(section)}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Checkbox
-                      checked={checked}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        toggleSelect(section);
-                      }}
-                    />
-                    <div>
-                      <Text strong>{section.Name}</Text>
-                      <br />
-                      <Text type="secondary" style={{ fontSize: 13 }}>{section.Description || "No description available."}</Text>
+              return (
+                <div 
+                  key={section.ID}
+                  className={`
+                    border-[2px] rounded-lg transition-all duration-200
+                    ${checked ? "border-[#003087] bg-[#F0F5FF] shadow-sm" : "border-[#E5E7EB] hover:border-[#D1D5DB] bg-white"}
+                  `}
+                >
+                  <div 
+                    className="flex items-start gap-4 p-5 cursor-pointer" 
+                    onClick={() => toggleSelect(section)}
+                  >
+                    <div className="pt-1">
+                      <Checkbox
+                        checked={checked}
+                        className="figma-custom-checkbox"
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          toggleSelect(section);
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="flex-1">
+                      <div className="text-[14px] font-medium text-[#111827] mb-1">
+                        {section.Name}
+                      </div>
+                      <div className="text-[14px] font-normal text-[#4B5563]">
+                        {section.Description || "No description available."}
+                      </div>
+                    </div>
+
+                    <div 
+                      onClick={(e) => { e.stopPropagation(); toggleExpand(section.ID); }} 
+                      className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {isExpanded ? <DownOutlined /> : <RightOutlined />}
                     </div>
                   </div>
-                  <div onClick={(e) => { e.stopPropagation(); toggleExpand(section.ID); }} style={{ padding: "4px 8px" }}>
-                    {isExpanded ? <DownOutlined /> : <RightOutlined />}
-                  </div>
-                </div>
 
-                {isExpanded && (
-                  <div style={{ marginTop: 16, paddingLeft: 36 }}>
-                    {(section.Parts || []).map((part) => (
-                      <div key={part.ID} style={{ marginBottom: 12, padding: 12, border: "1px solid #E5E7EB", borderRadius: 8, background: "white" }}>
-                        <Text strong>{part.Content}</Text>
-                        <div style={{ marginTop: 8 }}>
-                          {(part.Questions || []).map((q, index) => (
-                            <div key={q.ID} style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10 }}>
-                              <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0a2a79", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14 }}>{index + 1}</div>
-                              <Text style={{ fontSize: 15, lineHeight: "20px" }}>{q.Content}</Text>
+                  {isExpanded && (
+                    <div className="px-5 pb-5 pt-0 border-t-[1px] border-[#F1F5F9]">
+                      <div className="mt-4 space-y-4">
+                        {(section.Parts || []).map((part) => (
+                          <div key={part.ID} className="p-4 border-[1px] border-[#E5E7EB] rounded-lg bg-[#F9FAFB]">
+                            <Text className="font-bold text-[#111827] block mb-2">{part.Content}</Text>
+                            <div className="mt-3 space-y-3">
+                              {(part.Questions || []).map((q, index) => (
+                                <div key={q.ID} className="flex items-start gap-3">
+                                  <div className="w-6 h-6 rounded-full bg-[#003087] text-white flex items-center justify-center font-bold text-[12px] shrink-0">
+                                    {index + 1}
+                                  </div>
+                                  <Text className="text-[14px] leading-[20px] text-[#374151]">{q.Content}</Text>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
-            );
-          })}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
+      
+      <style>{`
+        .figma-custom-checkbox .ant-checkbox-inner {
+          width: 18px !important;
+          height: 18px !important;
+          border-radius: 2px !important;
+          border: 1px solid #D1D5DB !important;
+        }
+        .figma-custom-checkbox.ant-checkbox-checked .ant-checkbox-inner {
+          background-color: #003087 !important;
+          border-color: #003087 !important;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #F3F3F3;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #DADADA;
+          border-radius: 10px;
+        }
+      `}</style>
     </Modal>
   );
 };
