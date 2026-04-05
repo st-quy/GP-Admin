@@ -350,7 +350,7 @@ const CreateListening = () => {
             ...q.options,
             {
               id: nextIndex,
-              label: generateLabel(nextIndex),
+              label: generateLabel(nextIndex - 1),
               value: '',
             },
           ],
@@ -377,7 +377,7 @@ const CreateListening = () => {
         const reindexed = filtered.map((o, index) => ({
           ...o,
           id: index + 1,
-          label: generateLabel(index + 1),
+          label: generateLabel(index),
         }));
 
         return {
@@ -408,7 +408,7 @@ const CreateListening = () => {
               ...s.options,
               {
                 id: nextIndex,
-                label: generateLabel(nextIndex),
+                label: generateLabel(nextIndex - 1),
                 value: '',
               },
             ],
@@ -439,7 +439,7 @@ const CreateListening = () => {
           const reindexed = filtered.map((o, index) => ({
             ...o,
             id: index + 1,
-            label: generateLabel(index + 1),
+            label: generateLabel(index),
           }));
 
           return {
@@ -592,7 +592,12 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 2 name...'
               value={part2Name}
-              onChange={(e) => setPart2Name(e.target.value)}
+              maxLength={255}
+              onChange={(e) =>
+                setPart2Name(
+                  e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':?\n]/g, '')
+                )
+              }
             />
           </Form.Item>
 
@@ -638,7 +643,12 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 3 name...'
               value={part3Name}
-              onChange={(e) => setPart3Name(e.target.value)}
+              maxLength={255}
+              onChange={(e) =>
+                setPart3Name(
+                  e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':?\n]/g, '')
+                )
+              }
             />
           </Form.Item>
 
@@ -684,7 +694,12 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 4 name...'
               value={part4Name}
-              onChange={(e) => setPart4Name(e.target.value)}
+              maxLength={255}
+              onChange={(e) =>
+                setPart4Name(
+                  e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':?\n]/g, '')
+                )
+              }
             />
           </Form.Item>
 

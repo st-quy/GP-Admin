@@ -21,6 +21,10 @@ import {
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import ListeningMatchingEditor from '../CreateSkills/Listening/ListeningMatchingEditor';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
@@ -388,7 +392,7 @@ const UpdateListening = () => {
                         ...s.options,
                         {
                           id: s.options.length + 1,
-                          label: generateLabel(s.options.length),
+                          label: generateLabel(s.options.length - 1),
                           value: '',
                         },
                       ],
@@ -443,7 +447,7 @@ const UpdateListening = () => {
             ...q.options,
             {
               id: nextIndex,
-              label: generateLabel(nextIndex),
+              label: generateLabel(nextIndex - 1),
               value: '',
             },
           ],
@@ -468,7 +472,7 @@ const UpdateListening = () => {
         const reindexed = filtered.map((o, index) => ({
           ...o,
           id: index + 1,
-          label: generateLabel(index + 1),
+          label: generateLabel(index),
         }));
 
         return {
@@ -490,7 +494,8 @@ const UpdateListening = () => {
         <Form.Item label='Section Name' required>
           <Input
             value={sectionName}
-            onChange={(e) => setSectionName(e.target.value)}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            onChange={(e) => setSectionName(sanitizeQuestionInput(e.target.value))}
           />
         </Form.Item>
       </Card>
@@ -506,7 +511,8 @@ const UpdateListening = () => {
             <Input
               placeholder='Enter part name...'
               value={part1Name}
-              onChange={(e) => setPart1Name(e.target.value)}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
+              onChange={(e) => setPart1Name(sanitizeQuestionInput(e.target.value))}
             />
           </Form.Item>
 
@@ -533,11 +539,17 @@ const UpdateListening = () => {
                     <TextArea
                       rows={2}
                       value={q.instruction}
+                      maxLength={MAX_QUESTION_INPUT_LENGTH}
                       onChange={(e) =>
                         setPart1((prev) =>
                           prev.map((x) =>
                             x.id === q.id
-                              ? { ...x, instruction: e.target.value }
+                              ? {
+                                  ...x,
+                                  instruction: sanitizeQuestionInput(
+                                    e.target.value
+                                  ),
+                                }
                               : x
                           )
                         )
@@ -570,6 +582,7 @@ const UpdateListening = () => {
                       <Input
                         className='flex-1'
                         value={o.value}
+                        maxLength={MAX_QUESTION_INPUT_LENGTH}
                         onChange={(e) =>
                           setPart1((prev) =>
                             prev.map((x) =>
@@ -578,7 +591,12 @@ const UpdateListening = () => {
                                     ...x,
                                     options: x.options.map((opt) =>
                                       opt.id === o.id
-                                        ? { ...opt, value: e.target.value }
+                                        ? {
+                                            ...opt,
+                                            value: sanitizeQuestionInput(
+                                              e.target.value
+                                            ),
+                                          }
                                         : opt
                                     ),
                                   }
@@ -636,7 +654,8 @@ const UpdateListening = () => {
             <Input
               placeholder='Enter Part 2 name...'
               value={part2Name}
-              onChange={(e) => setPart2Name(e.target.value)}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
+              onChange={(e) => setPart2Name(sanitizeQuestionInput(e.target.value))}
             />
           </Form.Item>
 
@@ -644,8 +663,12 @@ const UpdateListening = () => {
             <TextArea
               rows={2}
               value={part2.instruction}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart2((prev) => ({ ...prev, instruction: e.target.value }))
+                setPart2((prev) => ({
+                  ...prev,
+                  instruction: sanitizeQuestionInput(e.target.value),
+                }))
               }
             />
           </Form.Item>
@@ -684,7 +707,8 @@ const UpdateListening = () => {
             <Input
               placeholder='Part 3 name'
               value={part3Name}
-              onChange={(e) => setPart3Name(e.target.value)}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
+              onChange={(e) => setPart3Name(sanitizeQuestionInput(e.target.value))}
             />
           </Form.Item>
 
@@ -692,8 +716,12 @@ const UpdateListening = () => {
             <TextArea
               rows={2}
               value={part3.instruction}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart3((prev) => ({ ...prev, instruction: e.target.value }))
+                setPart3((prev) => ({
+                  ...prev,
+                  instruction: sanitizeQuestionInput(e.target.value),
+                }))
               }
             />
           </Form.Item>
@@ -732,7 +760,8 @@ const UpdateListening = () => {
             <Input
               placeholder='Enter Part 4 name...'
               value={part4Name}
-              onChange={(e) => setPart4Name(e.target.value)}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
+              onChange={(e) => setPart4Name(sanitizeQuestionInput(e.target.value))}
             />
           </Form.Item>
 
@@ -751,8 +780,13 @@ const UpdateListening = () => {
                     rows={2}
                     value={g.instruction}
                     onChange={(e) =>
-                      updateGroupField(g.id, 'instruction', e.target.value)
+                      updateGroupField(
+                        g.id,
+                        'instruction',
+                        sanitizeQuestionInput(e.target.value)
+                      )
                     }
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
                   />
                 </Form.Item>
 
@@ -777,12 +811,13 @@ const UpdateListening = () => {
                       <Form.Item label={`Sub question ${s.id}`} required>
                         <Input
                           value={s.content}
+                          maxLength={MAX_QUESTION_INPUT_LENGTH}
                           onChange={(e) =>
                             updateGroupSub(
                               g.id,
                               s.id,
                               'content',
-                              e.target.value
+                              sanitizeQuestionInput(e.target.value)
                             )
                           }
                         />
@@ -797,12 +832,13 @@ const UpdateListening = () => {
                           <div>{o.label}</div>
                           <Input
                             value={o.value}
+                            maxLength={MAX_QUESTION_INPUT_LENGTH}
                             onChange={(e) =>
                               updateGroupOption(
                                 g.id,
                                 s.id,
                                 o.id,
-                                e.target.value
+                                sanitizeQuestionInput(e.target.value)
                               )
                             }
                           />

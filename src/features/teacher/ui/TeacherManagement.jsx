@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Table, Input, Select, Tag, Pagination, Empty, message, Tooltip } from 'antd';
-import { SearchOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Input, Select, Space, Tag, message, Pagination } from 'antd';
 import {
   useDeleteTeacher,
   useFetchTeacherById,
@@ -11,15 +10,8 @@ import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import { useNavigate } from 'react-router-dom';
-
-const { Option } = Select;
-
-const PAGE_SIZE_OPTIONS = [
-  { value: 5, label: '05 / pages' },
-  { value: 10, label: '10 / pages' },
-  { value: 20, label: '20 / pages' },
-  { value: 50, label: '50 / pages' },
-];
+import SearchInput from "@/app/components/SearchInput.jsx";
+import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const TeacherManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,25 +20,42 @@ const TeacherManagement = () => {
   const [pageSize, setPageSize] = useState(10);
   const navigate = useNavigate();
   const { id: editingTeacherId } = useParams();
-  const editingTeacherIdNumber =
-    typeof editingTeacherId === 'string' ? Number(editingTeacherId) : null;
   const { openConfirmModal, ModalComponent } = useConfirm();
   const { mutateAsync: deleteTeacher } = useDeleteTeacher();
 
-  const escapeSearchTerm = (term) => {
-    return term.replace(/([%_\\])/g, '\\$1');
+  const onSearchChange = (event) => {
+    const rawValue = event.target.value;
+    let cleanValue = rawValue;
+
+    if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
+      message.warning('Special characters and emojis are not allowed in search.');
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+    }
+
+    if (/\s{2,}/.test(cleanValue)) {
+      message.info('Multiple spaces are not allowed; collapsed to a single space.');
+      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+    }
+
+    if (cleanValue.length > 50) {
+      message.error('Search limit reached (max 50 characters).');
+      cleanValue = cleanValue.slice(0, 50);
+    }
+
+    cleanValue = cleanValue.replace(/^\s+/, '');
+    setSearchTerm(cleanValue);
+    setCurrentPage(1);
   };
 
-  const debouncedSearchTerm = useDebouncedValue(
-    escapeSearchTerm(searchTerm),
-    500
-  );
+  const debouncedSearchTerm = useDebouncedValue(searchTerm, 500);
+  
   const { data: teachersData, isLoading, refetch } = useFetchTeachers({
     page: currentPage,
     limit: pageSize,
     search: debouncedSearchTerm,
     ...(statusFilter !== null && { status: statusFilter }),
   });
+
   const {
     data: teacherDetailData,
     isLoading: isTeacherDetailLoading,
@@ -54,16 +63,8 @@ const TeacherManagement = () => {
     enabled: Boolean(editingTeacherId),
   });
 
-  const totalItems = teachersData?.data?.pagination?.total || 0;
-  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
-  const endItem = Math.min(currentPage * pageSize, totalItems);
-
   const handleStatusFilter = (value) => {
-    if (value == null) {
-      setStatusFilter(null);
-      return;
-    }
-    if (value === 'All') {
+    if (value == null || value === 'All') {
       setStatusFilter(null);
     } else {
       setStatusFilter(value === 'Active');
@@ -84,8 +85,7 @@ const TeacherManagement = () => {
           refetch();
         } catch (error) {
           message.error(
-            error?.response?.data?.message ||
-              'Failed to delete teacher. Please try again.'
+            error?.response?.data?.message || 'Failed to delete teacher. Please try again.'
           );
         }
       },
@@ -94,48 +94,54 @@ const TeacherManagement = () => {
 
   const columns = [
     {
-      title: 'TEACHER NAME',
-      dataIndex: ['fullname'],
+      title: <span className="font-bold text-[#637381]">TEACHER NAME</span>,
+      dataIndex: 'fullname',
       key: 'name',
+      width: '200px',
       render: (text, record) => (
-        <Link
-          to={`/teacher/edit/${record.ID}`}
-          className='figma-class-link font-medium'
-        >
-          {`${record.firstName} ${record.lastName}` || 'Unknown'}
-        </Link>
+        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
+          <Link
+            to={`/teacher/edit/${record.ID}`}
+            className='bg-transparent border-none p-0 cursor-pointer font-medium text-primaryColor underline underline-offset-4 hover:opacity-80'
+          >
+            {`${record.firstName} ${record.lastName}` || 'Unknown'}
+          </Link>
+        </div>
       ),
     },
     {
-      title: 'TEACHER ID',
+      title: <span className="font-bold text-[#637381]">TEACHER ID</span>,
       dataIndex: 'teacherCode',
       key: 'id',
-      width: 130,
-      render: (text) => <span className='text-[#637381]'>{text}</span>,
+      width: '120px',
+      align: 'center',
+      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
     },
     {
-      title: 'EMAIL',
+      title: <span className="font-bold text-[#637381]">EMAIL</span>,
       dataIndex: 'email',
       key: 'email',
+      width: '200px',
       ellipsis: true,
-      render: (text) => <span className='text-[#637381]'>{text}</span>,
+      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
     },
     {
-      title: 'PHONE',
+      title: <span className="font-bold text-[#637381]">PHONE</span>,
       dataIndex: 'phone',
       key: 'phone',
-      width: 140,
-      render: (text) => <span className='text-[#637381]'>{text}</span>,
+      width: '120px',
+      align: 'center',
+      render: (text) => <span className="font-medium text-primaryTextColor">{text || '---'}</span>
     },
     {
-      title: 'STATUS',
+      title: <span className="font-bold text-[#637381]">STATUS</span>,
       dataIndex: 'status',
       key: 'status',
-      width: 120,
+      width: '120px',
       align: 'center',
       render: (status) => (
         <Tag
-          className={`rounded-3xl font-semibold py-1 px-4 text-center border-none text-sm ${
+          className={`rounded-full font-semibold px-3 py-1 text-center border-none ${
             status === true
               ? 'bg-[#DAF8E6] text-[#1A8245]'
               : 'bg-[#E5E7EB] text-[#374151]'
@@ -146,30 +152,32 @@ const TeacherManagement = () => {
       ),
     },
     {
-      title: 'ACTIONS',
+      title: <span className="font-bold text-[#637381]">ACTIONS</span>,
       key: 'actions',
-      width: 120,
+      width: '150px',
       align: 'center',
       render: (_, record) => (
-        <div className='flex gap-3 justify-center items-center'>
+        <div className="flex items-center justify-center gap-4">
           <TeacherActionModal initialData={record} />
-          <Tooltip title='Delete'>
-            <button
-              className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
-              onClick={() => handleDeleteTeacher(record)}
-            >
-              <DeleteOutlined style={{ fontSize: '20px', color: '#FF4D4F' }} />
-            </button>
-          </Tooltip>
+          <button
+            onClick={() => handleDeleteTeacher(record)}
+            className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+          >
+            <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
+          </button>
         </div>
       ),
     },
   ];
 
+  const total = teachersData?.data?.pagination?.total || 0;
+  const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const end = Math.min(currentPage * pageSize, total);
+
   const selectedTeacher =
     teacherDetailData ||
     teachersData?.data?.teachers?.find(
-      (teacher) => teacher.ID === editingTeacherIdNumber
+      (teacher) => teacher.ID === editingTeacherId
     ) ||
     null;
 
@@ -188,111 +196,128 @@ const TeacherManagement = () => {
           onClose={handleCloseEditModal}
         />
       )}
-
-      {/* Header */}
-      <div className='figma-header-section'>
-        <div>
-          <h1 className='figma-title'>Teacher Account Management</h1>
-          <p className='figma-subtitle'>
-            Manage and organize teacher accounts
-          </p>
-        </div>
-        <div className='flex items-center gap-3 pt-4'>
-          <TeacherActionModal />
-        </div>
-      </div>
-
-      {/* Filters */}
-      <div className='figma-filter-bar'>
-        <div className='flex flex-wrap items-center gap-4'>
-          <Input
+      
+      <div className='flex items-center justify-between mb-10'>
+        <div className='flex items-center gap-4'>
+          <SearchInput
+            placeholder="Search by name, ID"
             value={searchTerm}
-            placeholder='Search by name, ID'
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className='figma-search-input'
-            allowClear
-            prefix={<SearchOutlined className='text-[#6B7280] mr-2' />}
+            onSearchChange={onSearchChange}
+            isFigmaRedesign={true}
+            style={{ margin: 0 }}
           />
           <Select
-            placeholder='Select Status'
+            placeholder="Select STATUS"
             onChange={handleStatusFilter}
-            style={{ width: 180 }}
-            size='large'
-            className='figma-filter-select'
+            className="figma-status-select-sync"
+            options={[
+              { value: 'All', label: 'All' },
+              { value: 'Active', label: 'Active' },
+              { value: 'Inactive', label: 'Inactive' },
+            ]}
             allowClear
-          >
-            <Option value='All'>All</Option>
-            <Option value='Active'>Active</Option>
-            <Option value='Inactive'>Inactive</Option>
-          </Select>
+          />
         </div>
+        <TeacherActionModal />
       </div>
 
-      {/* Table */}
-      <div className='figma-table-card'>
+      <style>{`
+        /* --- HIGH SPECIFICITY ALIGNMENT FIX --- */
+        
+        /* 1. Force the Select to match the Search bar height exactly */
+        .figma-status-select-sync.ant-select {
+          width: 180px !important;
+          height: 48px !important;
+          margin: 0 !important;
+          display: flex !important;
+          align-items: center !important;
+        }
+
+        /* 2. Target the internal AntD selector which actually has the border/shadow */
+        .figma-status-select-sync.ant-select .ant-select-selector {
+          height: 48px !important;
+          min-height: 48px !important;
+          display: flex !important;
+          align-items: center !important;
+          border: 1px solid #DFE4EA !important;
+          border-radius: 6px !important;
+          box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1) !important;
+          background-color: #ffffff !important;
+          padding: 0 12px !important;
+        }
+
+        /* 3. Center the placeholder and selected text vertically */
+        .figma-status-select-sync.ant-select .ant-select-selection-search,
+        .figma-status-select-sync.ant-select .ant-select-selection-item,
+        .figma-status-select-sync.ant-select .ant-select-selection-placeholder {
+          display: flex !important;
+          align-items: center !important;
+          height: 100% !important;
+          line-height: 1 !important;
+          inset-inline-start: 12px !important;
+        }
+
+        /* 4. Ensure the Search bar also has no extra margins that could cause offsets */
+        .figma-search-input {
+          margin: 0 !important;
+          vertical-align: middle !important;
+        }
+      `}</style>
+
+      <div className="figma-table-card figma-table-overrides w-full">
         <Table
           columns={columns}
           dataSource={teachersData?.data?.teachers}
           rowKey={(record) => record.ID}
-          scroll={{ x: 800 }}
+          scroll={{ x: "max-content" }}
           pagination={false}
-          className='figma-table-overrides'
           loading={isLoading || isTeacherDetailLoading || !teachersData}
-          locale={{
-            emptyText: <Empty description='No teachers found.' />,
-          }}
         />
       </div>
 
-      {/* Pagination */}
-      <div className='figma-pagination-wrapper'>
-        <div className='figma-pagination-box'>
-          <div className='figma-pagination-text whitespace-nowrap'>
-            {totalItems === 0
-              ? 'No entries found'
-              : `Showing ${String(startItem).padStart(2, '0')}-${String(endItem).padStart(2, '0')} of ${totalItems}`}
+      <div className="figma-pagination-wrapper">
+        <div className="figma-pagination-box">
+          <div className="figma-pagination-text whitespace-nowrap">
+            {total === 0
+              ? "No entries found"
+              : `Showing ${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")} of ${total}`}
           </div>
 
-          <div className='figma-pagination-nav-group'>
+          <div className="figma-pagination-nav-group">
             <Pagination
               current={currentPage}
               pageSize={pageSize}
-              total={totalItems}
+              total={total}
               onChange={(page) => setCurrentPage(page)}
               showSizeChanger={false}
               itemRender={(page, type, original) => {
-                if (type === 'page') {
+                if (type === "page") {
                   const isActive = currentPage === page;
                   return (
-                    <button
-                      className={`figma-page-btn ${isActive ? 'active' : ''}`}
-                    >
+                    <button className={`figma-page-btn ${isActive ? "active" : ""}`}>
                       {page}
                     </button>
                   );
                 }
-                if (type === 'prev') {
+                if (type === "prev") {
                   return (
-                    <button className='figma-symbol-btn' type='button'>
-                      {'\u2039'}
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u2039"}
                     </button>
                   );
                 }
-                if (type === 'next') {
+                if (type === "next") {
                   return (
-                    <button className='figma-symbol-btn' type='button'>
-                      {'\u203A'}
+                    <button className="figma-symbol-btn" type="button">
+                      {"\u203A"}
                     </button>
                   );
                 }
-                if (type === 'jump-prev' || type === 'jump-next') {
+                if (type === "jump-prev" || type === "jump-next") {
                   return (
                     <span
-                      className='text-[#637381] px-1'
-                      style={{ fontSize: '16px', lineHeight: '25px' }}
+                      className="text-[#637381] px-1"
+                      style={{ fontSize: "16px", lineHeight: "25px" }}
                     >
                       ...
                     </span>
@@ -303,7 +328,7 @@ const TeacherManagement = () => {
             />
           </div>
 
-          <div className='figma-page-size-container'>
+          <div className="figma-page-size-container">
             <Select
               value={pageSize}
               onChange={(val) => {
@@ -311,8 +336,13 @@ const TeacherManagement = () => {
                 setCurrentPage(1);
               }}
               bordered={false}
-              className='figma-page-size-select'
-              options={PAGE_SIZE_OPTIONS}
+              className="figma-page-size-select"
+              options={[
+                { value: 5, label: "05 / pages" },
+                { value: 10, label: "10 / pages" },
+                { value: 20, label: "20 / pages" },
+                { value: 50, label: "50 / pages" },
+              ]}
             />
           </div>
         </div>

@@ -3,6 +3,10 @@ import React from 'react';
 import { Form, Input, Button, Space, Divider } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import { WRITING_PART_TYPES } from '@features/questions/constant/writingType';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { TextArea } = Input;
 
@@ -15,8 +19,10 @@ const WritingEditor = ({ partType, requireImage }) => {
           name={['part1', 'title']}
           label='Instruction Text'
           rules={[{ required: true, message: 'Instruction text is required' }]}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
         >
           <TextArea
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             rows={3}
             placeholder='e.g., Answer the following questions.'
           />
@@ -50,12 +56,18 @@ const WritingEditor = ({ partType, requireImage }) => {
                     {...field}
                     name={[field.name, 'question']}
                     fieldKey={[field.fieldKey, 'question']}
+                    getValueFromEvent={(e) =>
+                      sanitizeQuestionInput(e.target.value)
+                    }
                     rules={[
                       { required: true, message: 'Question is required' },
                     ]}
                     className='!m-0'
                   >
-                    <Input placeholder='Enter question...' />
+                    <Input
+                      maxLength={MAX_QUESTION_INPUT_LENGTH}
+                      placeholder='Enter question...'
+                    />
                   </Form.Item>
                 </div>
               ))}
@@ -82,8 +94,10 @@ const WritingEditor = ({ partType, requireImage }) => {
           name={['part2', 'title']}
           label='Instruction Text'
           rules={[{ required: true, message: 'Instruction text is required' }]}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
         >
           <TextArea
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             rows={3}
             placeholder='e.g., You are filling in a registration form...'
           />
@@ -93,8 +107,10 @@ const WritingEditor = ({ partType, requireImage }) => {
           name={['part2', 'question']}
           label='Question'
           rules={[{ required: true, message: 'Question is required' }]}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
         >
           <TextArea
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             rows={3}
             placeholder='e.g., Complete the form below with appropriate information.'
           />
@@ -124,8 +140,10 @@ const WritingEditor = ({ partType, requireImage }) => {
           name={['part3', 'title']}
           label='Instruction Text'
           rules={[{ required: true, message: 'Title is required' }]}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
         >
           <TextArea
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             rows={3}
             placeholder='e.g., Answer the questions in the chat room below.'
           />
@@ -164,11 +182,17 @@ const WritingEditor = ({ partType, requireImage }) => {
                       name={[field.name, 'speaker']}
                       fieldKey={[field.fieldKey, 'speaker']}
                       label='Speaker'
+                      getValueFromEvent={(e) =>
+                        sanitizeQuestionInput(e.target.value)
+                      }
                       rules={[
                         { required: true, message: 'Speaker is required' },
                       ]}
                     >
-                      <Input placeholder='e.g., Ben, Quinn, Chris, Hannah...' />
+                      <Input
+                        maxLength={MAX_QUESTION_INPUT_LENGTH}
+                        placeholder='e.g., Ben, Quinn, Chris, Hannah...'
+                      />
                     </Form.Item>
 
                     <Form.Item
@@ -176,11 +200,18 @@ const WritingEditor = ({ partType, requireImage }) => {
                       name={[field.name, 'question']}
                       fieldKey={[field.fieldKey, 'question']}
                       label='Question'
+                      getValueFromEvent={(e) =>
+                        sanitizeQuestionInput(e.target.value)
+                      }
                       rules={[
                         { required: true, message: 'Question is required' },
                       ]}
                     >
-                      <TextArea rows={2} placeholder='Enter question...' />
+                      <TextArea
+                        maxLength={MAX_QUESTION_INPUT_LENGTH}
+                        rows={2}
+                        placeholder='Enter question...'
+                      />
                     </Form.Item>
 
                     {/* <Form.Item
@@ -227,15 +258,21 @@ const WritingEditor = ({ partType, requireImage }) => {
           name={['part4', 'partName']}
           label='Instruction Text'
           rules={[{ required: true, message: 'Instruction text is required' }]}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
         >
-          <Input placeholder='e.g., You are a member of the Fitness Club. ...' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='e.g., You are a member of the Fitness Club. ...'
+          />
         </Form.Item>
         <Form.Item
           name={['part4', 'emailText']}
           label='Sub Instruction'
           rules={[{ required: true, message: 'Instruction text is required' }]}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
         >
           <TextArea
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             rows={5}
             placeholder='Paste the news / situation / email text here...'
           />
@@ -246,8 +283,10 @@ const WritingEditor = ({ partType, requireImage }) => {
             name={['part4', 'q1']}
             label='Question 1'
             rules={[{ required: true, message: 'Question 1 is required' }]}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           >
             <TextArea
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               rows={3}
               placeholder='e.g., Write an email to your friend...'
             />
@@ -271,8 +310,10 @@ const WritingEditor = ({ partType, requireImage }) => {
             name={['part4', 'q2']}
             label='Question 2'
             rules={[{ required: true, message: 'Question 2 is required' }]}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           >
             <TextArea
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               rows={3}
               placeholder='e.g., Write an email to the club president...'
             />

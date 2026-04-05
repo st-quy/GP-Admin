@@ -80,7 +80,7 @@ const Details = ({ type, isLoading, data }) => {
             <div className="flex flex-col gap-y-6 flex-1">
               {col1.map((item, index) => (
                 <div key={index} className="flex items-center">
-                  <span className="w-[200px] text-[16px] text-[#374151] font-normal">
+                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className={`text-[16px] text-[#1F2A37] ${item.bold ? 'font-semibold' : 'font-medium'}`}>
@@ -93,7 +93,7 @@ const Details = ({ type, isLoading, data }) => {
             <div className="flex flex-col gap-y-6 flex-1">
               {col2.map((item, index) => (
                 <div key={index} className="flex items-center">
-                  <span className="w-[200px] text-[16px] text-[#374151] font-normal">
+                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className={`text-[16px] text-[#1F2A37] ${item.bold ? 'font-semibold' : 'font-medium'}`}>
