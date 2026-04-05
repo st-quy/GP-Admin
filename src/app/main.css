@@ -268,6 +268,14 @@ body {
     text-decoration: underline !important;
 }
 
+.figma-table-overrides .ant-table-tbody > tr:hover > td {
+    background-color: #f0f5ff !important;
+}
+
+.figma-table-overrides .ant-table-tbody > tr {
+    cursor: pointer;
+}
+
 .figma-search-input {
     width: 250px !important;
     height: 48px !important;
@@ -275,6 +283,42 @@ body {
     border: 1px solid #dfe4ea !important;
     border-radius: 6px !important;
     box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* --- FILTER BAR --- */
+
+.figma-filter-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+/* --- STAT CARD --- */
+
+.figma-stat-card {
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 20px 24px;
+    box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.figma-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0px 6px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* --- FILTER SELECT --- */
+
+.figma-filter-select .ant-select-selector {
+    height: 48px !important;
+    border-radius: 6px !important;
+    border: 1px solid #dfe4ea !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
 /* --- PAGINATION REDESIGN --- */

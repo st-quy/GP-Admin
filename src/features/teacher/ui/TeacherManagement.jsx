@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Table, Input, Select, Space, Tag, message } from 'antd';
+import { Table, Input, Select, Tag, Pagination, Empty, message, Tooltip } from 'antd';
 import { SearchOutlined, DeleteOutlined } from '@ant-design/icons';
 import {
   useDeleteTeacher,
@@ -11,25 +11,36 @@ import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import { useNavigate } from 'react-router-dom';
+
 const { Option } = Select;
+
+const PAGE_SIZE_OPTIONS = [
+  { value: 5, label: '05 / pages' },
+  { value: 10, label: '10 / pages' },
+  { value: 20, label: '20 / pages' },
+  { value: 50, label: '50 / pages' },
+];
 
 const TeacherManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
   const navigate = useNavigate();
   const { id: editingTeacherId } = useParams();
   const editingTeacherIdNumber =
     typeof editingTeacherId === 'string' ? Number(editingTeacherId) : null;
   const { openConfirmModal, ModalComponent } = useConfirm();
   const { mutateAsync: deleteTeacher } = useDeleteTeacher();
-  // Escape special SQL-like characters for search
+
   const escapeSearchTerm = (term) => {
     return term.replace(/([%_\\])/g, '\\$1');
   };
 
-  const debouncedSearchTerm = useDebouncedValue(escapeSearchTerm(searchTerm), 500);
+  const debouncedSearchTerm = useDebouncedValue(
+    escapeSearchTerm(searchTerm),
+    500
+  );
   const { data: teachersData, isLoading, refetch } = useFetchTeachers({
     page: currentPage,
     limit: pageSize,
@@ -43,19 +54,21 @@ const TeacherManagement = () => {
     enabled: Boolean(editingTeacherId),
   });
 
+  const totalItems = teachersData?.data?.pagination?.total || 0;
+  const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
+  const endItem = Math.min(currentPage * pageSize, totalItems);
+
   const handleStatusFilter = (value) => {
-    // When Select is cleared (allowClear), AntD passes undefined/null -> reset filter
     if (value == null) {
       setStatusFilter(null);
       return;
     }
-
     if (value === 'All') {
       setStatusFilter(null);
     } else {
-      const fil = value === 'Active' ? true : false;
-      setStatusFilter(fil);
+      setStatusFilter(value === 'Active');
     }
+    setCurrentPage(1);
   };
 
   const handleDeleteTeacher = (record) => {
@@ -71,7 +84,8 @@ const TeacherManagement = () => {
           refetch();
         } catch (error) {
           message.error(
-            error?.response?.data?.message || 'Failed to delete teacher. Please try again.'
+            error?.response?.data?.message ||
+              'Failed to delete teacher. Please try again.'
           );
         }
       },
@@ -83,50 +97,49 @@ const TeacherManagement = () => {
       title: 'TEACHER NAME',
       dataIndex: ['fullname'],
       key: 'name',
-      width: '200px',
       render: (text, record) => (
-        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
-          <Link
-            to={`/teacher/edit/${record.ID}`}
-            className='bg-transparent border-none p-0 cursor-pointer text-[10px] md:text-[14px] underline hover:opacity-80'
-          >
-            {`${record.firstName} ${record.lastName}` || 'Unknown'}
-          </Link>
-        </div>
+        <Link
+          to={`/teacher/edit/${record.ID}`}
+          className='figma-class-link font-medium'
+        >
+          {`${record.firstName} ${record.lastName}` || 'Unknown'}
+        </Link>
       ),
     },
     {
       title: 'TEACHER ID',
       dataIndex: 'teacherCode',
       key: 'id',
-      width: '100px',
+      width: 130,
+      render: (text) => <span className='text-[#637381]'>{text}</span>,
     },
     {
       title: 'EMAIL',
       dataIndex: 'email',
       key: 'email',
-      width: '200px',
       ellipsis: true,
+      render: (text) => <span className='text-[#637381]'>{text}</span>,
     },
     {
       title: 'PHONE',
       dataIndex: 'phone',
       key: 'phone',
-      width: '100px',
+      width: 140,
+      render: (text) => <span className='text-[#637381]'>{text}</span>,
     },
     {
       title: 'STATUS',
       dataIndex: 'status',
       key: 'status',
-      width: '120px',
+      width: 120,
       align: 'center',
       render: (status) => (
         <Tag
-          className={`rounded-3xl font-[600] py-1 text-center ${
+          className={`rounded-3xl font-semibold py-1 px-4 text-center border-none text-sm ${
             status === true
               ? 'bg-[#DAF8E6] text-[#1A8245]'
               : 'bg-[#E5E7EB] text-[#374151]'
-          } border-none text-[10px] md:text-[14px]`}
+          }`}
         >
           {status === true ? 'Active' : 'Inactive'}
         </Tag>
@@ -135,50 +148,23 @@ const TeacherManagement = () => {
     {
       title: 'ACTIONS',
       key: 'actions',
-      width: '150px',
+      width: 120,
+      align: 'center',
       render: (_, record) => (
-        <Space size='small' className='bg-white rounded-lg px-1'>
+        <div className='flex gap-3 justify-center items-center'>
           <TeacherActionModal initialData={record} />
-          <DeleteOutlined
-            onClick={() => handleDeleteTeacher(record)}
-            className='text-red-500 text-[18px] cursor-pointer hover:opacity-80'
-          />
-        </Space>
+          <Tooltip title='Delete'>
+            <button
+              className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+              onClick={() => handleDeleteTeacher(record)}
+            >
+              <DeleteOutlined style={{ fontSize: '20px', color: '#FF4D4F' }} />
+            </button>
+          </Tooltip>
+        </div>
       ),
     },
   ];
-
-  const tableComponents = {
-    header: {
-      cell: (props) => (
-        <th
-          {...props}
-          style={{
-            ...props.style,
-            backgroundColor: '#E6F0FA',
-            textAlign: 'center',
-          }}
-          className='text-primaryTextColor px-0 font-medium text-[10px] md:text-[14px] border-none'
-        />
-      ),
-    },
-    body: {
-      cell: (props) => (
-        <td
-          {...props}
-          style={{
-            ...props.style,
-            borderRightStyle: 'none',
-            textAlign: 'center',
-          }}
-          className='text-primaryTextColor px-0 font-medium text-[10px] md:text-[14px] border-none'
-        />
-      ),
-      row: (props) => (
-        <tr {...props} style={{ ...props.style, border: 'none' }} />
-      ),
-    },
-  };
 
   const selectedTeacher =
     teacherDetailData ||
@@ -202,8 +188,23 @@ const TeacherManagement = () => {
           onClose={handleCloseEditModal}
         />
       )}
-      <div className='flex justify-between items-center mb-4'>
-        <div className='flex flex-col md:flex-row md:items-center md:space-x-4 space-y-2 md:space-y-0'>
+
+      {/* Header */}
+      <div className='figma-header-section'>
+        <div>
+          <h1 className='figma-title'>Teacher Account Management</h1>
+          <p className='figma-subtitle'>
+            Manage and organize teacher accounts
+          </p>
+        </div>
+        <div className='flex items-center gap-3 pt-4'>
+          <TeacherActionModal />
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className='figma-filter-bar'>
+        <div className='flex flex-wrap items-center gap-4'>
           <Input
             value={searchTerm}
             placeholder='Search by name, ID'
@@ -211,14 +212,16 @@ const TeacherManagement = () => {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className='w-full md:w-[200px]'
+            className='figma-search-input'
             allowClear
-            suffix={<SearchOutlined className='text-[#9CA3AF]' />}
+            prefix={<SearchOutlined className='text-[#6B7280] mr-2' />}
           />
           <Select
-            placeholder='Select STATUS'
-            onChange={(value) => handleStatusFilter(value)}
-            className='w-full md:w-[150px]'
+            placeholder='Select Status'
+            onChange={handleStatusFilter}
+            style={{ width: 180 }}
+            size='large'
+            className='figma-filter-select'
             allowClear
           >
             <Option value='All'>All</Option>
@@ -226,52 +229,94 @@ const TeacherManagement = () => {
             <Option value='Inactive'>Inactive</Option>
           </Select>
         </div>
-        <TeacherActionModal />
       </div>
-      <Table
-        // @ts-ignore
-        columns={columns}
-        dataSource={teachersData?.data?.teachers}
-        rowKey={(record) => record.ID}
-        scroll={{ x: 600 }}
-        className='mb-4'
-        components={tableComponents}
-        loading={isLoading || isTeacherDetailLoading || !teachersData}
-        pagination={{
-          current: currentPage,
-          pageSize: pageSize,
-          total: teachersData?.data?.pagination?.total,
-          showSizeChanger: true,
-          pageSizeOptions: ['5', '10', '15', '20'],
-          showTotal: (total, range) =>
-            `Showing ${range[0]}-${range[1]} of ${total}`,
-          onChange: (page, size) => {
-            setCurrentPage(page);
-            setPageSize(size);
-          },
-          itemRender: (page, type, original) => {
-            if (type === 'page') {
-              const isActive = currentPage === page;
 
-              return (
-                <button
-                  className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-            ${
-              isActive
-                ? 'bg-[#003087] text-white border-[#003087]'
-                : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
-            }
-          `}
-                >
-                  {page}
-                </button>
-              );
-            }
+      {/* Table */}
+      <div className='figma-table-card'>
+        <Table
+          columns={columns}
+          dataSource={teachersData?.data?.teachers}
+          rowKey={(record) => record.ID}
+          scroll={{ x: 800 }}
+          pagination={false}
+          className='figma-table-overrides'
+          loading={isLoading || isTeacherDetailLoading || !teachersData}
+          locale={{
+            emptyText: <Empty description='No teachers found.' />,
+          }}
+        />
+      </div>
 
-            return original;
-          },
-        }}
-      />
+      {/* Pagination */}
+      <div className='figma-pagination-wrapper'>
+        <div className='figma-pagination-box'>
+          <div className='figma-pagination-text whitespace-nowrap'>
+            {totalItems === 0
+              ? 'No entries found'
+              : `Showing ${String(startItem).padStart(2, '0')}-${String(endItem).padStart(2, '0')} of ${totalItems}`}
+          </div>
+
+          <div className='figma-pagination-nav-group'>
+            <Pagination
+              current={currentPage}
+              pageSize={pageSize}
+              total={totalItems}
+              onChange={(page) => setCurrentPage(page)}
+              showSizeChanger={false}
+              itemRender={(page, type, original) => {
+                if (type === 'page') {
+                  const isActive = currentPage === page;
+                  return (
+                    <button
+                      className={`figma-page-btn ${isActive ? 'active' : ''}`}
+                    >
+                      {page}
+                    </button>
+                  );
+                }
+                if (type === 'prev') {
+                  return (
+                    <button className='figma-symbol-btn' type='button'>
+                      {'\u2039'}
+                    </button>
+                  );
+                }
+                if (type === 'next') {
+                  return (
+                    <button className='figma-symbol-btn' type='button'>
+                      {'\u203A'}
+                    </button>
+                  );
+                }
+                if (type === 'jump-prev' || type === 'jump-next') {
+                  return (
+                    <span
+                      className='text-[#637381] px-1'
+                      style={{ fontSize: '16px', lineHeight: '25px' }}
+                    >
+                      ...
+                    </span>
+                  );
+                }
+                return original;
+              }}
+            />
+          </div>
+
+          <div className='figma-page-size-container'>
+            <Select
+              value={pageSize}
+              onChange={(val) => {
+                setPageSize(val);
+                setCurrentPage(1);
+              }}
+              bordered={false}
+              className='figma-page-size-select'
+              options={PAGE_SIZE_OPTIONS}
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

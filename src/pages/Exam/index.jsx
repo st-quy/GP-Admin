@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import {
-  Card,
   Table,
   Input,
   Select,
   Pagination,
-  Space,
   Button,
-  Typography,
+  Space,
+  Tag,
+  Empty,
   message,
 } from 'antd';
 import {
@@ -20,9 +20,9 @@ import {
   SearchOutlined,
   EyeOutlined,
   PlayCircleOutlined,
+  PlusOutlined,
 } from '@ant-design/icons';
 
-import HeaderInfo from '@app/components/HeaderInfo';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -34,33 +34,67 @@ import {
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import { STATUS_CONFIG } from '@shared/lib/constants/examStatus';
-import { Tag, Tooltip as AntTooltip } from 'antd';
+import { Tooltip as AntTooltip } from 'antd';
 
 const { Option } = Select;
-const { Text } = Typography;
+
+const PAGE_SIZE_OPTIONS = [
+  { value: 5, label: '05 / pages' },
+  { value: 10, label: '10 / pages' },
+  { value: 20, label: '20 / pages' },
+  { value: 50, label: '50 / pages' },
+];
+
+const STATUS_CARDS = [
+  {
+    key: 'Submited',
+    label: 'Submitted',
+    color: '#D97706',
+    bg: '#FFFBEB',
+    icon: <ClockCircleOutlined />,
+  },
+  {
+    key: 'approved',
+    label: 'Approved',
+    color: '#059669',
+    bg: '#ECFDF5',
+    icon: <CheckCircleOutlined />,
+  },
+  {
+    key: 'Draft',
+    label: 'Draft',
+    color: '#6B7280',
+    bg: '#FFF7ED',
+    icon: <ExclamationCircleOutlined />,
+  },
+  {
+    key: 'Rejected',
+    label: 'Rejected',
+    color: '#DC2626',
+    bg: '#FEF2F2',
+    icon: <CloseCircleOutlined />,
+  },
+];
 
 const TopicListPage = () => {
   const navigate = useNavigate();
   const { role } = useSelector((state) => state.auth);
-  
-  // Robust check for admin role
-  const isAdmin = Array.isArray(role) 
-    ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
-    : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
-    
+
+  const isAdmin = Array.isArray(role)
+    ? role.some(
+        (r) => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin'
+      )
+    : typeof role === 'string' &&
+      (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin');
+
   const { openConfirmModal, ModalComponent } = useConfirm();
 
-  // Filters
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search, 500);
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
 
-  const [rejectOpen, setRejectOpen] = useState(false);
-  const [targetTopic, setTargetTopic] = useState(null);
-
-  // Query topics from backend with params
   const { data, isLoading } = useGetTopics({
     searchName: debouncedSearch || undefined,
     status: statusFilter === 'all' ? undefined : statusFilter,
@@ -70,6 +104,8 @@ const TopicListPage = () => {
 
   const topics = data?.data || [];
   const totalItems = data?.totalItems || 0;
+  const startItem = totalItems === 0 ? 0 : (page - 1) * pageSize + 1;
+  const endItem = Math.min(page * pageSize, totalItems);
 
   const deleteTopic = useDeleteTopic();
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
@@ -133,10 +169,8 @@ const TopicListPage = () => {
             );
             return;
           }
-
           await deleteTopicSectionsByTopicId.mutateAsync(topic.ID);
           await deleteTopic.mutateAsync(topic.ID);
-
           message.success('Topic and its TopicSections deleted successfully');
         } catch (error) {
           console.error(error);
@@ -170,21 +204,21 @@ const TopicListPage = () => {
 
   const columns = [
     {
-      title: 'Topic Name',
+      title: 'TOPIC NAME',
       dataIndex: 'Name',
       key: 'Name',
       ellipsis: true,
       render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
+        <span className='font-semibold text-[#111827]'>{text}</span>
       ),
     },
     {
-      title: 'Status',
+      title: 'STATUS',
       dataIndex: 'Status',
       key: 'Status',
+      width: 140,
       render: (_, record) => {
         const cfg = STATUS_CONFIG[record.Status] || {};
-
         const tagElement = (
           <Tag
             color={cfg.antColor}
@@ -193,7 +227,6 @@ const TopicListPage = () => {
             {cfg.label || record.Status}
           </Tag>
         );
-
         if (record.Status === 'rejected') {
           return (
             <AntTooltip
@@ -207,252 +240,312 @@ const TopicListPage = () => {
             </AntTooltip>
           );
         }
-
         return tagElement;
       },
     },
-
     {
-      title: 'Creation day',
+      title: 'CREATION DAY',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 150,
       render: (date) => (
-        <span className='text-gray-500 text-sm'>
+        <span className='text-[#637381]'>
           {new Date(date).toLocaleDateString()}
         </span>
       ),
     },
     {
-      title: 'Update date',
+      title: 'UPDATE DATE',
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      width: 150,
       render: (date) => (
-        <span className='text-gray-500 text-sm'>
+        <span className='text-[#637381]'>
           {new Date(date).toLocaleDateString()}
         </span>
       ),
     },
     {
-      title: 'Action',
+      title: 'ACTIONS',
       key: 'action',
       align: 'center',
-      // ellipsis: true,
+      width: 200,
       render: (_, record) => {
         const isSubmitted = record.Status === 'submited';
         const isApproved = record.Status === 'approved';
         const canModify = isSubmitted || isApproved;
-        
+
         return (
-          <Space size='middle'>
-            <Button
-              title='Review Topic'
-              type='text'
-              icon={<EyeOutlined />}
-              className='text-[#1890FF]'
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`view/${record.ID}`);
-              }}
-            />
+          <div className='flex items-center justify-center gap-2'>
+            <AntTooltip title='View'>
+              <button
+                className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  navigate(`view/${record.ID}`);
+                }}
+              >
+                <EyeOutlined style={{ fontSize: '18px', color: '#003087' }} />
+              </button>
+            </AntTooltip>
 
             {isSubmitted && isAdmin && (
               <>
-                <Button
-                  title='Approve Topic'
-                  type='text'
-                  icon={<CheckCircleOutlined />}
-                  className='text-[#52c41a]'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleApproveTopic(record);
-                  }}
-                />
-                <Button
-                  title='Reject Topic'
-                  type='text'
-                  icon={<CloseCircleOutlined />}
-                  className='text-[#FF4D4F]'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleRejectTopic(record);
-                  }}
-                />
+                <AntTooltip title='Approve'>
+                  <button
+                    className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleApproveTopic(record);
+                    }}
+                  >
+                    <CheckCircleOutlined
+                      style={{ fontSize: '18px', color: '#13C296' }}
+                    />
+                  </button>
+                </AntTooltip>
+                <AntTooltip title='Reject'>
+                  <button
+                    className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRejectTopic(record);
+                    }}
+                  >
+                    <CloseCircleOutlined
+                      style={{ fontSize: '18px', color: '#FF4D4F' }}
+                    />
+                  </button>
+                </AntTooltip>
               </>
             )}
 
             {!canModify && (
               <>
-                <Button
-                  title='Edit Topic'
-                  type='text'
-                  icon={<EditOutlined />}
-                  className='text-[#1890FF]'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditTopic(record);
-                  }}
-                />
-
-                <Button
-                  title='Delete Topic'
-                  type='text'
-                  icon={<DeleteOutlined />}
-                  className='text-[#FF4D4F]'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteTopic(record);
-                  }}
-                />
+                <AntTooltip title='Edit'>
+                  <button
+                    className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditTopic(record);
+                    }}
+                  >
+                    <EditOutlined
+                      style={{ fontSize: '18px', color: '#003087' }}
+                    />
+                  </button>
+                </AntTooltip>
+                <AntTooltip title='Delete'>
+                  <button
+                    className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeleteTopic(record);
+                    }}
+                  >
+                    <DeleteOutlined
+                      style={{ fontSize: '18px', color: '#FF4D4F' }}
+                    />
+                  </button>
+                </AntTooltip>
               </>
             )}
-            <PlayCircleOutlined
-              title='Do mock test'
-              type='link'
-              className='p-0 flex items-center cursor-pointer'
-              onClick={() => onStartHandler(record)}
-            />
-          </Space>
+
+            <AntTooltip title='Mock Test'>
+              <button
+                className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+                onClick={() => onStartHandler(record)}
+              >
+                <PlayCircleOutlined
+                  style={{ fontSize: '18px', color: '#003087' }}
+                />
+              </button>
+            </AntTooltip>
+          </div>
         );
       },
     },
   ];
 
   return (
-    <>
+    <div className='figma-page-container'>
       <ModalComponent />
-      
-      <HeaderInfo
-        title='Topic List'
-        subtitle='Manage and track all topics'
-        SubAction={
-          <Button
-            className='w-full p-5 bg-white text-black border border-gray-300 hover:!bg-gray-100 rounded-lg shadow-sm'
-            onClick={() => navigate('create')}
-          >
-            Create New Topic
-          </Button>
-        }
-      />
 
-      <div className='bg-gray-50 p-6'>
-        <div className='mx-auto space-y-6'>
-          {/* Summary Cards */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-amber-500 text-sm'>Submited</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.Submited}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center'>
-                  <ClockCircleOutlined className='text-gray-500' />
-                </div>
-              </div>
-            </Card>
-
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-emerald-500 text-sm'>Approved</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.approved}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center'>
-                  <CheckCircleOutlined className='text-emerald-500' />
-                </div>
-              </div>
-            </Card>
-
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-gray-500 text-sm'>Draft</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.Draft}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center'>
-                  <ExclamationCircleOutlined className='text-amber-500' />
-                </div>
-              </div>
-            </Card>
-
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-rose-500 text-sm'>Rejected</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.Rejected}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center'>
-                  <CloseCircleOutlined className='text-rose-500' />
-                </div>
-              </div>
-            </Card>
+      <div className='figma-content-wrapper'>
+        {/* Header */}
+        <div className='figma-header-section'>
+          <div>
+            <h1 className='figma-title'>Exam Management</h1>
+            <p className='figma-subtitle'>Manage and track all exam topics</p>
           </div>
+          <div className='flex items-center gap-3 pt-4'>
+            <Button
+              className='figma-primary-btn'
+              onClick={() => navigate('create')}
+              icon={<PlusOutlined />}
+            >
+              Create New Topic
+            </Button>
+          </div>
+        </div>
 
-          {/* Table + Filters */}
-          <Card className='shadow-sm border-none'>
-            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4'>
-              <Input
-                allowClear
-                className='sm:max-w-xs'
-                placeholder='Search topic name...'
-                prefix={<SearchOutlined />}
-                value={search}
-                maxLength={255}
-                onChange={(e) => {
-                  const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '');
+        {/* Status Summary Cards */}
+        <div className='grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6'>
+          {STATUS_CARDS.map((card) => (
+            <div
+              key={card.key}
+              className='figma-stat-card'
+              style={{ borderLeft: `4px solid ${card.color}` }}
+            >
+              <div className='flex items-center justify-between'>
+                <div>
+                  <p
+                    className='text-sm font-medium mb-1'
+                    style={{ color: card.color }}
+                  >
+                    {card.label}
+                  </p>
+                  <p className='text-2xl font-bold text-[#111827]'>
+                    {counts[card.key]}
+                  </p>
+                </div>
+                <div
+                  className='w-10 h-10 rounded-xl flex items-center justify-center'
+                  style={{ background: card.bg, color: card.color, fontSize: 20 }}
+                >
+                  {card.icon}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
 
-                  setPage(1);
-                  setSearch(sanitized);
-                }}
-              />
+        {/* Filters */}
+        <div className='figma-filter-bar'>
+          <div className='flex flex-wrap items-center gap-4'>
+            <Input
+              allowClear
+              placeholder='Search topic name...'
+              prefix={<SearchOutlined className='text-[#6B7280] mr-2' />}
+              value={search}
+              maxLength={255}
+              onChange={(e) => {
+                const sanitized = e.target.value.replace(
+                  /[^a-zA-Z0-9 ,.\-_:]/g,
+                  ''
+                );
+                setPage(1);
+                setSearch(sanitized);
+              }}
+              className='figma-search-input'
+            />
+            <Select
+              value={statusFilter}
+              onChange={(val) => {
+                setPage(1);
+                setStatusFilter(val);
+              }}
+              style={{ width: 180 }}
+              size='large'
+              className='figma-filter-select'
+            >
+              <Option value='all'>All Statuses</Option>
+              <Option value='submited'>Submitted</Option>
+              <Option value='draft'>Draft</Option>
+              <Option value='approved'>Approved</Option>
+              <Option value='rejected'>Rejected</Option>
+            </Select>
+          </div>
+        </div>
 
-              <Select
-                className='w-40'
-                value={statusFilter}
-                onChange={(val) => {
-                  setPage(1);
-                  setStatusFilter(val);
-                }}
-              >
-                <Option value='all'>All Statuses</Option>
-                <Option value='submited'>Submited</Option>
-                <Option value='draft'>Draft</Option>
-                <Option value='approved'>Approved</Option>
-                <Option value='rejected'>Rejected</Option>
-              </Select>
+        {/* Table */}
+        <div className='figma-table-card'>
+          <Table
+            rowKey='ID'
+            columns={columns}
+            dataSource={topics}
+            loading={isLoading}
+            pagination={false}
+            className='figma-table-overrides'
+            scroll={{ x: 800 }}
+            locale={{
+              emptyText: <Empty description='No topics found.' />,
+            }}
+          />
+        </div>
+
+        {/* Pagination */}
+        <div className='figma-pagination-wrapper'>
+          <div className='figma-pagination-box'>
+            <div className='figma-pagination-text whitespace-nowrap'>
+              {totalItems === 0
+                ? 'No entries found'
+                : `Showing ${String(startItem).padStart(2, '0')}-${String(endItem).padStart(2, '0')} of ${totalItems}`}
             </div>
 
-            <Table
-              rowKey='ID'
-              columns={columns}
-              dataSource={topics}
-              loading={isLoading}
-              pagination={{
-                current: page,
-                pageSize: pageSize,
-                total: totalItems,
-                showSizeChanger: true,
-                pageSizeOptions: ['5', '10', '20'],
-                onChange: (p, ps) => {
-                  setPage(p);
-                  setPageSize(ps);
-                },
-                position: ['bottomRight'],
-                showTotal: (total, range) => 
-                  `${range[0]}–${range[1]} of ${total} items`,
-              }}
-            />
-          </Card>
+            <div className='figma-pagination-nav-group'>
+              <Pagination
+                current={page}
+                pageSize={pageSize}
+                total={totalItems}
+                onChange={(p) => setPage(p)}
+                showSizeChanger={false}
+                itemRender={(pg, type, original) => {
+                  if (type === 'page') {
+                    const isActive = page === pg;
+                    return (
+                      <button
+                        className={`figma-page-btn ${isActive ? 'active' : ''}`}
+                      >
+                        {pg}
+                      </button>
+                    );
+                  }
+                  if (type === 'prev') {
+                    return (
+                      <button className='figma-symbol-btn' type='button'>
+                        {'\u2039'}
+                      </button>
+                    );
+                  }
+                  if (type === 'next') {
+                    return (
+                      <button className='figma-symbol-btn' type='button'>
+                        {'\u203A'}
+                      </button>
+                    );
+                  }
+                  if (type === 'jump-prev' || type === 'jump-next') {
+                    return (
+                      <span
+                        className='text-[#637381] px-1'
+                        style={{ fontSize: '16px', lineHeight: '25px' }}
+                      >
+                        ...
+                      </span>
+                    );
+                  }
+                  return original;
+                }}
+              />
+            </div>
+
+            <div className='figma-page-size-container'>
+              <Select
+                value={pageSize}
+                onChange={(val) => {
+                  setPageSize(val);
+                  setPage(1);
+                }}
+                bordered={false}
+                className='figma-page-size-select'
+                options={PAGE_SIZE_OPTIONS}
+              />
+            </div>
+          </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

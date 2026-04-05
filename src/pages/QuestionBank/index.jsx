@@ -3,11 +3,12 @@ import {
   Table,
   Button,
   Input,
-  Typography,
-  Pagination,
   Select,
   Tooltip,
   Modal,
+  Pagination,
+  Empty,
+  Dropdown,
 } from 'antd';
 import {
   SearchOutlined,
@@ -15,13 +16,12 @@ import {
   DeleteOutlined,
   EyeOutlined,
   ExclamationCircleFilled,
+  ReloadOutlined,
+  DownOutlined,
 } from '@ant-design/icons';
 import { useLocation, useNavigate } from 'react-router-dom';
-import dayjs from 'dayjs';
 
 import { useDeleteSection, useGetSections } from '@features/sections/hooks';
-
-const { Text, Title } = Typography;
 
 const SKILL_OPTIONS = [
   { value: '', label: 'All Skills' },
@@ -40,6 +40,13 @@ const validSkills = new Set([
   'GRAMMAR AND VOCABULARY',
 ]);
 
+const PAGE_SIZE_OPTIONS = [
+  { value: 5, label: '05 / pages' },
+  { value: 10, label: '10 / pages' },
+  { value: 20, label: '20 / pages' },
+  { value: 50, label: '50 / pages' },
+];
+
 const QuestionBank = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,7 +54,6 @@ const QuestionBank = () => {
   const queryParams = new URLSearchParams(location.search);
   const skillFromQuery = queryParams.get('skillName')?.trim().toUpperCase();
 
-  // --- Filter & pagination state ---
   const [selectedSkill, setSelectedSkill] = useState(
     validSkills.has(skillFromQuery) ? skillFromQuery : ''
   );
@@ -68,7 +74,6 @@ const QuestionBank = () => {
     }
   }, [skillFromQuery, selectedSkill]);
 
-  // --- API ---
   const sectionParams = useMemo(
     () => ({
       skillName: selectedSkill || undefined,
@@ -87,14 +92,12 @@ const QuestionBank = () => {
   const startItem = totalItems === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const endItem = Math.min(currentPage * pageSize, totalItems);
 
-  // --- Reset filters ---
   const handleResetFilters = () => {
     setSelectedSkill('');
     setSearchText('');
     setCurrentPage(1);
   };
 
-  // --- Delete ---
   const handleDeleteConfirm = () => {
     if (deleteTarget) {
       deleteSection(deleteTarget.ID);
@@ -111,96 +114,92 @@ const QuestionBank = () => {
     setDeleteModalOpen(true);
   };
 
-  // --- Table columns ---
+  const createMenuItems = [
+    { key: 'speaking', label: 'Speaking' },
+    { key: 'reading', label: 'Reading' },
+    { key: 'writing', label: 'Writing' },
+    { key: 'listening', label: 'Listening' },
+    { key: 'grammar', label: 'Grammar And Vocabulary' },
+  ];
+
+  const handleCreateClick = ({ key }) => {
+    navigate(`create/${key}`);
+  };
+
   const columns = [
     {
-      title: 'Topic',
+      title: 'SECTION NAME',
       dataIndex: 'Name',
       ellipsis: { showTitle: false },
       render: (text) => (
         <Tooltip title={text}>
-          <span className='font-semibold text-[#1F2937]'>{text}</span>
+          <span className='font-semibold text-[#111827]'>{text}</span>
         </Tooltip>
       ),
     },
     {
-      title: 'Skill',
-      dataIndex: 'Skill',
-      render: (_, record) => (
-        <span className='text-[#4B5563]'>{record?.Skill?.Name || '—'}</span>
-      ),
-    },
-    {
-      title: 'Type',
-      dataIndex: 'SubContent',
-      ellipsis: { showTitle: false },
-      render: (text) => (
-        <span className='text-[#4B5563]'>{text || '—'}</span>
-      ),
-    },
-    {
-      title: 'Question Text',
+      title: 'DESCRIPTION',
       dataIndex: 'Description',
       ellipsis: { showTitle: false },
       render: (text) => (
         <Tooltip title={text}>
-          <span className='text-[#4B5563]'>{text || '—'}</span>
+          <span className='text-[#637381]'>{text || '—'}</span>
         </Tooltip>
       ),
     },
     {
-      title: 'Last Updated',
-      dataIndex: 'updatedAt',
-      width: 180,
-      render: (text) =>
-        text ? (
-          <span className='text-[#4B5563]'>
-            {dayjs(text).format('HH:mm - DD/MM/YYYY')}
-          </span>
-        ) : (
-          '—'
-        ),
+      title: 'SKILL',
+      dataIndex: 'Skill',
+      width: 200,
+      render: (_, record) => (
+        <span className='text-[#637381]'>{record?.Skill?.Name || '—'}</span>
+      ),
     },
     {
-      title: 'Actions',
+      title: 'ACTIONS',
       key: 'action',
-      width: 120,
+      width: 140,
       align: 'center',
       render: (_, record) => (
-        <div className='flex items-center justify-center gap-2'>
-          <Button
-            type='text'
-            className='!text-blue-600 hover:!bg-blue-50'
-            icon={<EyeOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`${record.ID}?skillName=${record.Skill.Name}`);
-            }}
-          />
-          <Button
-            type='text'
-            className='!text-green-600 hover:!bg-green-50'
-            icon={<EditOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
-            }}
-          />
-          <Button
-            type='text'
-            className='!text-red-500 hover:!bg-red-50'
-            icon={<DeleteOutlined />}
-            onClick={(e) => {
-              e.stopPropagation();
-              openDeleteModal(record);
-            }}
-          />
+        <div className='flex items-center justify-center gap-3'>
+          <Tooltip title='View'>
+            <button
+              className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`${record.ID}?skillName=${record.Skill.Name}`);
+              }}
+            >
+              <EyeOutlined style={{ fontSize: '20px', color: '#003087' }} />
+            </button>
+          </Tooltip>
+          <Tooltip title='Edit'>
+            <button
+              className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`update/${record.ID}?skillName=${record.Skill.Name}`);
+              }}
+            >
+              <EditOutlined style={{ fontSize: '20px', color: '#13C296' }} />
+            </button>
+          </Tooltip>
+          <Tooltip title='Delete'>
+            <button
+              className='cursor-pointer border-none bg-transparent hover:opacity-70 transition-all'
+              onClick={(e) => {
+                e.stopPropagation();
+                openDeleteModal(record);
+              }}
+            >
+              <DeleteOutlined style={{ fontSize: '20px', color: '#FF4D4F' }} />
+            </button>
+          </Tooltip>
         </div>
       ),
     },
   ];
 
-  // --- Row selection ---
   const rowSelection = {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
@@ -209,89 +208,81 @@ const QuestionBank = () => {
   const deleteCount = deleteTarget ? 1 : selectedRowKeys.length;
 
   return (
-    <div className='w-[90%] max-w-[1476px] mx-auto py-8 space-y-6'>
-      {/* ===== HEADER ===== */}
-      <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
-        <div>
-          <Title level={3} className='!m-0 !font-bold !text-[#111928]'>
-            Question Bank
-          </Title>
-          <Text className='text-[#6B7280] text-[16px]'>
-            Manage and organize all your exam questions
-          </Text>
-        </div>
-        <Button
-          type='primary'
-          size='large'
-          onClick={() => navigate('create/speaking')}
-          className='!rounded-full !bg-[#003087] hover:!bg-[#002060] !border-none !font-medium !h-[48px] !px-8'
-        >
-          Create New Question
-        </Button>
-      </div>
-
-      {/* ===== FILTERS ===== */}
-      <div className='bg-white rounded-lg border border-gray-200 p-6'>
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 items-end'>
+    <div className='figma-page-container'>
+      <div className='figma-content-wrapper'>
+        {/* Header */}
+        <div className='figma-header-section'>
           <div>
-            <Text className='block text-[#374151] font-medium mb-2'>Skill</Text>
+            <h1 className='figma-title'>Question Bank</h1>
+            <p className='figma-subtitle'>
+              Manage and organize all your exam questions
+            </p>
+          </div>
+          <div className='flex items-center gap-3 pt-4'>
+            <Dropdown
+              menu={{ items: createMenuItems, onClick: handleCreateClick }}
+              trigger={['click']}
+              placement='bottomRight'
+            >
+              <Button className='figma-outline-btn'>
+                Create Questions <DownOutlined />
+              </Button>
+            </Dropdown>
+          </div>
+        </div>
+
+        {/* Filters */}
+        <div className='figma-filter-bar'>
+          <div className='flex flex-wrap items-center gap-4'>
             <Select
               value={selectedSkill}
               onChange={setSelectedSkill}
               options={SKILL_OPTIONS}
-              className='w-full'
+              className='figma-filter-select'
+              style={{ width: 200 }}
               size='large'
             />
-          </div>
-          <div>
-            <Text className='block text-[#374151] font-medium mb-2'>Search</Text>
             <Input
               maxLength={255}
               size='large'
               placeholder='Search question...'
-              prefix={<SearchOutlined className='text-gray-400' />}
+              prefix={<SearchOutlined className='text-[#6B7280] mr-2' />}
               value={searchText}
               onChange={(e) => {
                 const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '');
                 setSearchText(sanitized);
               }}
+              className='figma-search-input'
+              allowClear
             />
-          </div>
-          <div className='flex items-end'>
             <Button
-              size='large'
+              className='figma-outline-btn'
               onClick={handleResetFilters}
-              className='!rounded-full !border-gray-300 !text-[#374151] !font-medium !h-[40px] !px-6'
+              icon={<ReloadOutlined />}
             >
               Reset Filters
             </Button>
           </div>
-        </div>
-      </div>
 
-      {/* ===== TABLE SECTION ===== */}
-      <div className='space-y-4'>
-        {/* Selection info + Delete Selected */}
-        <div className='flex justify-between items-center'>
-          <Text className='text-[#4B5563] text-[14px]'>
-            {selectedRowKeys.length > 0
-              ? `${selectedRowKeys.length} question${selectedRowKeys.length > 1 ? 's' : ''} selected`
-              : ''}
-          </Text>
           {selectedRowKeys.length > 0 && (
-            <Button
-              danger
-              size='large'
-              onClick={() => openDeleteModal(null)}
-              className='!rounded-full !font-medium !h-[44px] !px-6'
-            >
-              Delete Selected
-            </Button>
+            <div className='flex items-center gap-4'>
+              <span className='text-[#637381] font-medium'>
+                {selectedRowKeys.length} selected
+              </span>
+              <Button
+                danger
+                className='figma-outline-btn !border-[#FF4D4F] !text-[#FF4D4F]'
+                onClick={() => openDeleteModal(null)}
+                icon={<DeleteOutlined />}
+              >
+                Delete Selected
+              </Button>
+            </div>
           )}
         </div>
 
         {/* Table */}
-        <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
+        <div className='figma-table-card'>
           <Table
             rowKey='ID'
             columns={columns}
@@ -299,7 +290,7 @@ const QuestionBank = () => {
             loading={isLoading}
             pagination={false}
             rowSelection={rowSelection}
-            rowClassName='hover:bg-gray-50 cursor-pointer'
+            className='figma-table-overrides'
             scroll={{ x: 900 }}
             onRow={(record) => ({
               onClick: () => {
@@ -310,48 +301,72 @@ const QuestionBank = () => {
                 );
               },
             })}
+            locale={{
+              emptyText: <Empty description='No questions found.' />,
+            }}
           />
         </div>
 
         {/* Pagination */}
-        <div className='flex flex-col sm:flex-row justify-between items-center gap-4 pt-2'>
-          <Text className='text-[#6B7280] text-[14px]'>
-            {totalItems === 0
-              ? 'No data found'
-              : `Showing ${startItem}-${endItem} of ${totalItems} questions`}
-          </Text>
-          <Pagination
-            current={currentPage}
-            total={totalItems}
-            pageSize={pageSize}
-            onChange={(page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            }}
-            itemRender={(page, type, original) => {
-              if (type === 'page') {
-                const isActive = currentPage === page;
-                return (
-                  <button
-                    className={`cursor-pointer min-w-[36px] h-[36px] flex items-center justify-center rounded-md border transition-all
-                      ${
-                        isActive
-                          ? 'bg-[#003087] text-white border-[#003087]'
-                          : 'bg-white text-gray-700 border-gray-300 hover:border-[#003087] hover:text-[#003087]'
-                      }
-                    `}
-                  >
-                    {page}
-                  </button>
-                );
-              }
-              return original;
-            }}
-          />
+        <div className='figma-pagination-wrapper'>
+          <div className='figma-pagination-box'>
+            <div className='figma-pagination-text whitespace-nowrap'>
+              {totalItems === 0
+                ? 'No entries found'
+                : `Showing ${String(startItem).padStart(2, '0')}-${String(endItem).padStart(2, '0')} of ${totalItems}`}
+            </div>
+
+            <div className='figma-pagination-nav-group'>
+              <Pagination
+                current={currentPage}
+                pageSize={pageSize}
+                total={totalItems}
+                onChange={(page) => setCurrentPage(page)}
+                showSizeChanger={false}
+                itemRender={(page, type, original) => {
+                  if (type === 'page') {
+                    const isActive = currentPage === page;
+                    return (
+                      <button className={`figma-page-btn ${isActive ? 'active' : ''}`}>
+                        {page}
+                      </button>
+                    );
+                  }
+                  if (type === 'prev') {
+                    return <button className='figma-symbol-btn' type='button'>{'\u2039'}</button>;
+                  }
+                  if (type === 'next') {
+                    return <button className='figma-symbol-btn' type='button'>{'\u203A'}</button>;
+                  }
+                  if (type === 'jump-prev' || type === 'jump-next') {
+                    return (
+                      <span className='text-[#637381] px-1' style={{ fontSize: '16px', lineHeight: '25px' }}>
+                        ...
+                      </span>
+                    );
+                  }
+                  return original;
+                }}
+              />
+            </div>
+
+            <div className='figma-page-size-container'>
+              <Select
+                value={pageSize}
+                onChange={(val) => {
+                  setPageSize(val);
+                  setCurrentPage(1);
+                }}
+                bordered={false}
+                className='figma-page-size-select'
+                options={PAGE_SIZE_OPTIONS}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* ===== DELETE MODAL ===== */}
+      {/* Delete Modal */}
       <Modal
         open={deleteModalOpen}
         onCancel={() => {
@@ -363,36 +378,32 @@ const QuestionBank = () => {
         closable={false}
         width={480}
       >
-        <div className='flex flex-col items-center text-center py-4'>
+        <div className='flex flex-col items-center text-center py-6'>
           <div className='w-16 h-16 rounded-full bg-red-50 flex items-center justify-center mb-4'>
             <ExclamationCircleFilled className='text-red-500 text-3xl' />
           </div>
-          <Title level={4} className='!m-0 !mb-2'>
+          <h3 className='text-xl font-bold text-[#111827] mb-2'>
             Delete Question
-          </Title>
-          <Text className='text-[#6B7280] mb-6'>
+          </h3>
+          <p className='text-[#637381] mb-6'>
             You are about to delete {deleteCount} question
             {deleteCount > 1 ? 's' : ''}. This action cannot be undone.
             <br />
             Do you want to continue?
-          </Text>
+          </p>
           <div className='flex gap-4'>
             <Button
-              size='large'
+              className='figma-outline-btn'
               onClick={() => {
                 setDeleteModalOpen(false);
                 setDeleteTarget(null);
               }}
-              className='!rounded-full !min-w-[120px] !h-[44px]'
             >
               Cancel
             </Button>
             <Button
-              type='primary'
-              danger
-              size='large'
+              className='figma-primary-btn !bg-[#FF4D4F]'
               onClick={handleDeleteConfirm}
-              className='!rounded-full !min-w-[160px] !h-[44px] !font-medium'
             >
               Delete Question
             </Button>
