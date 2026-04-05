@@ -54,10 +54,13 @@ const Details = ({ type, isLoading, data }) => {
     { label: "End time", value: formatDateTime(data.endTime), bold: true },
   ];
 
-  const studentItems = [
-    { label: "Student Name", value: `${data.firstName} ${data.lastName}` },
+  const studentCol1 = [
+    { label: "Student name", value: `${data.firstName} ${data.lastName}` },
     { label: "Student ID", value: data.studentCode },
-    { label: "Class", value: data.class },
+    { label: "Class name", value: data.class },
+  ];
+
+  const studentCol2 = [
     { label: "Email", value: data.email },
     { label: "Phone", value: data.phone },
   ];
@@ -104,17 +107,31 @@ const Details = ({ type, isLoading, data }) => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-y-6 md:grid-cols-2 lg:gap-x-40">
-            {studentItems.map((item, index) => (
-              <div key={index} className="flex items-center">
-                <span className="w-[200px] text-[16px] text-[#374151] font-normal">
-                  {item.label}
-                </span>
-                <div className={`text-[16px] text-[#1F2A37] font-medium`}>
-                  {item.value || "Not Available"}
+          <div className="flex flex-col md:flex-row justify-between lg:gap-x-40">
+            <div className="flex flex-col gap-y-6 flex-1">
+              {studentCol1.map((item, index) => (
+                <div key={index} className="flex items-center">
+                  <span className="w-[150px] text-[16px] text-[#374151] font-normal">
+                    {item.label}
+                  </span>
+                  <div className="text-[16px] text-[#1F2A37] font-semibold">
+                    {item.value || "Not Available"}
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
+            <div className="flex flex-col gap-y-6 flex-1 mt-6 md:mt-0">
+              {studentCol2.map((item, index) => (
+                <div key={index} className="flex items-center">
+                  <span className="w-[150px] text-[16px] text-[#374151] font-normal">
+                    {item.label}
+                  </span>
+                  <div className="text-[16px] text-[#1F2A37] font-semibold">
+                    {item.value || "Not Available"}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

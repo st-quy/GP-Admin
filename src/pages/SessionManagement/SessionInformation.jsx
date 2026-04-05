@@ -182,7 +182,7 @@ const SessionInformation = ({ type }) => {
               ) : (
                 <div className="mt-8">
                   <SearchInput
-                    placeholder="Search by name, level"
+                    placeholder="Search by session name"
                     value={searchKeyword}
                     onSearchChange={onSearchChange}
                     isFigmaRedesign={true}
