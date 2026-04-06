@@ -1,5 +1,5 @@
 import React from "react";
-import { Card, Spin, Tag, Typography, Descriptions, Divider } from "antd";
+import { Spin, Tag, Typography } from "antd";
 import { TableType } from "@features/session/constant/TableEnum";
 
 const { Text } = Typography;
@@ -41,51 +41,28 @@ const Details = ({ type, isLoading, data }) => {
     });
   };
 
-  const items =
-    type === TableType.SESSION
-      ? [
-          {
-            key: "1",
-            label: "Session Name",
-            children: data.sessionName || "Not Available",
-          },
-          {
-            key: "2",
-            label: "Session Key",
-            children: data.sessionKey || "Not Available",
-          },
-          {
-            key: "3",
-            label: "Participants",
-            children: data.SessionParticipants?.length || "0",
-          },
-          { key: "4", label: "Status", children: statusTag(data.status) },
-          {
-            key: "5",
-            label: "Start Time",
-            children: formatDateTime(data.startTime),
-          },
-          {
-            key: "6",
-            label: "End Time",
-            children: formatDateTime(data.endTime),
-          },
-        ]
-      : [
-          {
-            key: "1",
-            label: "Student Name",
-            children: `${data.firstName} ${data.lastName}` || "Not Available",
-          },
-          {
-            key: "2",
-            label: "Student ID",
-            children: data.studentCode || "Not Available",
-          },
-          { key: "3", label: "Class", children: data.class || "Not Available" },
-          { key: "4", label: "Email", children: data.email || "Not Available" },
-          { key: "5", label: "Phone", children: data.phone || "Not Available" },
-        ];
+  const col1 = [
+    { label: "Session name", value: data.sessionName, bold: true },
+    { label: "Number of participants", value: data.SessionParticipants?.length || "0", bold: true },
+    { label: "Start time", value: formatDateTime(data.startTime), bold: true },
+  ];
+
+  const col2 = [
+    { label: "Session key", value: data.sessionKey, bold: true },
+    { label: "Status", value: statusTag(data.status), isTag: true },
+    { label: "End time", value: formatDateTime(data.endTime), bold: true },
+  ];
+
+  const studentCol1 = [
+    { label: "Student name", value: `${data.firstName} ${data.lastName}` },
+    { label: "Student ID", value: data.studentCode },
+    { label: "Class name", value: data.class },
+  ];
+
+  const studentCol2 = [
+    { label: "Email", value: data.email },
+    { label: "Phone", value: data.phone },
+  ];
 
   return (
     <div>
@@ -99,26 +76,65 @@ const Details = ({ type, isLoading, data }) => {
           ? "Track student request and participation."
           : "View student details."}
       </p>
-      <div className="w-full">
-        <Card className="w-full h-full px-4 py-0 md:px-14 md:py-6 shadow-md mt-8 flex justify-center">
-          <Descriptions
-            size="small"
-            column={{ xs: 1, sm: 1, md: 1, lg: 2, xl: 2 }}
-            items={items}
-            labelStyle={{
-              width: "130px",
-              fontWeight: "bold",
-              padding: "5px",
-            }}
-            contentStyle={{
-              width: "200px",
-              fontWeight: "bold",
-              padding: "5px",
-            }}
-            className="max-w-[400px] md:max-w-full flex justify-center"
-          />
-        </Card>
-        <Divider className="mt-16" />
+      
+      <div className="mt-8 w-full rounded-lg bg-white p-10 shadow-[0px_4px_4px_rgba(0,0,0,0.1)]">
+        {type === TableType.SESSION ? (
+          <div className="flex flex-col md:flex-row justify-between lg:gap-x-40">
+            {/* Column 1 */}
+            <div className="flex flex-col gap-y-6 flex-1">
+              {col1.map((item, index) => (
+                <div key={index} className="flex items-center">
+                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
+                    {item.label}
+                  </span>
+                  <div className={`text-[16px] text-[#1F2A37] ${item.bold ? 'font-semibold' : 'font-medium'}`}>
+                    {item.value || "Not Available"}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Column 2 */}
+            <div className="flex flex-col gap-y-6 flex-1">
+              {col2.map((item, index) => (
+                <div key={index} className="flex items-center">
+                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
+                    {item.label}
+                  </span>
+                  <div className={`text-[16px] text-[#1F2A37] ${item.bold ? 'font-semibold' : 'font-medium'}`}>
+                    {item.value || "Not Available"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-col md:flex-row justify-between lg:gap-x-40">
+            <div className="flex flex-col gap-y-6 flex-1">
+              {studentCol1.map((item, index) => (
+                <div key={index} className="flex items-center">
+                  <span className="w-[150px] text-[16px] text-[#374151] font-normal">
+                    {item.label}
+                  </span>
+                  <div className="text-[16px] text-[#1F2A37] font-semibold">
+                    {item.value || "Not Available"}
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col gap-y-6 flex-1 mt-6 md:mt-0">
+              {studentCol2.map((item, index) => (
+                <div key={index} className="flex items-center">
+                  <span className="w-[150px] text-[16px] text-[#374151] font-normal">
+                    {item.label}
+                  </span>
+                  <div className="text-[16px] text-[#1F2A37] font-semibold">
+                    {item.value || "Not Available"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

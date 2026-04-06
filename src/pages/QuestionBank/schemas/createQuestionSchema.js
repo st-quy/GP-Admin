@@ -1,51 +1,66 @@
 // schema.js
 import * as yup from 'yup';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  QUESTION_INPUT_REGEX,
+} from '@shared/lib/questionInput';
+
+const questionText = (label) =>
+  yup
+    .string()
+    .trim()
+    .required(`${label} is required`)
+    .max(
+      MAX_QUESTION_INPUT_LENGTH,
+      `${label} must be at most ${MAX_QUESTION_INPUT_LENGTH} characters`
+    )
+    .matches(QUESTION_INPUT_REGEX, `${label} contains invalid characters`);
 
 export const createSpeakingSchema = yup.object().shape({
   parts: yup.object().shape({
     part1: yup.object().shape({
-      name: yup.string().trim().required('Part 1 name is required'),
+      name: questionText('Part 1 name'),
       questions: yup
         .array()
         .of(
           yup.object().shape({
-            value: yup.string().trim().required('Question is required'),
+            value: questionText('Question'),
           })
         )
         .min(3, 'Part 1 requires at least 3 questions'),
     }),
 
     part2: yup.object().shape({
-      name: yup.string().trim().required('Part 2 name is required'),
+      name: questionText('Part 2 name'),
       questions: yup
         .array()
         .of(
           yup.object().shape({
-            value: yup.string().trim().required('Question is required'),
+            value: questionText('Question'),
           })
         )
         .min(3, 'Part 2 requires at least 3 questions'),
     }),
 
     part3: yup.object().shape({
-      name: yup.string().trim().required('Part 3 name is required'),
+      name: questionText('Part 3 name'),
       questions: yup
         .array()
         .of(
           yup.object().shape({
-            value: yup.string().trim().required('Question is required'),
+            value: questionText('Question'),
           })
         )
         .min(3, 'Part 3 requires at least 3 questions'),
     }),
 
     part4: yup.object().shape({
-      name: yup.string().trim().required('Part 4 name is required'),
+      name: questionText('Part 4 name'),
       questions: yup
         .array()
         .of(
           yup.object().shape({
-            value: yup.string().trim().required('Question is required'),
+            value: questionText('Question'),
           })
         )
         .min(3, 'Part 4 requires at least 3 questions'),

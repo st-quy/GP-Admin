@@ -1,6 +1,5 @@
 // @ts-nocheck
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import HeaderInfo from '@app/components/HeaderInfo';
 import {
     AudioOutlined,
     ReadOutlined,
@@ -10,7 +9,11 @@ import {
     HolderOutlined,
     LeftOutlined,
     EyeOutlined,
-    SwapOutlined
+    SoundOutlined,
+    FormOutlined,
+    InfoCircleOutlined,
+    ArrowRightOutlined,
+    SwapOutlined,
 } from "@ant-design/icons";
 import {
     Card,
@@ -24,11 +27,11 @@ import {
     DatePicker,
     Modal,
     Spin,
-    Layout,
     Row,
     Col,
+    ConfigProvider,
     InputNumber,
-    Switch
+    Switch,
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
@@ -60,14 +63,13 @@ const SortableQuestionItem = ({ id, children }) => {
 
 const { Text, Title } = Typography;
 const { RangePicker } = DatePicker;
-const { Content } = Layout;
 
 const SKILL_TABS = [
     { key: "SPEAKING", label: "Speaking", icon: <AudioOutlined /> },
-    { key: "LISTENING", label: "Listening", icon: <CustomerServiceOutlined /> },
+    { key: "LISTENING", label: "Listening", icon: <SoundOutlined /> },
     { key: "GRAMMAR AND VOCABULARY", label: "Grammar & Vocabulary", icon: <BookOutlined /> },
     { key: "READING", label: "Reading", icon: <ReadOutlined /> },
-    { key: "WRITING", label: "Writing", icon: <EditOutlined /> },
+    { key: "WRITING", label: "Writing", icon: <FormOutlined /> },
 ];
 
 const CreateExamPage = () => {
@@ -103,7 +105,10 @@ const CreateExamPage = () => {
     const { mutateAsync: updateTopicSection } = useUpdateTopicSection();
     const { role, user } = useSelector((state) => state.auth);
 
-    // Robust check for admin role
+    useEffect(() => {
+        setOpenModal(false);
+    }, [location.key]);
+
     const isAdmin = Array.isArray(role)
         ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
         : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
@@ -111,7 +116,7 @@ const CreateExamPage = () => {
     const handleApprove = async () => {
         openConfirmModal({
             title: 'Approve Exam',
-            message: `Are you sure you want to approve this exam? This will make it available for students.`,
+            message: `Are you sure you want to approve this exam? This will make the exam available for students.`,
             okText: 'Approve',
             okButtonColor: '#52c41a',
             onConfirm: async () => {
@@ -156,8 +161,115 @@ const CreateExamPage = () => {
         }
     }, [isDirty, isViewMode, navigate]);
 
+    const handleSaveExam = async () => {
+        try {
+            const values = await form.validateFields(['name', 'duration']);
+            const finalScores = { ...questionScores };
+            instructions.forEach(({ skill, section }) => {
+                const sectionQuestions = [];
+                (section.Parts || []).forEach(p => {
+                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
+                });
+                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
+                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
+                if (total > maxAllowed) {
+                    const ratio = maxAllowed / total;
+                    sectionQuestions.forEach(qid => {
+                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
+                    });
+                }
+            });
 
+            const topicPayload = { 
+                Name: values.name.trim(), 
+                Status: 'draft',
+                Duration: values.duration,
+                ShuffleQuestions,
+                ShuffleAnswers
+            };
 
+            let topicResponse;
+            if (topicId) {
+                topicResponse = await updateTopic({ id: topicId, data: topicPayload });
+                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
+                await updateTopicSection({ 
+                    topicId: savedTopicId, 
+                    data: { sectionIds: selectedParts, scoreConfig: finalScores } 
+                });
+            } else {
+                topicResponse = await createExam(topicPayload);
+                const savedTopicId = topicResponse.ID || topicResponse._ID;
+                if (!savedTopicId) return message.error("Cannot get topic ID");
+                await updateTopicSection({
+                    topicId: savedTopicId,
+                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
+                });
+            }
+            message.success("Topic saved successfully!");
+            setIsDirty(false);
+            navigate("/exam");
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to save topic");
+        }
+    };
+
+    const handleSubmitExam = async () => {
+        if (instructions.length < 5) {
+            message.warning("Please select all 5 skills before submitting");
+            return;
+        }
+        try {
+            const values = await form.validateFields();
+            const finalScores = { ...questionScores };
+            instructions.forEach(({ skill, section }) => {
+                const sectionQuestions = [];
+                (section.Parts || []).forEach(p => {
+                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
+                });
+                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
+                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
+                if (total > maxAllowed) {
+                    const ratio = maxAllowed / total;
+                    sectionQuestions.forEach(qid => {
+                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
+                    });
+                }
+            });
+
+            const topicPayload = { 
+                Name: values.name.trim(), 
+                Status: 'submited',
+                Duration: values.duration,
+                ShuffleQuestions,
+                ShuffleAnswers
+            };
+
+            let topicResponse;
+            if (topicId) {
+                topicResponse = await updateTopic({ id: topicId, data: topicPayload });
+                const savedTopicId = topicResponse.ID || topicResponse._ID || topicId;
+                await updateTopicSection({ 
+                    topicId: savedTopicId, 
+                    data: { sectionIds: selectedParts, scoreConfig: finalScores } 
+                });
+            } else {
+                topicResponse = await createExam(topicPayload);
+                const savedTopicId = topicResponse.ID || topicResponse._ID;
+                if (!savedTopicId) return message.error("Cannot get topic ID");
+                await updateTopicSection({
+                    topicId: savedTopicId,
+                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
+                });
+            }
+            message.success("Topic submitted successfully!");
+            setIsDirty(false);
+            navigate("/exam");
+        } catch (error) {
+            console.error(error);
+            message.error("Failed to submit topic");
+        }
+    };
 
     const handlePartSelect = (sections) => {
         setIsDirty(true);
@@ -213,90 +325,6 @@ const CreateExamPage = () => {
         setPreviewOpen(true);
     };
 
-    const handleSaveExam = async () => {
-        try {
-            const values = form.getFieldsValue();
-            if (!values.name || !values.name.trim()) return message.error("Exam name is required");
-
-            const finalScores = { ...questionScores };
-            instructions.forEach(({ skill, section }) => {
-                const sectionQuestions = [];
-                (section.Parts || []).forEach(p => {
-                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
-                });
-                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
-                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
-                if (total > maxAllowed) {
-                    const ratio = maxAllowed / total;
-                    sectionQuestions.forEach(qid => {
-                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
-                    });
-                }
-            });
-
-            let topicResponse;
-            if (topicId) {
-                topicResponse = await updateTopic({
-                    id: topicId,
-                    data: { Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
-                });
-                await updateTopicSection({
-                    topicId: topicResponse.ID || topicId,
-                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
-                });
-            } else {
-                topicResponse = await createExam({
-                    Name: values.name.trim(), Status: 'draft', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers
-                });
-                await updateTopicSection({
-                    topicId: topicResponse.ID,
-                    data: { sectionIds: selectedParts, scoreConfig: finalScores }
-                });
-            }
-            setIsDirty(false);
-            message.success("Topic saved successfully!");
-            navigate("/exam");
-        } catch (error) {
-            message.error("Failed to save topic");
-        }
-    };
-
-    const handleSubmitExam = async () => {
-        if (instructions.length < 5) return message.warning("Please select all 5 skills before submitting");
-        try {
-            const values = form.getFieldsValue();
-            const finalScores = { ...questionScores };
-            instructions.forEach(({ skill, section }) => {
-                const sectionQuestions = [];
-                (section.Parts || []).forEach(p => {
-                    (p.Questions || []).forEach(q => sectionQuestions.push(q.ID));
-                });
-                const total = sectionQuestions.reduce((acc, qid) => acc + (finalScores[qid] || 0), 0);
-                const maxAllowed = ["SPEAKING", "WRITING"].includes(skill) ? 50 : 20;
-                if (total > maxAllowed) {
-                    const ratio = maxAllowed / total;
-                    sectionQuestions.forEach(qid => {
-                        if (finalScores[qid]) finalScores[qid] = parseFloat((finalScores[qid] * ratio).toFixed(2));
-                    });
-                }
-            });
-
-            await updateTopic({
-                id: topicId,
-                data: { Name: values.name.trim(), Status: 'submited', Duration: values.duration || null, ShuffleQuestions, ShuffleAnswers }
-            });
-            await updateTopicSection({
-                topicId,
-                data: { sectionIds: selectedParts, scoreConfig: finalScores }
-            });
-            setIsDirty(false);
-            message.success("Topic submitted successfully!");
-            navigate("/exam");
-        } catch (error) {
-            message.error("Failed to submit topic");
-        }
-    };
-
     const handleScoreChange = (questionId, score) => {
         setQuestionScores(prev => ({ ...prev, [questionId]: score }));
         setIsDirty(true);
@@ -313,73 +341,140 @@ const CreateExamPage = () => {
         setLeaveConfirmOpen(false);
     };
 
-    const renderInstructionContent = () => {
-        const found = instructions.find((i) => i.skill === selectedSkill);
+    const onNameChange = (e) => {
+        let value = e.target.value;
+        
+        if (/[^a-zA-Z0-9\s]/.test(value)) {
+            message.warning('Special characters and emojis are not allowed in exam name.');
+            value = value.replace(/[^a-zA-Z0-9\s]/g, '');
+        }
+
+        if (/\s{2,}/.test(value)) {
+            message.info('Multiple spaces are not allowed; collapsed to a single space.');
+            value = value.replace(/\s{2,}/g, ' ');
+        }
+
+        if (value.length > 50) {
+            message.error('Exam name limit reached (max 50 characters).');
+            value = value.slice(0, 50);
+        }
+
+        value = value.replace(/^\s+/, '');
+        form.setFieldsValue({ name: value });
+        setIsDirty(true);
+    };
+
+    const onDurationChange = (e) => {
+        let value = e.target.value;
+        
+        if (/[^0-9]/.test(value)) {
+            message.warning('Only numbers are allowed for duration.');
+            value = value.replace(/[^0-9]/g, '');
+        }
+
+        if (value.length > 4) {
+            message.error('Max duration limit reached (9999 minutes).');
+            value = value.slice(0, 4);
+        }
+
+        form.setFieldsValue({ duration: value });
+        setIsDirty(true);
+    };
+
+    const renderSelectedSectionUI = () => {
+        const found = instructions.find(ins => ins.skill === selectedSkill);
         if (!found) {
             return (
-                <div style={{ width: "100%", height: 180, border: "2px dashed #D1D5DB", borderRadius: 12, display: "flex", justifyContent: "center", alignItems: "center", color: "#9CA3AF", fontSize: 16, fontWeight: 500 }}>
-                    + Instruction
+                <div className="w-full h-[158px] border-[1px] border-dashed border-[#D1D5DB] rounded-lg flex flex-col items-center justify-center text-[#9CA3AF] cursor-pointer hover:bg-gray-50 transition-all gap-2"
+                     onClick={() => { if (!isViewMode) setOpenModal(true) }}>
+                    <span className="text-[27px] font-normal leading-[33px]">+</span>
+                    <span className="text-[21px] font-normal leading-[25px]">Instruction</span>
                 </div>
             );
         }
         const { section } = found;
         return (
-            <div style={{ width: "100%" }}>
-                <Card style={{ border: "1px solid #E5E7EB", borderRadius: 12, background: "#FAFAFA" }} bodyStyle={{ padding: 16 }}>
-                    <Text strong style={{ fontSize: 16 }}>{section.Name}</Text>
-                    <br />
-                    <Text type="secondary">{section.Description}</Text>
-                    <div style={{ marginTop: 16 }}>
+            <div className="w-full">
+                <Card 
+                    className="border-[1px] border-[#E5E7EB] rounded-lg bg-[#FAFAFA]" 
+                    bodyStyle={{ padding: 20 }}
+                >
+                    <div className="flex justify-between items-center mb-4">
+                        <Text className="text-[18px] font-semibold text-[#111827]">{section.Name}</Text>
+                        {!isViewMode && (
+                            <Button 
+                                type="link" 
+                                danger 
+                                onClick={(e) => { e.stopPropagation(); handlePartSelect([]); }}
+                                className="font-medium"
+                            >
+                                Remove Section
+                            </Button>
+                        )}
+                    </div>
+                    <Text className="text-gray-500 mb-6 block">{section.Description}</Text>
+                    
+                    <div className="mt-6 space-y-4">
                         {(section.Parts || []).map((part) => (
-                            <div key={part.ID} style={{ marginBottom: 12, padding: 12, border: "1px solid #E5E7EB", borderRadius: 8, background: "white" }}>
-                                <Text strong>{part.Content}</Text>
+                            <div key={part.ID} className="p-4 border-[1px] border-[#E5E7EB] rounded-lg bg-white shadow-sm">
+                                <Text className="font-bold text-[#111827] block mb-2">{part.Content}</Text>
                                 {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                    <>
-                                        <br />
-                                        <Text type="secondary">{part.SubContent}</Text>
-                                    </>
+                                    <Text className="text-gray-400 text-sm block mb-4">{part.SubContent}</Text>
                                 )}
-                                {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                    <div style={{ marginTop: 8 }}>
-                                        <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={(event) => {
-                                            if (isViewMode) return;
-                                            const { active, over } = event;
-                                            if (!over || active.id === over.id) return;
-                                            const questions = [...(part.Questions || [])];
-                                            const oldIdx = questions.findIndex(q => q.ID === active.id);
-                                            const newIdx = questions.findIndex(q => q.ID === over.id);
-                                            if (oldIdx === -1 || newIdx === -1) return;
-                                            const [moved] = questions.splice(oldIdx, 1);
-                                            questions.splice(newIdx, 0, moved);
-                                            setInstructions(prev => prev.map(ins => {
-                                                if (ins.skill !== selectedSkill) return ins;
-                                                return {
-                                                    ...ins,
-                                                    section: {
-                                                        ...ins.section,
-                                                        Parts: (ins.section.Parts || []).map(p => p.ID === part.ID ? { ...p, Questions: questions } : p),
-                                                    },
-                                                };
-                                            }));
-                                        }}>
-                                            <SortableContext items={(part.Questions || []).map(q => q.ID)} strategy={verticalListSortingStrategy}>
-                                                {(part.Questions || []).map((q, index) => (
-                                                    <SortableQuestionItem key={q.ID} id={q.ID}>
-                                                        {(listeners, attributes) => (
-                                                            <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 10, padding: 8, borderRadius: 8, background: "#fff", border: "1px solid transparent" }}>
-                                                                {!isViewMode && <HolderOutlined {...listeners} {...attributes} style={{ cursor: "grab", color: "#999", fontSize: 16, marginTop: 4, flexShrink: 0 }} />}
-                                                                <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#0a2a79", color: "white", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 600, fontSize: 14, flexShrink: 0 }}>
-                                                                    {(selectedSkill === "SPEAKING" && part.Content === "Part 4") ? <span style={{ fontSize: 22, fontWeight: 700, marginTop: -2 }}>+</span> : (index + 1)}
-                                                                </div>
-                                                                <Text style={{ fontSize: 15, lineHeight: "20px" }}>{q.Content}</Text>
+                                
+                                <div className="mt-2">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={(event) => {
+                                        if (isViewMode) return;
+                                        const { active, over } = event;
+                                        if (!over || active.id === over.id) return;
+                                        const questions = [...(part.Questions || [])];
+                                        const oldIdx = questions.findIndex(q => q.ID === active.id);
+                                        const newIdx = questions.findIndex(q => q.ID === over.id);
+                                        if (oldIdx === -1 || newIdx === -1) return;
+                                        const [moved] = questions.splice(oldIdx, 1);
+                                        questions.splice(newIdx, 0, moved);
+                                        setInstructions(prev => prev.map(ins => {
+                                            if (ins.skill !== selectedSkill) return ins;
+                                            return {
+                                                ...ins,
+                                                section: {
+                                                    ...ins.section,
+                                                    Parts: (ins.section.Parts || []).map(p => p.ID === part.ID ? { ...p, Questions: questions } : p),
+                                                },
+                                            };
+                                        }));
+                                    }}>
+                                        <SortableContext items={(part.Questions || []).map(q => q.ID)} strategy={verticalListSortingStrategy}>
+                                            {(part.Questions || []).map((q, index) => (
+                                                <SortableQuestionItem key={q.ID} id={q.ID}>
+                                                    {(listeners, attributes) => (
+                                                        <div className="flex items-start gap-4 mb-3 p-3 rounded-lg bg-[#F9FAFB] border-[1px] border-transparent hover:border-[#E5E7EB] transition-all">
+                                                            {!isViewMode && <HolderOutlined {...listeners} {...attributes} className="cursor-grab text-gray-400 mt-1" />}
+                                                            <div className="w-7 h-7 rounded-full bg-[#003087] text-white flex items-center justify-center font-bold text-[14px] shrink-0">
+                                                                {(selectedSkill === "SPEAKING" && part.Content === "Part 4") ? "+" : (index + 1)}
                                                             </div>
-                                                        )}
-                                                    </SortableQuestionItem>
-                                                ))}
-                                            </SortableContext>
-                                        </DndContext>
-                                    </div>
-                                )}
+                                                            <div className="flex-grow">
+                                                                <Text className="text-[15px] leading-[22px] text-[#374151]">{q.Content}</Text>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 ml-auto">
+                                                                <Text size="small">Score:</Text>
+                                                                <InputNumber
+                                                                    min={0}
+                                                                    max={100}
+                                                                    value={questionScores[q.ID] || 0}
+                                                                    onChange={(val) => handleScoreChange(q.ID, val)}
+                                                                    disabled={isViewMode}
+                                                                    size="small"
+                                                                    style={{ width: 60 }}
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </SortableQuestionItem>
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
+                                </div>
                             </div>
                         ))}
                     </div>
@@ -397,19 +492,36 @@ const CreateExamPage = () => {
 
     useEffect(() => {
         if (!topicData) return;
-        form.setFieldsValue({ name: topicData.Name, duration: topicData.Duration });
-        setShuffleQuestions(!!topicData.ShuffleQuestions);
-        setShuffleAnswers(!!topicData.ShuffleAnswers);
+        const data = topicData.data ? topicData.data : topicData;
+        if (!data || !data.Name) return;
 
+        form.setFieldsValue({ 
+            name: data.Name,
+            duration: data.Duration,
+            creator: data.creator ? `${data.creator.firstName} ${data.creator.lastName}` : "Unknown",
+            editor: data.updater ? `${data.updater.firstName} ${data.updater.lastName}` : "None"
+        });
+
+        setShuffleQuestions(!!data.ShuffleQuestions);
+        setShuffleAnswers(!!data.ShuffleAnswers);
+        
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
-        (topicData.Sections || []).forEach(section => {
-            const skill = section.Skill.Name;
+        const scores = {};
+
+        (data.Sections || []).forEach(section => {
+            const skill = section.Skill?.Name || "UNKNOWN";
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
             instructionsData.push({ skill, section });
+            
+            if (section.TopicSection && section.TopicSection.scoreConfig) {
+                Object.assign(scores, section.TopicSection.scoreConfig);
+            }
         });
+        
+        setQuestionScores(scores);
         setSelectedSectionBySkill(sectionsBySkill);
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
@@ -417,164 +529,258 @@ const CreateExamPage = () => {
     }, [topicData]);
 
     return (
-        <>
-            <ModalComponent />
-
-            <HeaderInfo
-                title={isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
-                subtitle={isViewMode ? "Preview the exam information and structure. Editing is disabled." : topicId ? "Modify exam information, structure, and skill-based questions." : "Set up exam details, structure, and choose skill-based questions."}
-                actions={
-                    <div style={{ display: "flex", gap: "12px" }}>
-                        <Button icon={<LeftOutlined />} onClick={() => navigate("/exam")}>Back</Button>
-                        <Button icon={<EyeOutlined />} onClick={handlePreviewExam}>Preview</Button>
-                        {isViewMode && topicData?.Status === 'submited' && isAdmin && (
-                            <>
-                                <Button type="primary" style={{ background: "#52c41a", borderColor: "#52c41a" }} onClick={handleApprove}>Approve</Button>
-                                <Button danger type="primary" onClick={handleReject}>Reject</Button>
-                            </>
-                        )}
-                    </div>
-                }
-            />
-
-            <Content style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-                <Spin spinning={isLoading}>
-                    <Form form={form} layout="vertical" onValuesChange={() => setIsDirty(true)}>
-
-                        <Card title="Settings" style={{ marginBottom: 24, borderRadius: 12 }}>
-                            <Row gutter={24}>
-                                <Col span={12}>
-                                    <Form.Item label="Exam Name" name="name" rules={[{ required: true }]}>
-                                        <Input placeholder="Exam name..." size="large" disabled={isViewMode} />
-                                    </Form.Item>
-                                </Col>
-                                <Col span={6}>
-                                    <Form.Item label="Duration (minutes)" name="duration">
-                                        <InputNumber min={1} max={999} disabled={isViewMode} size="large" style={{ width: '100%' }} />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-
-                            {!isViewMode && (
-                                <div style={{ padding: '16px', background: '#f0f5ff', borderRadius: 8 }}>
-                                    <Title level={5}><SwapOutlined /> Randomization Settings</Title>
-                                    <Row gutter={48}>
-                                        <Col>
-                                            <Space>
-                                                <Switch
-                                                    checked={ShuffleQuestions}
-                                                    onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
-                                                    disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"}
-                                                />
-                                                <Text strong>Shuffle Questions</Text>
-                                            </Space>
-                                        </Col>
-                                        <Col>
-                                            <Space>
-                                                <Switch
-                                                    checked={ShuffleAnswers}
-                                                    onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
-                                                    disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)}
-                                                />
-                                                <Text strong>Shuffle Answers</Text>
-                                            </Space>
-                                        </Col>
-                                    </Row>
-                                </div>
-                            )}
-
-                            <Form.Item label="Creator" name="creator">
-                                <Input disabled />
-                            </Form.Item>
-
-                            <Form.Item label="Last Edited By" name="editor">
-                                <Input disabled />
-                            </Form.Item>
-
-                            <Form.Item label="Duration Time" name="timeRange" rules={[{ required: true }]}>
-                                <RangePicker showTime={{ format: 'HH:mm' }} format="YYYY-MM-DD HH:mm" disabled={isViewMode} />
-                            </Form.Item>
-                        </Card>
-
-                        <div style={{ borderRadius: 12, background: "#F5F6FA", border: "1px solid #E5E7EB", marginBottom: 20 }}>
-                            <div style={{ display: "flex", height: 40 }}>
-                                {SKILL_TABS.map((tab) => {
-                                    const active = selectedSkill === tab.key;
-                                    return (
-                                        <div
-                                            key={tab.key}
-                                            onClick={() => setSelectedSkill(tab.key)}
-                                            style={{
-                                                padding: "8px 18px",
-                                                cursor: "pointer",
-                                                background: active ? "#1677FF" : "white",
-                                                color: active ? "white" : "#4B5563"
-                                            }}
-                                        >
-                                            {tab.label}
-                                        </div>
-                                    );
-                                })}
-                            </div>
-
-                            <div
-                                style={{ padding: "24px", background: "white" }}
-                                onClick={() => { if (!isViewMode) setOpenModal(true) }}
-                            >
-                                {renderInstructionContent()}
+        <div className="figma-page-container">
+            <div className="figma-content-wrapper">
+                <ConfigProvider
+                    theme={{
+                        token: {
+                            controlHeight: 50,
+                            borderRadius: 8,
+                        }
+                    }}
+                >
+                    <div className="py-8">
+                        <div className="mb-10 flex justify-between items-start">
+                            <div>
+                                <h4 className="figma-title">
+                                    {isViewMode ? "View Exam Details" : topicId ? "Edit Exam" : "Create New Exam"}
+                                </h4>
+                                <p className="figma-subtitle">
+                                    {isViewMode 
+                                        ? "Preview the exam information and structure. Editing is disabled." 
+                                        : topicId 
+                                            ? "Modify exam information, structure, and skill-based questions." 
+                                            : "Set up exam details, structure, and choose skill-based questions."
+                                    }
+                                </p>
                             </div>
                         </div>
 
-                        <Divider />
+                        <Form form={form} layout="vertical">
+                            <Card 
+                                className="mb-8 border-[1px] border-[#E5E7EB] rounded-lg shadow-[0px_1px_2px_rgba(0,0,0,0.05)]"
+                                bodyStyle={{ padding: 25 }}
+                            >
+                                <div className="flex items-center gap-2 mb-8">
+                                    <InfoCircleOutlined style={{ color: '#003087', fontSize: '18px' }} />
+                                    <span className="text-[18px] font-semibold text-[#111827]">Exam Basic Information</span>
+                                </div>
 
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                            <Button type="primary" onClick={handlePreviewExam}>Start Exam Preview</Button>
-
-                            <Space>
-                                <Button onClick={() => handleNavigateAway('/exam')}>Cancel</Button>
+                                <Row gutter={24}>
+                                    <Col span={24}>
+                                        <Form.Item 
+                                            label={<span className="text-[14px] font-medium text-[#374151]">Exam Name *</span>} 
+                                            name="name" 
+                                            rules={[{ required: true, message: 'Please enter exam name' }]}
+                                        >
+                                            <Input 
+                                                maxLength={51} 
+                                                placeholder="e.g., IELTS Academic Practice Test 1" 
+                                                disabled={isViewMode}
+                                                onChange={onNameChange}
+                                                className="!h-[50px] border-[#D1D5DB]"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={8}>
+                                        <Form.Item 
+                                            label={<span className="text-[14px] font-medium text-[#374151]">Duration (minutes) *</span>} 
+                                            name="duration" 
+                                            rules={[{ required: true, message: 'Please enter duration' }]}
+                                        >
+                                            <Input 
+                                                type="text"
+                                                placeholder="e.g. 60" 
+                                                disabled={isViewMode} 
+                                                onChange={onDurationChange}
+                                                className="w-full !h-[50px] border-[#D1D5DB]"
+                                            />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={8}>
+                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Creator</span>} name="creator">
+                                            <Input disabled className="!h-[50px] border-[#D1D5DB]" />
+                                        </Form.Item>
+                                    </Col>
+                                    <Col span={8}>
+                                        <Form.Item label={<span className="text-[14px] font-medium text-[#374151]">Last Edited By</span>} name="editor">
+                                            <Input disabled className="!h-[50px] border-[#D1D5DB]" />
+                                        </Form.Item>
+                                    </Col>
+                                </Row>
 
                                 {!isViewMode && (
-                                    <>
-                                        <Button type="primary" onClick={handleSaveExam}>Save As Draft</Button>
-                                        <Button type="primary" onClick={handleSubmitExam}>Submit For Review</Button>
-                                    </>
+                                    <div className="mt-6 p-4 bg-[#f0f5ff] rounded-lg border border-[#d6e4ff]">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <SwapOutlined className="text-[#003087]" />
+                                            <span className="text-[16px] font-semibold text-[#003087]">Randomization Settings</span>
+                                        </div>
+                                        <Row gutter={48}>
+                                            <Col>
+                                                <Space size="middle">
+                                                    <Switch
+                                                        checked={ShuffleQuestions}
+                                                        onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
+                                                        disabled={selectedSkill !== "GRAMMAR AND VOCABULARY"}
+                                                    />
+                                                    <span className="text-[14px] font-medium text-[#374151]">Shuffle Questions</span>
+                                                </Space>
+                                            </Col>
+                                            <Col>
+                                                <Space size="middle">
+                                                    <Switch
+                                                        checked={ShuffleAnswers}
+                                                        onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
+                                                        disabled={!["GRAMMAR AND VOCABULARY", "LISTENING", "READING"].includes(selectedSkill)}
+                                                    />
+                                                    <span className="text-[14px] font-medium text-[#374151]">Shuffle Answers</span>
+                                                </Space>
+                                            </Col>
+                                        </Row>
+                                    </div>
                                 )}
-                            </Space>
+                            </Card>
+
+                            <Card 
+                                className="border-[1px] border-[#E5E7EB] rounded-lg shadow-[0px_1px_2px_rgba(0,0,0,0.05)] overflow-hidden"
+                                bodyStyle={{ padding: 0 }}
+                            >
+                                <div className="flex border-b-[1px] border-[#E5E7EB] bg-[#F8FAFC]">
+                                    {SKILL_TABS.map((tab) => {
+                                        const active = selectedSkill === tab.key;
+                                        return (
+                                            <div 
+                                                key={tab.key} 
+                                                onClick={() => setSelectedSkill(tab.key)} 
+                                                className={`
+                                                    flex items-center gap-3 px-6 h-[52px] cursor-pointer transition-all font-medium text-[14px]
+                                                    ${active ? "bg-[#003087] text-white" : "text-[#64748B] hover:bg-gray-100"}
+                                                `}
+                                            >
+                                                {React.cloneElement(tab.icon, { style: { color: active ? "white" : "#64748B", fontSize: '16px' } })}
+                                                {tab.label}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                                <div className="p-8">
+                                    {renderSelectedSectionUI()}
+                                </div>
+                            </Card>
+
+                            <div className="flex justify-between items-center mt-10 pb-10">
+                                <Button 
+                                    icon={<EyeOutlined />} 
+                                    onClick={handlePreviewExam}
+                                    className="!h-[50px] !px-8 !rounded-lg font-medium border-[#D1D5DB] text-[#374151]"
+                                >
+                                    Start Exam Preview
+                                </Button>
+                                
+                                <Space size="middle">
+                                    <Button 
+                                        onClick={() => handleNavigateAway('/exam')}
+                                        className="!h-[50px] !w-[120px] !rounded-lg font-medium border-[#D1D5DB] text-[#374151]"
+                                    >
+                                        Cancel
+                                    </Button>
+                                    
+                                    {isViewMode && isAdmin && (topicData?.data?.Status === 'submited' || topicData?.Status === 'submited') && (
+                                        <>
+                                            <Button 
+                                                type="primary" 
+                                                style={{ background: "#22AD5C", borderColor: "#22AD5C" }} 
+                                                onClick={handleApprove}
+                                                className="!h-[50px] !w-[140px] !rounded-lg font-medium shadow-none hover:opacity-90"
+                                            >
+                                                Approve
+                                            </Button>
+                                            <Button 
+                                                danger 
+                                                type="primary" 
+                                                onClick={handleReject}
+                                                className="!h-[50px] !w-[140px] !rounded-lg font-medium shadow-none hover:opacity-90"
+                                            >
+                                                Reject
+                                            </Button>
+                                        </>
+                                    )}
+
+                                    {!isViewMode && (
+                                        <>
+                                            <Button 
+                                                onClick={handleSaveExam}
+                                                className="!h-[50px] !px-6 !rounded-lg font-medium border-[#003087] text-[#003087]"
+                                            >
+                                                Save As Draft
+                                            </Button>
+                                            <Button 
+                                                type="primary" 
+                                                onClick={handleSubmitExam}
+                                                icon={<ArrowRightOutlined />}
+                                                className="!h-[50px] !px-6 !rounded-lg font-medium !bg-[#003087] !border-none shadow-none hover:opacity-90"
+                                            >
+                                                Submit For Review
+                                            </Button>
+                                        </>
+                                    )}
+                                </Space>
+                            </div>
+                        </Form>
+                    </div>
+                </ConfigProvider>
+
+                <ChooseSectionModal 
+                    open={openModal} 
+                    onCancel={() => setOpenModal(false)} 
+                    skillName={selectedSkill} 
+                    onSelect={handlePartSelect} 
+                    selectedSectionId={selectedSectionBySkill[selectedSkill]} 
+                />
+                
+                <PreviewExam 
+                    isModalOpen={previewOpen} 
+                    setIsModalOpen={setPreviewOpen} 
+                    dataExam={previewData} 
+                    fileData={null} 
+                    setDataExam={setPreviewData} 
+                />
+                
+                <ModalComponent />
+                
+                <Modal 
+                    title={<span className="text-[18px] font-semibold text-[#111827]">You have unsaved changes</span>} 
+                    open={leaveConfirmOpen} 
+                    onCancel={() => setLeaveConfirmOpen(false)} 
+                    centered
+                    footer={[
+                        <div className="flex justify-end gap-3 p-4 pt-0" key="footer">
+                            <Button 
+                                key="discard" 
+                                danger 
+                                onClick={discardAndLeave}
+                                className="!h-[50px] !px-6 !rounded-lg font-medium border-[#FF4D4F] text-[#FF4D4F]"
+                            >
+                                Leave without Saving
+                            </Button>
+                            <Button 
+                                key="save" 
+                                type="primary" 
+                                onClick={saveDraftAndLeave}
+                                className="!h-[50px] !px-6 !rounded-lg font-medium !bg-[#003087] !border-none shadow-none hover:opacity-90"
+                            >
+                                Save as Draft & Leave
+                            </Button>
                         </div>
-
-                    </Form>
-                </Spin>
-            </Content>
-
-            <ChooseSectionModal
-                open={openModal}
-                onClose={() => setOpenModal(false)}
-                skillName={selectedSkill}
-                onSelect={handlePartSelect}
-                selectedSectionId={selectedSectionBySkill[selectedSkill]}
-            />
-
-            <PreviewExam
-                isModalOpen={previewOpen}
-                setIsModalOpen={setPreviewOpen}
-                dataExam={previewData}
-                fileData={null}
-                setDataExam={setPreviewData}
-            />
-
-            <Modal
-                title="You have unsaved changes"
-                open={leaveConfirmOpen}
-                onCancel={() => setLeaveConfirmOpen(false)}
-                footer={[
-                    <Button key="discard" danger onClick={discardAndLeave}>Leave without Saving</Button>,
-                    <Button key="save" type="primary" onClick={saveDraftAndLeave}>Save as Draft & Leave</Button>,
-                    <Button key="stay" onClick={() => setLeaveConfirmOpen(false)}>Stay on Page</Button>,
-                ]}
-            >
-                <p>Would you like to save your work as a draft before leaving?</p>
-            </Modal>
-        </>
+                    ]}
+                >
+                    <p className="text-[#4B5563] text-[15px] leading-[22px]">
+                        You have unsaved changes in your exam structure. Would you like to save your work as a draft before leaving this page?
+                    </p>
+                </Modal>
+            </div>
+        </div>
     );
 }
+
 export default CreateExamPage;

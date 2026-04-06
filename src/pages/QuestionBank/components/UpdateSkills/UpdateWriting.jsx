@@ -1,5 +1,6 @@
-import React, { useEffect } from 'react';
-import { Card, Button, message, Form, Input } from 'antd';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
+import { Card, Button, message, Form, Input, Modal } from 'antd';
+import { SaveOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { WRITING_PART_TYPES } from '@features/questions/constant/writingType';
@@ -9,6 +10,13 @@ import {
 } from '@features/questions/hooks';
 import { buildWritingFullPayload } from '@features/questions/utils/buildQuestionPayload';
 import WritingEditor from '../CreateSkills/Writing/WritingEditor';
+import { QuestionApi } from '@features/questions/api';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
+
+const AUTOSAVE_DEBOUNCE_MS = 2000;
 
 const UpdateWriting = () => {
   const [form] = Form.useForm();
@@ -20,6 +28,10 @@ const UpdateWriting = () => {
     sectionId
   );
   const { mutate: updateWritingGroup, isPending } = useUpdateQuestionGroup();
+
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const debounceTimerRef = useRef(null);
+  const payloadRef = useRef(null);
 
   // --- MAP API → FORM VALUES ---
   useEffect(() => {
@@ -42,7 +54,7 @@ const UpdateWriting = () => {
         PartID: detail.part2?.PartID,
         title: detail.part2?.name || '',
         question: detail.part2?.question || '',
-        fields: [''], // form filling FE dùng fields nhưng API không có → giữ default
+        fields: [''],
       },
 
       // ===== PART 3 =====
@@ -52,7 +64,7 @@ const UpdateWriting = () => {
         chats: detail.part3?.chats?.map((c) => ({
           speaker: c.speaker,
           question: c.question,
-          wordLimit: '', // API không trả → để rỗng
+          wordLimit: '',
         })) || [{ speaker: '', question: '', wordLimit: '' }],
       },
 
@@ -69,11 +81,77 @@ const UpdateWriting = () => {
     });
   }, [detail]);
 
+  const scheduleAutosave = useCallback((payload) => {
+    payloadRef.current = payload;
+    setIsAutosaving(true);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      if (payloadRef.current) {
+        try {
+          await QuestionApi.update({ sectionId, payload: payloadRef.current });
+        } catch (error) {
+          console.error('Autosave failed:', error);
+        } finally {
+          setIsAutosaving(false);
+          payloadRef.current = null;
+        }
+      } else {
+        setIsAutosaving(false);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }, [sectionId]);
+
+  const handleValuesChange = useCallback((changedValues, allValues) => {
+    try {
+      const fullPayload = buildWritingFullPayload(allValues);
+      const payload = {
+        SkillName: 'WRITING',
+        SectionName: allValues.sectionName || 'Untitled Draft',
+        Status: 'draft',
+        parts: fullPayload.parts,
+      };
+      scheduleAutosave(payload);
+    } catch (e) {
+      // Skip if form not ready
+    }
+  }, [scheduleAutosave]);
+
+  const handleSaveAsDraft = async () => {
+    const values = form.getFieldsValue(true);
+    try {
+      const fullPayload = buildWritingFullPayload(values);
+      const payload = {
+        SkillName: 'WRITING',
+        SectionName: values.sectionName || 'Untitled Draft',
+        Status: 'draft',
+        parts: fullPayload.parts,
+      };
+
+      await QuestionApi.update({ sectionId, payload });
+      message.success('Draft saved successfully');
+      navigate(-1);
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Failed to save draft');
+    }
+  };
+
+  const handleCancel = () => {
+    Modal.confirm({
+      title: 'Discard Changes?',
+      content: 'You have unsaved changes. Are you sure you want to go back?',
+      okText: 'Discard & Go Back',
+      cancelText: 'Keep Editing',
+      okButtonProps: { danger: true },
+      onOk: () => navigate(-1),
+      onCancel: () => {},
+    });
+  };
+
   const handleUpdate = async () => {
     try {
       const values = await form.validateFields();
-
       const payload = buildWritingFullPayload(values);
+      payload.Status = 'published';
 
       updateWritingGroup(
         { sectionId, payload },
@@ -99,6 +177,7 @@ const UpdateWriting = () => {
     <Form
       form={form}
       layout='vertical'
+      onValuesChange={handleValuesChange}
       className='flex flex-col gap-8 pb-20'
       initialValues={{
         sectionName: '',
@@ -119,7 +198,7 @@ const UpdateWriting = () => {
     >
       {/* SECTION */}
       <Card title='Section Information'>
-        {/* HIDDEN: giữ PartID cho 4 phần (sẽ không hiển thị) */}
+        {/* HIDDEN: giữ PartID cho 4 phần */}
         <Form.Item name={['part1', 'PartID']} style={{ display: 'none' }}>
           <Input />
         </Form.Item>
@@ -135,9 +214,13 @@ const UpdateWriting = () => {
         <Form.Item
           label='Section Name'
           name='sectionName'
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='e.g., Fitness Club Writing Test' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='e.g., Fitness Club Writing Test'
+          />
         </Form.Item>
       </Card>
 
@@ -163,18 +246,21 @@ const UpdateWriting = () => {
 
       {/* ACTION BUTTONS */}
       <div className='flex justify-end gap-4'>
-        <Button size='large' onClick={() => navigate(-1)}>
+        <Button size='large' onClick={handleCancel}>
           Cancel
+        </Button>
+        <Button size='large' loading={isPending || isAutosaving} onClick={handleSaveAsDraft}>
+          <SaveOutlined /> Save as Draft
         </Button>
 
         <Button
           type='primary'
           size='large'
-          loading={isPending}
+          loading={isPending || isAutosaving}
           className='bg-blue-900'
           onClick={handleUpdate}
         >
-          Update
+          Publish
         </Button>
       </div>
     </Form>

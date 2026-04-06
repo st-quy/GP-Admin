@@ -424,18 +424,19 @@ export const buildFullReadingPayload = (values) => {
   /* ======================================================
         PART 1 — DROPDOWN
   ====================================================== */
-  const p1 = values.part1;
+  const p1 = values.part1 || {};
 
-  const finalContent = buildDropdownContent(p1.content, p1.blanks);
+  const blanks = p1.blanks || [];
+  const finalContent = buildDropdownContent(p1.content, blanks);
 
-  const p1Options = p1.blanks.map((b) => ({
+  const p1Options = blanks.map((b) => ({
     key: b.key,
-    value: b.options.map((o) => o.value),
+    value: (b.options || []).map((o) => o.value),
   }));
 
-  const p1Correct = p1.blanks.map((b) => ({
+  const p1Correct = blanks.map((b) => ({
     key: b.key,
-    value: b.options.find((o) => o.id === b.correctAnswer)?.value || '',
+    value: (b.options || []).find((o) => o.id === b.correctAnswer)?.value || '',
   }));
 
   result.parts.push({
@@ -455,12 +456,12 @@ export const buildFullReadingPayload = (values) => {
   /* ======================================================
         PART 2A — ORDERING
   ====================================================== */
-  const p2a = values.part2A;
+  const p2a = values.part2A || {};
 
-  const p2aOptions = p2a.items.map((i) => i.text.trim());
+  const p2aOptions = (p2a.items || []).map((i) => (i.text || '').trim());
 
-  const p2aCorrect = p2a.items.map((i, index) => ({
-    key: i.text.trim(),
+  const p2aCorrect = (p2a.items || []).map((i, index) => ({
+    key: (i.text || '').trim(),
     value: index + 1,
   }));
 
@@ -469,10 +470,10 @@ export const buildFullReadingPayload = (values) => {
     PartName: p2a.name,
     Type: 'ordering',
     Sequence: 2,
-    Content: p2a.intro.trim(),
+    Content: (p2a.intro || '').trim(),
     AnswerContent: {
       type: 'ordering',
-      content: p2a.intro.trim(),
+      content: (p2a.intro || '').trim(),
       options: p2aOptions,
       correctAnswer: p2aCorrect,
     },
@@ -481,12 +482,12 @@ export const buildFullReadingPayload = (values) => {
   /* ======================================================
         PART 2B — ORDERING
   ====================================================== */
-  const p2b = values.part2B;
+  const p2b = values.part2B || {};
 
-  const p2bOptions = p2b.items.map((i) => i.text.trim());
+  const p2bOptions = (p2b.items || []).map((i) => (i.text || '').trim());
 
-  const p2bCorrect = p2b.items.map((i, index) => ({
-    key: i.text.trim(),
+  const p2bCorrect = (p2b.items || []).map((i, index) => ({
+    key: (i.text || '').trim(),
     value: index + 1,
   }));
 
@@ -495,10 +496,10 @@ export const buildFullReadingPayload = (values) => {
     PartName: p2b.name,
     Type: 'ordering',
     Sequence: 3,
-    Content: p2b.intro.trim(),
+    Content: (p2b.intro || '').trim(),
     AnswerContent: {
       type: 'ordering',
-      content: p2b.intro.trim(),
+      content: (p2b.intro || '').trim(),
       options: p2bOptions,
       correctAnswer: p2bCorrect,
     },
@@ -507,14 +508,14 @@ export const buildFullReadingPayload = (values) => {
   /* ======================================================
         PART 3 — MATCHING (dropdown matching)
   ====================================================== */
-  const p3 = values.part3;
+  const p3 = values.part3 || {};
 
-  const p3Left = p3.leftItems.map((i) => i.text.trim()); // giữ nguyên
-  const p3Right = p3.rightItems.map((i) => i.text.trim());
+  const p3Left = (p3.leftItems || []).map((i) => i.text.trim());
+  const p3Right = (p3.rightItems || []).map((i) => i.text.trim());
 
-  const p3Correct = p3.mapping.map((m) => ({
-    key: String(m.leftIndex + 1),
-    value: p3.rightItems.find((r) => r.id === m.rightId)?.text.trim() || '',
+  const p3Correct = (p3.mapping || []).map((m) => ({
+    key: String((m.leftIndex ?? 0) + 1),
+    value: (p3.rightItems || []).find((r) => r.id === m.rightId)?.text?.trim() || '',
   }));
 
   result.parts.push({
@@ -522,10 +523,10 @@ export const buildFullReadingPayload = (values) => {
     PartName: p3.name,
     Type: 'dropdown-list',
     Sequence: 4,
-    Content: p3.content.trim(),
+    Content: (p3.content || '').trim(),
     AnswerContent: {
       type: 'dropdown-list',
-      content: p3.content.trim(),
+      content: (p3.content || '').trim(),
       leftItems: p3Left,
       rightItems: p3Right,
       correctAnswer: p3Correct,
@@ -535,14 +536,14 @@ export const buildFullReadingPayload = (values) => {
   /* ======================================================
         PART 4 — FULL MATCHING
   ====================================================== */
-  const p4 = values.part4;
+  const p4 = values.part4 || {};
 
-  const p4Left = p4.leftItems.map((i) => i.text.trim());
-  const p4Right = p4.rightItems.map((i) => i.text.trim());
+  const p4Left = (p4.leftItems || []).map((i) => i.text.trim());
+  const p4Right = (p4.rightItems || []).map((i) => i.text.trim());
 
-  const p4Correct = p4.mapping.map((m) => ({
-    left: p4.leftItems[m.leftIndex]?.text.trim() || '',
-    right: p4.rightItems.find((r) => r.id === m.rightId)?.text.trim() || '',
+  const p4Correct = (p4.mapping || []).map((m) => ({
+    left: (p4.leftItems || [])[m.leftIndex ?? 0]?.text?.trim() || '',
+    right: (p4.rightItems || []).find((r) => r.id === m.rightId)?.text?.trim() || '',
   }));
 
   result.parts.push({
@@ -550,10 +551,10 @@ export const buildFullReadingPayload = (values) => {
     PartName: p4.name,
     Type: 'matching',
     Sequence: 5,
-    Content: p4.content.trim(),
+    Content: (p4.content || '').trim(),
     AnswerContent: {
       type: 'matching',
-      content: p4.content.trim(),
+      content: (p4.content || '').trim(),
       leftItems: p4Left,
       rightItems: p4Right,
       correctAnswer: p4Correct,

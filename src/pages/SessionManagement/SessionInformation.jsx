@@ -112,60 +112,81 @@ const SessionInformation = ({ type }) => {
     },
   ];
 
+  const isAllGraded = data?.isAllGraded || false;
+
   return (
     <div className="session-container flex flex-col p-2 md:p-8">
       <Details type={type} isLoading={isLoading} data={data} />
 
       <div className="w-full">
-        <div className="flex justify-between">
+        <div className="flex justify-between items-start mb-10">
           <div>
-            <p className="text-[30px] text-black font-bold">
+            <h4 className="figma-title">
               {type == TableType.SESSION
                 ? "Student Monitoring"
                 : "Assessment History"}
-            </p>
-            <p className="text-[18px] text-primaryTextColor font-medium mt-[10px]">
+            </h4>
+            <p className="figma-subtitle">
               {type == TableType.SESSION
                 ? "Track student request and participation."
                 : "Overview of Past Performance."}
             </p>
           </div>
           {type === TableType.SESSION && (
-            <div>
-              <Button
-                className={`font-bold rounded-full transition-all duration-150 ease-in-out
-    md:px-[28px] px-[18px] md:py-[13px] py-[7px] 
-    md:text-base text-xs border-none transform 
-
-    ${isLoadingPublishScores ? "cursor-not-allowed opacity-60" : "hover:scale-105"}
-  `}
-                onClick={handlePublishScore}
-                disabled={data?.isPublished}
-                loading={isLoadingPublishScores}
-              >
-                {data?.isPublished ? "Published" : "Publish Score"}
-              </Button>
-            </div>
+            <Button
+              className={`!h-[50px] !w-[236px] !rounded-[50px] !border-none font-bold text-white transition-all
+                ${data?.isPublished 
+                  ? "!bg-[#E5E7EB] !text-[#6B7280]" 
+                  : isAllGraded 
+                    ? "!bg-[#13C296]" 
+                    : "!bg-[#003087]"
+                }
+                ${isLoadingPublishScores ? "cursor-not-allowed opacity-60" : "hover:scale-105"}
+              `}
+              onClick={handlePublishScore}
+              disabled={data?.isPublished}
+              loading={isLoadingPublishScores}
+            >
+              {data?.isPublished ? "Published" : "Publish Score"}
+            </Button>
           )}
         </div>
-        <div className="md:mt-[34px] mt-[20px]">
-          <SearchInput
-            placeholder="Search by name, level"
-            value={searchKeyword}
-            onSearchChange={onSearchChange}
-            className={` ${type == TableType.SESSION ? "absolute z-10" : "mb-8"}`}
-          />
-        </div>
-        <div className={`${type == TableType.SESSION && "h-[500px]"}`}>
-          {type == TableType.SESSION ? (
-            <Tabs defaultActiveKey="item-1" items={items} />
-          ) : (
-            <StudentSessionTable
-              id={sessionId}
-              studentId={studentId}
-              type={type}
-              searchKeyword={searchKeyword}
+
+        <div>
+          {type === TableType.SESSION ? (
+            <Tabs 
+              defaultActiveKey="item-1" 
+              items={items}
+              className="figma-custom-tabs"
+              tabBarExtraContent={{
+                left: (
+                  <div className="pr-10">
+                    <SearchInput
+                      placeholder="Search by name, level"
+                      value={searchKeyword}
+                      onSearchChange={onSearchChange}
+                      isFigmaRedesign={true}
+                    />
+                  </div>
+                )
+              }}
             />
+          ) : (
+            <div className="mt-8">
+              <SearchInput
+                placeholder="Search by session name"
+                value={searchKeyword}
+                onSearchChange={onSearchChange}
+                isFigmaRedesign={true}
+                className="mb-8"
+              />
+              <StudentSessionTable
+                id={sessionId}
+                studentId={studentId}
+                type={type}
+                searchKeyword={searchKeyword}
+              />
+            </div>
           )}
         </div>
       </div>

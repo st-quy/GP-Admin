@@ -1,64 +1,250 @@
 // @ts-nocheck
-import React, { useState } from 'react';
-import { Input, Button, Form, Card } from 'antd';
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Input, Button, Form, Card, Modal, message } from 'antd';
+import { PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
+import { useNavigate, useParams } from 'react-router-dom';
 
-import { useCreateQuestion } from '../../../../features/questions/hooks';
+import { QuestionApi, SectionApi } from '../../../../features/questions/api';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
 import { yupSync } from '@shared/lib/utils';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
-const CreateSpeaking = () => {
+const AUTOSAVE_DEBOUNCE_MS = 2000;
+
+const CreateSpeaking = ({ draftId: propDraftId }) => {
   const navigate = useNavigate();
+  const { draftId: urlDraftId } = useParams();
+  const draftId = propDraftId || urlDraftId;
   const [form] = Form.useForm();
 
-  const { mutate: createSpeaking, isPending } = useCreateQuestion();
   const [images, setImages] = useState({});
+  const imagesRef = useRef({});
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!draftId);
+  const [formKey, setFormKey] = useState(0);
+  const debounceTimerRef = useRef(null);
+  const payloadRef = useRef(null);
+  const draftIdRef = useRef(draftId);
+  const draftDataRef = useRef(null);
 
-  /** FE → BE Payload */
-  const handleSubmit = async () => {
+  // Keep ref in sync
+  useEffect(() => {
+    draftIdRef.current = draftId;
+  }, [draftId]);
+
+  // Load existing draft from URL
+  useEffect(() => {
+    if (!draftId) return;
+
+    let cancelled = false;
+    const loadDraft = async () => {
+      try {
+        const { data } = await QuestionApi.getDetail({ skillName: 'SPEAKING', sectionId: draftId });
+        if (cancelled) return;
+
+        const d = data.data;
+        const partMap = {};
+        const imgMap = {};
+        const parts = Object.keys(d).filter((k) => k.startsWith('part'));
+
+        parts.forEach((key) => {
+          const p = d[key];
+          // API returns lowercase: name, questions, image
+          // or uppercase: PartName, Questions, Image (from buildSpeakingDetail)
+          const questions = (p.questions || p.Questions || []).map((q) => {
+            if (typeof q === 'string') {
+              return { value: q, type: 'speaking' };
+            }
+            return {
+              id: q.ID,
+              value: q.Content || '',
+              type: q.Type || 'speaking',
+              sequence: q.Sequence,
+              content: q.Content || '',
+            };
+          });
+
+          const filledQuestions = questions.length > 0 ? questions : [{ value: '' }, { value: '' }, { value: '' }];
+
+          partMap[key] = {
+            name: p.name || p.PartName || '',
+            image: p.image || p.Image || null,
+            questions: filledQuestions,
+          };
+          if (p.image || p.Image) {
+            imgMap[key] = p.image || p.Image;
+          }
+        });
+
+        // Force form re-render with new key so initialValues are applied correctly
+        setImages(imgMap);
+        imagesRef.current = imgMap;
+        // Store draft data in a ref for initialValues
+        draftDataRef.current = { sectionName: d.SectionName, parts: partMap };
+        console.log('[DRAFT LOAD] Raw API response:', JSON.stringify(d, null, 2));
+        console.log('[DRAFT LOAD] Mapped partMap:', JSON.stringify(partMap, null, 2));
+        setFormKey((prev) => prev + 1);
+      } catch (error) {
+        console.error('Failed to load draft:', error);
+        message.error('Failed to load draft');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    loadDraft();
+    return () => { cancelled = true; };
+  }, [draftId]);
+
+  // Autosave logic
+  const scheduleAutosave = useCallback((payload) => {
+    payloadRef.current = payload;
+    setIsAutosaving(true);
+
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(async () => {
+      if (payloadRef.current && draftIdRef.current) {
+        try {
+          await QuestionApi.update({ sectionId: draftIdRef.current, payload: payloadRef.current });
+        } catch (error) {
+          console.error('Autosave failed:', error);
+        } finally {
+          setIsAutosaving(false);
+          payloadRef.current = null;
+        }
+      } else {
+        setIsAutosaving(false);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }, []);
+
+  const handleValuesChange = (changedValues, allValues) => {
+    imagesRef.current = { ...imagesRef.current };
+    if (draftIdRef.current) {
+      scheduleAutosave(buildPayload(allValues, imagesRef.current));
+    }
+  };
+
+  const buildPayload = (values, imgs, status = 'draft') => {
+    const buildPartQuestions = (questions) =>
+      (questions || []).map((q, idx) => ({
+        id: q.id || null,
+        type: q.type || 'speaking',
+        sequence: idx + 1,
+        content: q.value || '',
+      }));
+
+    return {
+      SkillName: 'SPEAKING',
+      SectionName: values?.sectionName || 'Untitled Draft',
+      Status: status,
+      parts: {
+        part1: { name: values?.parts?.part1?.name, image: imgs?.part1, sequence: 1, questions: buildPartQuestions(values?.parts?.part1?.questions) },
+        part2: { name: values?.parts?.part2?.name, image: imgs?.part2, sequence: 2, questions: buildPartQuestions(values?.parts?.part2?.questions) },
+        part3: { name: values?.parts?.part3?.name, image: imgs?.part3, sequence: 3, questions: buildPartQuestions(values?.parts?.part3?.questions) },
+        part4: { name: values?.parts?.part4?.name, image: imgs?.part4, sequence: 4, questions: buildPartQuestions(values?.parts?.part4?.questions) },
+      },
+    };
+  };
+
+  const handleSaveAsDraft = async () => {
+    if (!draftIdRef.current) {
+      message.warning('No draft to save');
+      return;
+    }
+    const values = form.getFieldsValue(true);
+    const payload = buildPayload(values, imagesRef.current, 'draft');
+
+    try {
+      await QuestionApi.update({ sectionId: draftIdRef.current, payload });
+      message.success('Draft saved successfully');
+      navigate(-1);
+    } catch (error) {
+      message.error(error.response?.data?.message || 'Failed to save draft');
+    }
+  };
+
+  const handleCancel = () => {
+    Modal.confirm({
+      title: 'Discard Changes?',
+      content: 'You have unsaved changes. Are you sure you want to go back?',
+      okText: 'Discard & Go Back',
+      cancelText: 'Keep Editing',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        if (draftIdRef.current) {
+          try {
+            await SectionApi.deleteDraft(draftIdRef.current);
+          } catch (e) {
+            console.error('Failed to discard draft:', e);
+          }
+        }
+        navigate(-1);
+      },
+      onCancel: () => {},
+    });
+  };
+
+  const handlePublish = async () => {
     try {
       const values = await form.validateFields();
+      const payload = buildPayload(values, imagesRef.current, 'published');
 
-      const payload = {
-        SkillName: 'SPEAKING',
-        SectionName: values.sectionName,
-        parts: {
-          part1: { ...values.parts.part1, image: images.part1, sequence: 1 },
-          part2: { ...values.parts.part2, image: images.part2, sequence: 2 },
-          part3: { ...values.parts.part3, image: images.part3, sequence: 3 },
-          part4: { ...values.parts.part4, image: images.part4, sequence: 4 },
-        },
-      };
-
-      createSpeaking(payload, {
-        onSuccess: () => navigate(-1),
-      });
+      if (draftIdRef.current) {
+        await QuestionApi.update({ sectionId: draftIdRef.current, payload });
+        message.success('Question published successfully');
+        navigate(-1);
+      }
     } catch (err) {
       console.error(err);
     }
   };
 
-  /** Render mỗi Instruction */
+  const handleImageChange = useCallback((key, url) => {
+    setImages((prev) => {
+      const next = { ...prev, [key]: url };
+      imagesRef.current = next;
+      return next;
+    });
+    form.setFieldsValue({
+      parts: {
+        ...form.getFieldValue('parts'),
+        [key]: {
+          ...form.getFieldValue(['parts', key]),
+          image: url,
+        },
+      },
+    });
+    form.validateFields([['parts', key, 'image']]);
+  }, [form]);
+
   const renderPart = (key, title) => {
     const isRequiredImage = key !== 'part1';
 
     return (
       <Card title={title} className='mb-6 border rounded-lg shadow-sm'>
-        {/* Part Name */}
         <Form.Item
           label='Part Name'
           name={['parts', key, 'name']}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[yupSync(createSpeakingSchema, ['parts', key, 'name'])]}
           validateTrigger={['onChange', 'onBlur']}
           required
         >
-          <Input placeholder='Enter part name' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='Enter part name'
+          />
         </Form.Item>
 
-        {/* UPLOAD FIELD WITH VALIDATION */}
         <Form.Item
           required={isRequiredImage}
           label='Picture'
@@ -81,25 +267,12 @@ const CreateSpeaking = () => {
             bucketType='images'
             hint='Drop a JPG or PNG image here or click to browse'
             listType='picture'
-            onChange={(url) => {
-              setImages((prev) => ({ ...prev, [key]: url }));
-              form.setFieldsValue({
-                parts: {
-                  ...form.getFieldValue('parts'),
-                  [key]: {
-                    ...form.getFieldValue(['parts', key]),
-                    image: url,
-                  },
-                },
-              });
-              form.validateFields([['parts', key, 'image']]);
-            }}
+            onChange={(url) => handleImageChange(key, url)}
             title='Upload instruction image'
             value={images[key]}
           />
         </Form.Item>
 
-        {/* QUESTIONS */}
         <Form.List name={['parts', key, 'questions']}>
           {(fields, { add, remove }) => (
             <>
@@ -113,6 +286,9 @@ const CreateSpeaking = () => {
                     {...field}
                     className='w-full'
                     name={[field.name, 'value']}
+                    getValueFromEvent={(e) =>
+                      sanitizeQuestionInput(e.target.value)
+                    }
                     rules={[
                       yupSync(createSpeakingSchema, [
                         'parts',
@@ -124,7 +300,10 @@ const CreateSpeaking = () => {
                     ]}
                     validateTrigger={['onChange', 'onBlur']}
                   >
-                    <Input placeholder='Enter question' />
+                    <Input
+                      maxLength={MAX_QUESTION_INPUT_LENGTH}
+                      placeholder='Enter question'
+                    />
                   </Form.Item>
 
                   {field.name >= 3 && (
@@ -152,12 +331,22 @@ const CreateSpeaking = () => {
     );
   };
 
+  // If no draftId in URL, create one and redirect
+  if (!draftId && !isLoading) {
+    return <RedirectToNewDraft />;
+  }
+
+  if (isLoading) {
+    return <div style={{ padding: 40, textAlign: 'center' }}>Loading draft...</div>;
+  }
+
   return (
     <Form
+      key={formKey}
       form={form}
       layout='vertical'
-      onFinish={handleSubmit}
-      initialValues={{
+      onValuesChange={handleValuesChange}
+      initialValues={draftDataRef.current || {
         parts: {
           part1: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
           part2: { questions: [{ value: '' }, { value: '' }, { value: '' }] },
@@ -170,9 +359,13 @@ const CreateSpeaking = () => {
         <Form.Item
           label='Name'
           name='sectionName'
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true, message: 'Section name is required' }]}
         >
-          <Input placeholder='Enter section name' />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder='Enter section name'
+          />
         </Form.Item>
       </Card>
 
@@ -182,18 +375,42 @@ const CreateSpeaking = () => {
       {renderPart('part4', 'Instruction 4')}
 
       <div className='flex justify-end gap-4 mt-6'>
-        <Button onClick={() => navigate(-1)}>Cancel</Button>
+        <Button onClick={handleCancel}>Cancel</Button>
+        <Button onClick={handleSaveAsDraft} loading={isAutosaving}>
+          <SaveOutlined /> Save as Draft
+        </Button>
         <Button
           type='primary'
-          htmlType='submit'
-          loading={isPending}
+          onClick={handlePublish}
+          loading={isAutosaving}
           className='bg-blue-900'
         >
-          Save
+          Publish
         </Button>
       </div>
     </Form>
   );
+};
+
+// Component that creates a draft and redirects
+const RedirectToNewDraft = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const createAndRedirect = async () => {
+      try {
+        const { data } = await SectionApi.createDraft('SPEAKING');
+        const sectionId = data.data.ID;
+        navigate(`/questions/create/speaking/${sectionId}`, { replace: true });
+      } catch (error) {
+        console.error('Failed to create draft:', error);
+        message.error('Failed to create draft');
+      }
+    };
+    createAndRedirect();
+  }, []);
+
+  return <div style={{ padding: 40, textAlign: 'center' }}>Creating draft...</div>;
 };
 
 export default CreateSpeaking;

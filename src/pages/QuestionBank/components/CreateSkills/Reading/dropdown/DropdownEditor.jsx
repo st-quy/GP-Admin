@@ -1,5 +1,5 @@
 // dropdown/DropdownEditor.jsx
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Button, Space, Typography, Input, Form } from 'antd';
 
 const { TextArea } = Input;
@@ -9,38 +9,42 @@ const BLANK_REGEX = /\[(\d+)\]/g;
 
 const DropdownEditor = () => {
   const form = Form.useFormInstance();
+  const content = Form.useWatch(['part1', 'content'], form);
 
-  const insertBlank = () => {
-    const content = form.getFieldValue(['part1', 'content']) || '';
-    const count = (content.match(/\[\d+\]/g) || []).length;
-    const newContent = content + ` [${count}]`;
-    handleChange(newContent);
-  };
-
-  const handleChange = (val) => {
-    form.setFieldValue(['part1', 'content'], val);
-
-    // Detect blank keys hiện có trong content
+  const syncBlanks = (val) => {
     const detectedKeys = [...val.matchAll(BLANK_REGEX)].map((m) => m[1]);
-
-    // Get existing blanks in form
     const existingBlanks = form.getFieldValue(['part1', 'blanks']) || [];
 
-    // Build new blanks list mà KHÔNG mất options cũ
     const mergedBlanks = detectedKeys.map((key) => {
       const found = existingBlanks.find((b) => b.key === key);
-      if (found) return found; // giữ lại options + correctAnswer
-
-      // blank mới → tạo blank rỗng
+      if (found) return found;
       return {
         key,
         options: [],
-        correctAnswer: '',
+        correctAnswer: null,
       };
     });
 
     form.setFieldValue(['part1', 'blanks'], mergedBlanks);
   };
+
+  const handleChange = (val) => {
+    form.setFieldValue(['part1', 'content'], val);
+    syncBlanks(val);
+  };
+
+  const insertBlank = () => {
+    const current = form.getFieldValue(['part1', 'content']) || '';
+    const count = (current.match(/\[\d+\]/g) || []).length;
+    handleChange(current + ` [${count}]`);
+  };
+
+  // Sync blanks when content changes (including programmatic setFieldsValue)
+  useEffect(() => {
+    if (content !== undefined && content !== null) {
+      syncBlanks(content);
+    }
+  }, [content]);
 
   return (
     <div className='w-full pt-2'>

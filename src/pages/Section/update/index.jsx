@@ -43,7 +43,15 @@ const SectionUpdate = () => {
     }
   };
 
-  return <div className='p-4'>{renderDetail()}</div>;
+  return (
+    <div className="figma-page-container">
+      <div className="figma-content-wrapper">
+        <div className="py-8">
+          {renderDetail()}
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default SectionUpdate;

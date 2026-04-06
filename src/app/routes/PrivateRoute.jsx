@@ -185,6 +185,12 @@ const PrivateRoute = [
             role: ['teacher', 'admin', 'superadmin'],
           },
           {
+            path: 'create/:skill/:draftId',
+            element: <CreateQuestion />,
+            breadcrumb: 'Edit Draft',
+            role: ['teacher', 'admin', 'superadmin'],
+          },
+          {
             path: 'update/:id',
             element: <SectionUpdate />,
             breadcrumb: 'Update Section ',

@@ -105,53 +105,31 @@ const MinioUploadDragger = ({
 
         setFileList([pendingFile]);
 
-        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-          fileName: file.name,
-          type: bucketType,
-        });
+        // Use backend proxy upload instead of direct to MinIO to avoid CORS
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', bucketType);
 
-        const { uploadUrl, fileUrl } = data;
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.onprogress = (event) => {
-          const total = event.total || file.size;
-          const percent = Math.round((event.loaded / total) * 100);
-
-          setFileList([
-            {
-              ...pendingFile,
-              percent,
+        try {
+          const { data: uploadData } = await axiosInstance.post('/presigned-url/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (event) => {
+              const total = event.total || file.size;
+              const percent = Math.round((event.loaded / total) * 100);
+              setFileList([{ ...pendingFile, percent }]);
+              onProgress?.({ percent });
             },
-          ]);
+          });
 
-          onProgress?.({ percent });
-        };
+          const { fileUrl: actualFileUrl } = uploadData;
 
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const uploadedFile = buildUploadedFile(fileUrl, file.name);
-            setFileList([uploadedFile]);
-            onChange?.(fileUrl);
-            onSuccess?.({ fileUrl });
-            return;
-          }
-
-          const error = new Error('Upload failed');
-          setFileList([]);
-          onError?.(error);
-          message.error('Upload failed');
-        };
-
-        xhr.onerror = () => {
-          const error = new Error('Upload failed');
-          setFileList([]);
-          onError?.(error);
-          message.error('Upload failed');
-        };
-
-        xhr.open('PUT', uploadUrl, true);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
+          const uploadedFile = buildUploadedFile(actualFileUrl, file.name);
+          setFileList([uploadedFile]);
+          onChange?.(actualFileUrl);
+          onSuccess?.({ fileUrl: actualFileUrl });
+        } catch (uploadError) {
+          throw new Error('Upload failed');
+        }
       } catch (error) {
         setFileList([]);
         onError?.(error);

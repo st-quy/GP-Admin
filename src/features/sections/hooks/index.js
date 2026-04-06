@@ -33,11 +33,30 @@ export const useDeleteSection = () => {
       return response.data;
     },
     onSuccess: (data) => {
-      message.success('Deleted section successfully');
+      message.success('Topic deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['sections'] });
     },
     onError: ({ response }) => {
-      message.error("Can't delete this section because it has topic");
+      const errorMsg = response?.data?.message || 'Failed to delete question';
+      message.error(errorMsg);
+    },
+  });
+};
+
+export const useUpdateSectionStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, Status }) => {
+      const response = await SectionApi.updateStatus(id, Status);
+      return response.data;
+    },
+    onSuccess: (data) => {
+      message.success(data.message || 'Status updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['sections'] });
+    },
+    onError: ({ response }) => {
+      const errorMsg = response?.data?.message || 'Failed to update status';
+      message.error(errorMsg);
     },
   });
 };

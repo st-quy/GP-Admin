@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Card,
   Table,
-  Input,
   Select,
   Space,
   Button,
   Typography,
   message,
+  Row,
+  Col,
   Tag,
   Tooltip as AntTooltip,
+  ConfigProvider,
+  Pagination,
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -21,11 +24,13 @@ import {
   SearchOutlined,
   EyeOutlined,
   PlayCircleOutlined,
+  PlusCircleOutlined,
+  FileTextOutlined,
+  FolderAddOutlined,
   ExportOutlined,
   CopyOutlined,
 } from '@ant-design/icons';
 
-import HeaderInfo from '@app/components/HeaderInfo';
 import { useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
@@ -34,13 +39,16 @@ import {
   useDeleteTopicSectionByTopicId,
   useUpdateTopic,
   useCreateTopic,
+  useDuplicateTopic,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import { STATUS_CONFIG } from '@shared/lib/constants/examStatus';
+import SearchInput from "@/app/components/SearchInput.jsx";
+import { StatCard } from "../../features/dashboard/components/StatCard";
 
-const { Option } = Select;
 const { Text } = Typography;
+const { Option } = Select;
 
 const statusOptions = [
   { value: 'draft', label: 'Draft' },
@@ -53,7 +61,6 @@ const TopicListPage = () => {
   const navigate = useNavigate();
   const { role } = useSelector((state) => state.auth);
   
-  // Robust check for admin role
   const isAdmin = Array.isArray(role) 
     ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
     : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
@@ -62,16 +69,42 @@ const TopicListPage = () => {
 
   // Filters
   const [search, setSearch] = useState('');
-  const debouncedSearch = useDebouncedValue(search, 500);
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(5);
+  const [pageSize, setPageSize] = useState(10);
 
   // Row selection
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
+  const onSearchChange = (event) => {
+    const rawValue = event.target.value;
+    let cleanValue = rawValue;
+
+    if (/[^a-zA-Z0-9\s]/.test(cleanValue)) {
+      message.warning('Special characters and emojis are not allowed in search.');
+      cleanValue = cleanValue.replace(/[^a-zA-Z0-9\s]/g, '');
+    }
+
+    if (/\s{2,}/.test(cleanValue)) {
+      message.info('Multiple spaces are not allowed; collapsed to a single space.');
+      cleanValue = cleanValue.replace(/\s{2,}/g, ' ');
+    }
+
+    if (cleanValue.length > 50) {
+      message.error('Search limit reached (max 50 characters).');
+      cleanValue = cleanValue.slice(0, 50);
+    }
+
+    cleanValue = cleanValue.replace(/^\s+/, '');
+    setSearch(cleanValue);
+    setPage(1);
+    setSelectedRowKeys([]); // Reset selection on search
+  };
+
+  const debouncedSearch = useDebouncedValue(search, 500);
+
   // Query topics from backend with params
-  const { data, isLoading } = useGetTopics({
+  const { data, isLoading, refetch } = useGetTopics({
     searchName: debouncedSearch || undefined,
     status: statusFilter === 'all' ? undefined : statusFilter,
     page,
@@ -83,14 +116,52 @@ const TopicListPage = () => {
 
   const deleteTopic = useDeleteTopic();
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
-  const updateTopic = useUpdateTopic();
-  const createTopic = useCreateTopic();
+  const { mutateAsync: updateTopic } = useUpdateTopic();
+  const { mutateAsync: createTopic } = useCreateTopic();
+  const { mutateAsync: duplicateTopic } = useDuplicateTopic();
 
   const counts = {
     Submited: data?.statusCounts?.submited || 0,
     approved: data?.statusCounts?.approved || 0,
     Draft: data?.statusCounts?.draft || 0,
     Rejected: data?.statusCounts?.rejected || 0,
+    Archived: data?.statusCounts?.archived || 0,
+  };
+
+  const handleArchiveTopic = (topic) => {
+    openConfirmModal({
+      title: 'Archive Exam',
+      message: `Are you sure you want to archive "${topic.Name}"? Once archived, it cannot be edited.`,
+      okText: 'Archive',
+      okButtonColor: '#637381',
+      onConfirm: async () => {
+        try {
+          await updateTopic({ id: topic.ID, data: { Status: 'archived' } });
+          message.success('Exam archived successfully');
+          refetch();
+        } catch (error) {
+          message.error('Failed to archive exam');
+        }
+      },
+    });
+  };
+
+  const handleDuplicateTopic = (topic) => {
+    openConfirmModal({
+      title: 'Duplicate Exam',
+      message: `Are you sure you want to duplicate "${topic.Name}"? This will create a new editable draft.`,
+      okText: 'Duplicate',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        try {
+          await duplicateTopic(topic.ID);
+          message.success(`Exam "${topic.Name}" duplicated successfully`);
+          refetch();
+        } catch (error) {
+          // Error message is handled in the hook
+        }
+      },
+    });
   };
 
   /* =========================================================
@@ -113,8 +184,9 @@ const TopicListPage = () => {
       okButtonColor: '#52c41a',
       onConfirm: async () => {
         try {
-          await updateTopic.mutateAsync({ id: topic.ID, data: { Status: 'approved' } });
+          await updateTopic({ id: topic.ID, data: { Status: 'approved' } });
           message.success('Exam approved successfully');
+          refetch();
         } catch (error) {
           message.error('Failed to approve exam');
         }
@@ -130,11 +202,12 @@ const TopicListPage = () => {
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
         try {
-          await updateTopic.mutateAsync({
+          await updateTopic({
             id: topic.ID,
             data: { Status: 'rejected', ReasonReject: null },
           });
           message.success('Exam rejected successfully');
+          refetch();
         } catch (error) {
           message.error('Failed to reject exam');
         }
@@ -145,7 +218,7 @@ const TopicListPage = () => {
   const handleDeleteTopic = (topic) => {
     openConfirmModal({
       title: 'Are you sure you want to delete this topic?',
-      message: 'After deleting this topic it will no longer appear.',
+      message: `After deleting "${topic.Name}", it will no longer appear in the system.`,
       okText: 'Delete',
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
@@ -160,10 +233,11 @@ const TopicListPage = () => {
           await deleteTopicSectionsByTopicId.mutateAsync(topic.ID);
           await deleteTopic.mutateAsync(topic.ID);
 
-          message.success('Topic and its TopicSections deleted successfully');
+          message.success(`Exam set "${topic.Name}" deleted successfully`);
+          refetch();
         } catch (error) {
           console.error(error);
-          message.error('Failed to delete topic or its Sections');
+          message.error(`Failed to delete exam set "${topic.Name}"`);
         }
       },
     });
@@ -184,8 +258,8 @@ const TopicListPage = () => {
   };
 
   const handleEditTopic = (topic) => {
-    if (['approved', 'submited'].includes(topic.Status)) {
-      message.error('Cannot edit topic with status Approved or Submited');
+    if (['approved', 'submited', 'archived'].includes(topic.Status)) {
+      message.error('Cannot edit topic with current status');
       return;
     }
     navigate(`/exam/edit/${topic.ID}`);
@@ -209,11 +283,12 @@ const TopicListPage = () => {
         try {
           await Promise.all(
             selected.map((t) =>
-              updateTopic.mutateAsync({ id: t.ID, data: { Status: newStatus } })
+              updateTopic({ id: t.ID, data: { Status: newStatus } })
             )
           );
           setSelectedRowKeys([]);
           message.success(`Updated ${selected.length} topic(s) to "${newStatus}"`);
+          refetch();
         } catch {
           message.error('Failed to update some topics');
         }
@@ -245,6 +320,7 @@ const TopicListPage = () => {
           }
           setSelectedRowKeys([]);
           message.success(`Deleted ${deletable.length} topic(s)`);
+          refetch();
         } catch {
           message.error('Failed to delete some topics');
         }
@@ -263,13 +339,14 @@ const TopicListPage = () => {
       onConfirm: async () => {
         try {
           for (const t of selected) {
-            await createTopic.mutateAsync({
+            await createTopic({
               Name: `${t.Name} (Copy)`,
               Status: 'draft',
             });
           }
           setSelectedRowKeys([]);
           message.success(`Cloned ${selected.length} topic(s)`);
+          refetch();
         } catch {
           message.error('Failed to clone some topics');
         }
@@ -366,25 +443,28 @@ const TopicListPage = () => {
      ========================================================= */
   const columns = [
     {
-      title: 'Topic Name',
+      title: <span className="font-bold text-[#637381]">TOPIC NAME</span>,
       dataIndex: 'Name',
       key: 'Name',
+      width: '300px',
       ellipsis: true,
       render: (text) => (
-        <span className='font-medium text-gray-800'>{text}</span>
+        <span className="font-medium text-primaryTextColor">{text}</span>
       ),
     },
     {
-      title: 'Status',
+      title: <span className="font-bold text-[#637381]">STATUS</span>,
       dataIndex: 'Status',
       key: 'Status',
+      width: '150px',
+      align: 'center',
       render: (_, record) => {
         const cfg = STATUS_CONFIG[record.Status] || {};
 
         const tagElement = (
           <Tag
             color={cfg.antColor}
-            className='font-medium px-3 py-1 rounded-md'
+            className='font-semibold px-3 py-1 rounded-full border-none'
           >
             {cfg.label || record.Status}
           </Tag>
@@ -407,254 +487,366 @@ const TopicListPage = () => {
         return tagElement;
       },
     },
-
     {
-      title: 'Creation day',
+      title: <span className="font-bold text-[#637381]">CREATION DAY</span>,
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: '150px',
+      align: 'center',
       render: (date) => (
-        <span className='text-gray-500 text-sm'>
+        <span className="font-medium text-primaryTextColor">
           {new Date(date).toLocaleDateString()}
         </span>
       ),
     },
     {
-      title: 'Update date',
+      title: <span className="font-bold text-[#637381]">UPDATE DATE</span>,
       dataIndex: 'updatedAt',
       key: 'updatedAt',
+      width: '150px',
+      align: 'center',
       render: (date) => (
-        <span className='text-gray-500 text-sm'>
+        <span className="font-medium text-primaryTextColor">
           {new Date(date).toLocaleDateString()}
         </span>
       ),
     },
     {
-      title: 'Action',
+      title: <span className="font-bold text-[#637381]">ACTIONS</span>,
       key: 'action',
+      width: '200px',
       align: 'center',
-      // ellipsis: true,
       render: (_, record) => {
         const isSubmitted = record.Status === 'submited';
         const isApproved = record.Status === 'approved';
-        const canModify = isSubmitted || isApproved;
+        const isRejected = record.Status === 'rejected';
+        const isArchived = record.Status === 'archived';
+        
+        const canEdit = !isSubmitted && !isApproved && !isArchived;
+        const canArchive = isApproved || isRejected;
         
         return (
-          <Space size='middle'>
-            <Button
-              title='Review Topic'
-              type='text'
-              icon={<EyeOutlined />}
-              className='text-[#1890FF]'
+          <div className="flex items-center justify-center gap-3">
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 navigate(`view/${record.ID}`);
               }}
-            />
+              className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+              title="Review Topic"
+            >
+              <EyeOutlined style={{ fontSize: "20px", color: "#003087" }} />
+            </button>
 
             {isSubmitted && isAdmin && (
               <>
-                <Button
-                  title='Approve Topic'
-                  type='text'
-                  icon={<CheckCircleOutlined />}
-                  className='text-[#52c41a]'
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleApproveTopic(record);
                   }}
-                />
-                <Button
-                  title='Reject Topic'
-                  type='text'
-                  icon={<CloseCircleOutlined />}
-                  className='text-[#FF4D4F]'
+                  className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                  title="Approve Topic"
+                >
+                  <CheckCircleOutlined style={{ fontSize: "20px", color: "#22AD5C" }} />
+                </button>
+                <button
                   onClick={(e) => {
                     e.stopPropagation();
                     handleRejectTopic(record);
                   }}
-                />
+                  className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                  title="Reject Topic"
+                >
+                  <CloseCircleOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
+                </button>
               </>
             )}
 
-            {!canModify && (
-              <>
-                <Button
-                  title='Edit Topic'
-                  type='text'
-                  icon={<EditOutlined />}
-                  className='text-[#1890FF]'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleEditTopic(record);
-                  }}
-                />
-
-                <Button
-                  title='Delete Topic'
-                  type='text'
-                  icon={<DeleteOutlined />}
-                  className='text-[#FF4D4F]'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteTopic(record);
-                  }}
-                />
-              </>
+            {canArchive && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleArchiveTopic(record);
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Archive Topic"
+              >
+                <FolderAddOutlined style={{ fontSize: "20px", color: "#637381" }} />
+              </button>
             )}
-            <PlayCircleOutlined
-              title='Do mock test'
-              type='link'
-              className='p-0 flex items-center cursor-pointer'
+
+            {canEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEditTopic(record);
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Edit Topic"
+              >
+                <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
+              </button>
+            )}
+
+            {(canEdit || isArchived || isRejected) && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteTopic(record);
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Delete Topic"
+              >
+                <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
+              </button>
+            )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDuplicateTopic(record);
+              }}
+              className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+              title="Duplicate Topic"
+            >
+              <CopyOutlined style={{ fontSize: "20px", color: "#003087" }} />
+            </button>
+
+            <button
               onClick={() => onStartHandler(record)}
-            />
-          </Space>
+              className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+              title="Do mock test"
+            >
+              <PlayCircleOutlined style={{ fontSize: "20px", color: "#003087" }} />
+            </button>
+          </div>
         );
       },
     },
   ];
 
+  const total = totalItems;
+  const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, total);
+
   return (
-    <>
-      <ModalComponent />
-      
-      <HeaderInfo
-        title='Topic List'
-        subtitle='Manage and track all topics'
-        SubAction={
-          <Button
-            className='w-full p-5 bg-white text-black border border-gray-300 hover:!bg-gray-100 rounded-lg shadow-sm'
-            onClick={() => navigate('create')}
-          >
-            Create New Topic
-          </Button>
-        }
-      />
-
-      <div className='bg-gray-50 p-6'>
-        <div className='mx-auto space-y-6'>
-          {/* Summary Cards */}
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-amber-500 text-sm'>Submited</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.Submited}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center'>
-                  <ClockCircleOutlined className='text-gray-500' />
-                </div>
-              </div>
-            </Card>
-
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-emerald-500 text-sm'>Approved</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.approved}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center'>
-                  <CheckCircleOutlined className='text-emerald-500' />
-                </div>
-              </div>
-            </Card>
-
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-gray-500 text-sm'>Draft</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.Draft}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center'>
-                  <ExclamationCircleOutlined className='text-amber-500' />
-                </div>
-              </div>
-            </Card>
-
-            <Card className='shadow-sm border-none'>
-              <div className='flex items-center justify-between'>
-                <div>
-                  <div className='text-rose-500 text-sm'>Rejected</div>
-                  <div className='text-2xl font-semibold mt-1'>
-                    {counts.Rejected}
-                  </div>
-                </div>
-                <div className='w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center'>
-                  <CloseCircleOutlined className='text-rose-500' />
-                </div>
-              </div>
-            </Card>
+    <div className="figma-page-container">
+      <div className="figma-content-wrapper">
+        <ModalComponent />
+        
+        <div className="py-8">
+          <div className="mb-10 flex flex-col md:flex-row justify-between items-start gap-4">
+            <div>
+              <h4 className="figma-title">Topic List</h4>
+              <p className="figma-subtitle">Manage and track all topics</p>
+            </div>
+            <Button
+              icon={<PlusCircleOutlined />}
+              onClick={() => navigate('create')}
+              className="!h-[50px] !w-[210px] !rounded-[50px] !bg-primaryColor !text-white font-[500] leading-[24px] hover:!opacity-90"
+            >
+              Create New Topic
+            </Button>
           </div>
 
-          {/* Table + Filters */}
-          <Card className='shadow-sm border-none'>
-            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4'>
-              <Input
-                allowClear
-                className='sm:max-w-xs'
-                placeholder='Search topic name...'
-                prefix={<SearchOutlined />}
-                value={search}
-                maxLength={255}
-                onChange={(e) => {
-                  const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:]/g, '');
-
-                  setPage(1);
-                  setSelectedRowKeys([]);
-                  setSearch(sanitized);
-                }}
+          <Row gutter={[20, 20]} className="mb-10">
+            <Col xs={24} sm={12} md={8} lg={4.8}>
+              <StatCard
+                icon={<ClockCircleOutlined />}
+                title="Submitted"
+                value={counts.Submited}
+                subtitle="Awaiting review"
+                color="#003087"
               />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
+              <StatCard
+                icon={<CheckCircleOutlined />}
+                title="Approved"
+                value={counts.approved}
+                subtitle="Ready for test"
+                color="#22AD5C"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
+              <StatCard
+                icon={<ExclamationCircleOutlined />}
+                title="Draft"
+                value={counts.Draft}
+                subtitle="Work in progress"
+                color="#F2994A"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
+              <StatCard
+                icon={<CloseCircleOutlined />}
+                title="Rejected"
+                value={counts.Rejected}
+                subtitle="Requires revision"
+                color="#FF4D4F"
+              />
+            </Col>
+            <Col xs={24} sm={12} md={8} lg={4.8}>
+              <StatCard
+                icon={<FileTextOutlined />}
+                title="Archived"
+                value={counts.Archived}
+                subtitle="Historical data"
+                color="#637381"
+              />
+            </Col>
+          </Row>
 
-              <Select
-                className='w-40'
-                value={statusFilter}
-                onChange={(val) => {
-                  setPage(1);
-                  setSelectedRowKeys([]);
-                  setStatusFilter(val);
-                }}
-              >
-                <Option value='all'>All Statuses</Option>
-                <Option value='submited'>Submited</Option>
-                <Option value='draft'>Draft</Option>
-                <Option value='approved'>Approved</Option>
-                <Option value='rejected'>Rejected</Option>
-              </Select>
+          <div className='flex items-center justify-between mb-10'>
+            <div className='flex items-center gap-4'>
+              <SearchInput
+                placeholder="Search topic name..."
+                value={search}
+                onSearchChange={onSearchChange}
+                isFigmaRedesign={true}
+                style={{ margin: 0 }}
+              />
+              <div className="status-select-wrapper">
+                <Select
+                  placeholder="Select STATUS"
+                  value={statusFilter}
+                  onChange={(val) => {
+                    setPage(1);
+                    setSelectedRowKeys([]); // Reset selection on filter change
+                    setStatusFilter(val);
+                  }}
+                  className="figma-status-select-sync"
+                  options={[
+                    { value: 'all', label: 'All Statuses' },
+                    { value: 'submited', label: 'Submited' },
+                    { value: 'draft', label: 'Draft' },
+                    { value: 'approved', label: 'Approved' },
+                    { value: 'rejected', label: 'Rejected' },
+                    { value: 'archived', label: 'Archived' },
+                  ]}
+                />
+              </div>
             </div>
+          </div>
 
+          <style>{`
+            .status-select-wrapper .ant-select-selector {
+              height: 48px !important;
+              display: flex !important;
+              align-items: center !important;
+              border: 1px solid #DFE4EA !important;
+              border-radius: 6px !important;
+              box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1) !important;
+              background-color: #ffffff !important;
+              padding: 0 12px !important;
+            }
+            .status-select-wrapper .ant-select-selection-item,
+            .status-select-wrapper .ant-select-selection-placeholder {
+              line-height: 46px !important;
+              display: flex !important;
+              align-items: center !important;
+            }
+            .figma-status-select-sync.ant-select {
+              width: 180px !important;
+              height: 48px !important;
+              margin: 0 !important;
+            }
+          `}</style>
+
+          <div className="figma-table-card figma-table-overrides w-full">
             <Table
               rowKey='ID'
               columns={columns}
               dataSource={topics}
               loading={isLoading}
               rowSelection={rowSelection}
-              pagination={{
-                current: page,
-                pageSize: pageSize,
-                total: totalItems,
-                showSizeChanger: true,
-                pageSizeOptions: ['5', '10', '20'],
-                onChange: (p, ps) => {
-                  setPage(p);
-                  setPageSize(ps);
-                },
-                position: ['bottomRight'],
-                showTotal: (total, range) => 
-                  `${range[0]}–${range[1]} of ${total} items`,
-              }}
+              pagination={false}
             />
-          </Card>
+          </div>
+
+          <div className="figma-pagination-wrapper">
+            <div className="figma-pagination-box">
+              <div className="figma-pagination-text whitespace-nowrap">
+                {total === 0
+                  ? "No entries found"
+                  : `Showing ${String(start).padStart(2, "0")}-${String(end).padStart(2, "0")} of ${total}`}
+              </div>
+
+              <div className="figma-pagination-nav-group">
+                <Pagination
+                  current={page}
+                  pageSize={pageSize}
+                  total={total}
+                  onChange={(p) => {
+                    setPage(p);
+                    setSelectedRowKeys([]); // Reset selection on page change
+                  }}
+                  showSizeChanger={false}
+                  itemRender={(pageNumber, type, original) => {
+                    if (type === "page") {
+                      const isActive = pageNumber === page;
+                      return (
+                        <button className={`figma-page-btn ${isActive ? "active" : ""}`}>
+                          {pageNumber}
+                        </button>
+                      );
+                    }
+                    if (type === "prev") {
+                      return (
+                        <button className="figma-symbol-btn" type="button">
+                          {"\u2039"}
+                        </button>
+                      );
+                    }
+                    if (type === "next") {
+                      return (
+                        <button className="figma-symbol-btn" type="button">
+                          {"\u203A"}
+                        </button>
+                      );
+                    }
+                    if (type === "jump-prev" || type === "jump-next") {
+                      return (
+                        <span
+                          className="text-[#637381] px-1"
+                          style={{ fontSize: "16px", lineHeight: "25px" }}
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    return original;
+                  }}
+                />
+              </div>
+
+              <div className="figma-page-size-container">
+                <Select
+                  value={pageSize}
+                  onChange={(val) => {
+                    setPageSize(val);
+                    setPage(1);
+                    setSelectedRowKeys([]); // Reset selection on page size change
+                  }}
+                  bordered={false}
+                  className="figma-page-size-select"
+                  options={[
+                    { value: 5, label: "05 / pages" },
+                    { value: 10, label: "10 / pages" },
+                    { value: 20, label: "20 / pages" },
+                    { value: 50, label: "50 / pages" },
+                  ]}
+                />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
       {/* ==================== BULK ACTION TOOLBAR ==================== */}
       {renderBulkToolbar()}
-    </>
+    </div>
   );
 };
 
