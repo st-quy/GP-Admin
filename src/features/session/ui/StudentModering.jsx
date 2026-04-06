@@ -1,7 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
 import { Table, message, Pagination, Select } from "antd";
-import CheckCircleIcon from "@/assets/icons/check-circle.svg";
-import CloseCircleIcon from "@/assets/icons/close-circle.svg";
 import ConfirmationModal from "@shared/Modal/ConfirmationModal";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -141,37 +139,45 @@ const StudentMonitoring = ({
 
   const columns = [
     {
-      title: "Student Name",
+      title: "STUDENT NAME",
       dataIndex: "studentName",
       key: "studentName",
+      align: "center",
+      width: "30%",
     },
     {
-      title: "Student ID",
+      title: "STUDENT ID",
       dataIndex: "studentId",
       key: "studentId",
+      align: "center",
+      width: "20%",
     },
     {
-      title: "Class Name",
+      title: "CLASS NAME",
       dataIndex: "className",
       key: "className",
+      align: "center",
+      width: "30%",
     },
     {
-      title: "Action",
+      title: "ACTION",
       key: "action",
+      align: "center",
+      width: "20%",
       render: (_, record) => (
-        <div className="flex justify-center space-x-4">
-          <img
-            src={CheckCircleIcon}
-            alt="Check Circle"
+        <div className="flex justify-center items-center gap-4">
+          <span
             onClick={() => handleAction(record, "approve")}
-            className="md:h-7 h-5 text-[#22AD5C] hover:text-green-600 hover:cursor-pointer"
-          />
-          <img
-            src={CloseCircleIcon}
-            alt="Close Circle"
+            className="text-[#22AD5C] hover:opacity-70 cursor-pointer text-2xl leading-none select-none"
+          >
+            &#x2714;
+          </span>
+          <span
             onClick={() => handleAction(record, "reject")}
-            className="md:h-7 h-5 text-[#F23030] hover:text-red-600 hover:cursor-pointer"
-          />
+            className="text-[#F23030] hover:opacity-70 cursor-pointer text-2xl leading-none select-none"
+          >
+            &#x2716;
+          </span>
         </div>
       ),
     },
@@ -183,29 +189,28 @@ const StudentMonitoring = ({
 
   return (
     <div className="w-full">
-      <div className="flex items-center min-h-[32px] mb-2">
+      <div className="flex items-center min-h-[32px] mb-4">
         {selectedRowKeys.length > 0 && (
-          <div className="flex items-center gap-2">
-            <div
-              className="text-[#003087] font-medium md:text-sm text-[10px] h-8 px-3 hover:underline hover:cursor-pointer"
+          <div className="flex items-center gap-1">
+            <span
+              className="text-[#003087] font-medium text-sm underline cursor-pointer hover:opacity-70 px-1"
               onClick={() => handleBulkAction("approve")}
             >
               Approve
-            </div>
-            <div className="text-[#DFE4EA]">|</div>
-            <div
-              className="text-[#F23030] font-medium md:text-sm text-[10px] h-8 px-3 hover:underline hover:cursor-pointer"
+            </span>
+            <span className="text-[#9CA3AF]">|</span>
+            <span
+              className="text-[#F23030] font-medium text-sm underline cursor-pointer hover:opacity-70 px-1"
               onClick={() => handleBulkAction("reject")}
             >
               Reject
-            </div>
+            </span>
           </div>
         )}
       </div>
 
       <div className="figma-table-card figma-table-overrides w-full">
         <Table
-          scroll={{ y: 5 * 70 }}
           rowSelection={rowSelection}
           // @ts-ignore
           columns={columns}
@@ -216,6 +221,7 @@ const StudentMonitoring = ({
           )}
           pagination={false}
           className="w-full"
+          scroll={{ x: "max-content" }}
         />
       </div>
 

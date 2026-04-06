@@ -76,14 +76,13 @@ const Details = ({ type, isLoading, data }) => {
           : "View student details."}
       </p>
       
-      <div className="mt-8 w-full rounded-lg bg-white p-10 shadow-[0px_4px_4px_rgba(0,0,0,0.1)]">
+      <div className="mt-8 w-full rounded-lg bg-white py-8 px-10 shadow-[0px_4px_4px_rgba(0,0,0,0.1)]">
         {type === TableType.SESSION ? (
-          <div className="flex flex-col md:flex-row justify-between lg:gap-x-40">
-            {/* Column 1 */}
-            <div className="flex flex-col gap-y-6 flex-1">
+          <div className="flex flex-col md:flex-row gap-x-10">
+            <div className="flex-1 flex flex-col gap-y-5">
               {col1.map((item, index) => (
-                <div key={index} className="flex items-center">
-                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
+                <div key={index} className="flex items-center h-[40px]">
+                  <span className="w-[210px] shrink-0 text-left pr-5 text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className={`text-[16px] text-[#1F2A37] ${item.bold ? 'font-semibold' : 'font-medium'}`}>
@@ -92,11 +91,10 @@ const Details = ({ type, isLoading, data }) => {
                 </div>
               ))}
             </div>
-            {/* Column 2 */}
-            <div className="flex flex-col gap-y-6 flex-1">
+            <div className="flex-1 flex flex-col gap-y-5">
               {col2.map((item, index) => (
-                <div key={index} className="flex items-center">
-                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
+                <div key={index} className="flex items-center h-[40px]">
+                  <span className="w-[120px] shrink-0 text-left pr-5 text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className={`text-[16px] text-[#1F2A37] ${item.bold ? 'font-semibold' : 'font-medium'}`}>
@@ -107,11 +105,11 @@ const Details = ({ type, isLoading, data }) => {
             </div>
           </div>
         ) : (
-          <div className="flex flex-col md:flex-row justify-between lg:gap-x-40">
-            <div className="flex flex-col gap-y-6 flex-1">
+          <div className="flex flex-col md:flex-row gap-x-10">
+            <div className="flex-1 flex flex-col gap-y-5">
               {studentCol1.map((item, index) => (
-                <div key={index} className="flex items-center">
-                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
+                <div key={index} className="flex items-center h-[40px]">
+                  <span className="w-[140px] shrink-0 text-left pr-5 text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className="text-[16px] text-[#1F2A37] font-semibold">
@@ -120,10 +118,10 @@ const Details = ({ type, isLoading, data }) => {
                 </div>
               ))}
             </div>
-            <div className="flex flex-col gap-y-6 flex-1 mt-6 md:mt-0">
+            <div className="flex-1 flex flex-col gap-y-5 mt-5 md:mt-0">
               {studentCol2.map((item, index) => (
-                <div key={index} className="flex items-center">
-                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
+                <div key={index} className="flex items-center h-[40px]">
+                  <span className="w-[120px] shrink-0 text-left pr-5 text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className="text-[16px] text-[#1F2A37] font-semibold">
