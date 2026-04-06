@@ -2,6 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { Input, Button, Select, Row, Col, Typography } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { Text } = Typography;
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -164,12 +168,11 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 </div>
 
                 <Input
-                  maxLength={255}
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
                   placeholder={`Content ${index + 1}`}
                   value={item.text}
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                    updateLeft(index, sanitized)
+                    updateLeft(index, sanitizeQuestionInput(e.target.value));
                   }}
                   status={leftErrors[index] ? 'error' : ''}
                 />
@@ -192,6 +195,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
 
           <Button
             icon={<PlusOutlined />}
+            htmlType='button'
             onClick={addLeft}
             style={{ width: '100%', marginTop: 10 }}
           >
@@ -231,14 +235,12 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
                 </div>
 
                 <Input
-                  maxLength={255}
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
                   placeholder={`Option ${LETTERS[index]}`}
                   value={item.text}
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                    updateRight(index, sanitized)
-                  }
-                  }
+                    updateRight(index, sanitizeQuestionInput(e.target.value));
+                  }}
                   status={rightErrors[index] ? 'error' : ''}
                 />
 
@@ -260,6 +262,7 @@ const GrammarMatchingEditorForm = ({ groupIndex, group, updateGroup }) => {
 
           <Button
             icon={<PlusOutlined />}
+            htmlType='button'
             onClick={addRight}
             style={{ width: '100%', marginTop: 10 }}
           >
