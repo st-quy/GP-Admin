@@ -1,5 +1,5 @@
 // UpdateListening.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Input,
   Select,
@@ -9,8 +9,9 @@ import {
   Card,
   Space,
   Collapse,
+  Modal,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 
 import { useNavigate, useParams } from 'react-router-dom';
 import {
@@ -21,6 +22,7 @@ import {
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import ListeningMatchingEditor from '../CreateSkills/Listening/ListeningMatchingEditor';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
+import { QuestionApi } from '@features/questions/api';
 import {
   MAX_QUESTION_INPUT_LENGTH,
   sanitizeQuestionInput,
@@ -28,6 +30,7 @@ import {
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
+const AUTOSAVE_DEBOUNCE_MS = 2000;
 
 const UpdateListening = () => {
   const navigate = useNavigate();
@@ -40,6 +43,13 @@ const UpdateListening = () => {
   );
 
   const { mutate: updateListeningGroup, isPending } = useUpdateQuestionGroup();
+
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const debounceTimerRef = useRef(null);
+  const payloadRef = useRef(null);
+  const isPublishingRef = useRef(false);
 
   // ===============================
   // STATE
@@ -98,26 +108,42 @@ const UpdateListening = () => {
     setPart1Id(d.part1?.id);
     setPart1Name(d.part1?.name);
 
-    const mcqList = d.part1?.questions?.map((q, idx) => {
-      const opts = q.AnswerContent?.options || [];
+    if (d.part1?.questions?.length > 0) {
+      const mcqList = d.part1.questions.map((q, idx) => {
+        const opts = q.AnswerContent?.options || [];
 
-      return {
-        id: idx + 1, // UI index
-        questionId: q.ID,
-        instruction: q.Content || '',
-        audioUrl: q.AudioKeys || '',
-        options: [
-          { id: 1, label: 'A', value: opts[0] || '' },
-          { id: 2, label: 'B', value: opts[1] || '' },
-          { id: 3, label: 'C', value: opts[2] || '' },
-        ],
-        correctId:
-          [opts[0], opts[1], opts[2]].indexOf(q.AnswerContent?.correctAnswer) +
-          1,
-      };
-    });
+        return {
+          id: idx + 1,
+          questionId: q.ID,
+          instruction: q.Content || '',
+          audioUrl: q.AudioKeys || '',
+          options: [
+            { id: 1, label: 'A', value: opts[0] || '' },
+            { id: 2, label: 'B', value: opts[1] || '' },
+            { id: 3, label: 'C', value: opts[2] || '' },
+          ],
+          correctId:
+            [opts[0], opts[1], opts[2]].indexOf(q.AnswerContent?.correctAnswer) +
+            1,
+        };
+      });
 
-    setPart1(mcqList);
+      setPart1(mcqList);
+    } else {
+      setPart1(
+        Array.from({ length: 13 }, (_, i) => ({
+          id: i + 1,
+          instruction: '',
+          audioUrl: '',
+          options: [
+            { id: 1, label: 'A', value: '' },
+            { id: 2, label: 'B', value: '' },
+            { id: 3, label: 'C', value: '' },
+          ],
+          correctId: null,
+        }))
+      );
+    }
 
     // ---- PART 2 ----
     setPart2Id(d.part2?.id);
@@ -126,26 +152,37 @@ const UpdateListening = () => {
     const part2Q = d.part2?.questions?.[0];
     const ac2 = part2Q?.AnswerContent;
 
-    setPart2({
-      questionId: part2Q?.ID,
-      instruction: ac2?.content || '',
-      audioUrl: ac2?.audioKeys || '',
-      leftItems:
-        ac2?.leftItems?.map((t, idx) => ({
-          id: idx + 1,
-          text: t.replace(/^\s*\d+\.\s*/, ''),
-        })) || [],
-      rightItems:
-        ac2?.rightItems?.map((t, idx) => ({
-          id: idx + 1,
-          text: t.replace(/^\s*\d+\.\s*/, ''),
-        })) || [],
-      mapping:
-        ac2?.correctAnswer?.map((m, idx) => ({
-          leftIndex: idx,
-          rightId: ac2.rightItems.findIndex((x) => x === m.value) + 1,
-        })) || [],
-    });
+    if (part2Q) {
+      setPart2({
+        questionId: part2Q?.ID,
+        instruction: ac2?.content || '',
+        audioUrl: ac2?.audioKeys || '',
+        leftItems:
+          ac2?.leftItems?.map((t, idx) => ({
+            id: idx + 1,
+            text: typeof t === 'string' ? t.replace(/^\s*\d+\.\s*/, '') : t.text || '',
+          })) || [],
+        rightItems:
+          ac2?.rightItems?.map((t, idx) => ({
+            id: idx + 1,
+            text: typeof t === 'string' ? t.replace(/^\s*\d+\.\s*/, '') : t.text || '',
+          })) || [],
+        mapping:
+          ac2?.correctAnswer?.map((m, idx) => ({
+            leftIndex: idx,
+            rightId: ac2.rightItems.findIndex((x) => (typeof x === 'string' ? x : x.text) === m.value) + 1,
+          })) || [],
+      });
+    } else {
+      setPart2({
+        questionId: '',
+        instruction: '',
+        audioUrl: '',
+        leftItems: [],
+        rightItems: [],
+        mapping: [],
+      });
+    }
 
     // ---- PART 3 ----
     setPart3Id(d.part3?.id);
@@ -154,53 +191,103 @@ const UpdateListening = () => {
     const part3Q = d.part3?.questions?.[0];
     const ac3 = part3Q?.AnswerContent;
 
-    setPart3({
-      questionId: part3Q?.ID,
-      instruction: ac3?.content || '',
-      audioUrl: ac3?.audioKeys || '',
-      leftItems:
-        ac3?.leftItems?.map((t, idx) => ({
-          id: idx + 1,
-          text: t.replace(/^\s*\d+\.\s*/, ''),
-        })) || [],
-      rightItems:
-        ac3?.rightItems?.map((t, idx) => ({
-          id: idx + 1,
-          text: t.replace(/^\s*\d+\.\s*/, ''),
-        })) || [],
-      mapping:
-        ac3?.correctAnswer?.map((m, idx) => ({
-          leftIndex: idx,
-          rightId: ac3.rightItems.findIndex((x) => x === m.value) + 1,
-        })) || [],
-    });
+    if (part3Q) {
+      setPart3({
+        questionId: part3Q?.ID,
+        instruction: ac3?.content || '',
+        audioUrl: ac3?.audioKeys || '',
+        leftItems:
+          ac3?.leftItems?.map((t, idx) => ({
+            id: idx + 1,
+            text: typeof t === 'string' ? t.replace(/^\s*\d+\.\s*/, '') : t.text || '',
+          })) || [],
+        rightItems:
+          ac3?.rightItems?.map((t, idx) => ({
+            id: idx + 1,
+            text: typeof t === 'string' ? t.replace(/^\s*\d+\.\s*/, '') : t.text || '',
+          })) || [],
+        mapping:
+          ac3?.correctAnswer?.map((m, idx) => ({
+            leftIndex: idx,
+            rightId: ac3.rightItems.findIndex((x) => (typeof x === 'string' ? x : x.text) === m.value) + 1,
+          })) || [],
+      });
+    } else {
+      setPart3({
+        questionId: '',
+        instruction: '',
+        audioUrl: '',
+        leftItems: [],
+        rightItems: [],
+        mapping: [],
+      });
+    }
 
     // ---- PART 4 ----
     setPart4Id(d.part4?.id);
     setPart4Name(d.part4?.name);
 
-    const part4Groups = d.part4?.questions?.map((q, gIdx) => {
-      const ac = q.AnswerContent?.groupContent?.listContent || [];
+    if (d.part4?.questions?.length > 0) {
+      const part4Groups = d.part4.questions.map((q, gIdx) => {
+        const ac = q.AnswerContent?.groupContent?.listContent || [];
 
-      return {
-        id: gIdx + 1,
-        questionId: q.ID, // ← thêm
-        instruction: q.Content || '',
-        audioUrl: q.AudioKeys || '',
-        subQuestions: ac.map((sc) => ({
-          id: sc.ID,
-          content: sc.content,
-          options: sc.options.map((op, idx) => ({
-            id: idx + 1,
-            label: generateLabel(idx),
-            value: op,
+        return {
+          id: gIdx + 1,
+          questionId: q.ID,
+          instruction: q.Content || '',
+          audioUrl: q.AudioKeys || '',
+          subQuestions: ac.map((sc) => ({
+            id: sc.ID,
+            content: sc.content,
+            options: sc.options.map((op, idx) => ({
+              id: idx + 1,
+              label: generateLabel(idx),
+              value: op,
+            })),
+            correctId: sc.options.indexOf(sc.correctAnswer) + 1,
           })),
-          correctId: sc.options.indexOf(sc.correctAnswer) + 1,
-        })),
-      };
-    });
+        };
+      });
 
-    setPart4(part4Groups);
+      setPart4(part4Groups);
+    } else {
+      setPart4([
+        {
+          id: 1,
+          instruction: '',
+          audioUrl: '',
+          subQuestions: [
+            {
+              id: 1,
+              content: '',
+              options: [
+                { id: 1, label: 'A', value: '' },
+                { id: 2, label: 'B', value: '' },
+                { id: 3, label: 'C', value: '' },
+              ],
+              correctId: null,
+            },
+          ],
+        },
+        {
+          id: 2,
+          instruction: '',
+          audioUrl: '',
+          subQuestions: [
+            {
+              id: 1,
+              content: '',
+              options: [
+                { id: 1, label: 'A', value: '' },
+                { id: 2, label: 'B', value: '' },
+                { id: 3, label: 'C', value: '' },
+              ],
+              correctId: null,
+            },
+          ],
+        },
+      ]);
+    }
   }, [detail]);
 
   // ===============================
@@ -208,34 +295,34 @@ const UpdateListening = () => {
   // ===============================
 
   const validatePart1 = () => {
-    if (!part1Name.trim()) return false;
+    if (!part1Name?.trim()) return false;
     for (let q of part1) {
-      if (!q.instruction.trim() || !q.audioUrl) return false;
-      if (q.options.filter((o) => o.value.trim()).length < 2) return false;
+      if (!q.instruction?.trim() || !q.audioUrl) return false;
+      if (q.options.filter((o) => o.value?.trim()).length < 2) return false;
       if (!q.correctId) return false;
     }
     return true;
   };
 
   const validateMatching = (p, name) =>
-    name.trim() &&
-    p.instruction.trim() &&
+    name?.trim() &&
+    p.instruction?.trim() &&
     p.audioUrl &&
-    p.leftItems.length &&
-    p.rightItems.length &&
-    p.mapping.length;
+    p.leftItems?.length &&
+    p.rightItems?.length &&
+    p.mapping?.length;
 
   const validatePart4Group = (g) => {
-    if (!g.instruction.trim() || !g.audioUrl) return false;
+    if (!g.instruction?.trim() || !g.audioUrl) return false;
     for (let s of g.subQuestions) {
-      if (!s.content.trim()) return false;
+      if (!s.content?.trim()) return false;
       if (!s.correctId) return false;
     }
     return true;
   };
 
   const validatePart4 = () =>
-    part4Name.trim() && part4.every((g) => validatePart4Group(g));
+    part4Name?.trim() && part4.every((g) => validatePart4Group(g));
 
   const valid1 = validatePart1();
   const valid2 = validateMatching(part2, part2Name);
@@ -243,10 +330,6 @@ const UpdateListening = () => {
   const valid4 = validatePart4();
 
   const handleSaveAll = () => {
-    if (!valid1 || !valid2 || !valid3 || !valid4 || !sectionName.trim()) {
-      message.error('Please complete all required fields before saving.');
-      return;
-    }
     const values = {
       sectionName,
       part1Id,
@@ -259,12 +342,12 @@ const UpdateListening = () => {
       part3Name,
       part4Name,
 
-      part1, // trong này có questionId từng câu
-      part2, // có questionId
-      part3, // có questionId
-      part4, // mỗi group có questionId
+      part1,
+      part2,
+      part3,
+      part4,
 
-      sectionId, // nếu BE cần
+      sectionId,
     };
 
     const payload = buildListeningPayload(values);
@@ -279,6 +362,128 @@ const UpdateListening = () => {
         onError: () => message.error('Failed to update Listening'),
       }
     );
+  };
+
+  /* ---------------- AUTOSAVE ---------------- */
+  const scheduleAutosave = useCallback((payload) => {
+    if (isPublishing) return;
+    payloadRef.current = payload;
+    setIsAutosaving(true);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      if (payloadRef.current) {
+        try {
+          await QuestionApi.update({ sectionId, payload: payloadRef.current });
+        } catch (error) {
+          console.error('[LISTENING UPDATE AUTOSAVE] Failed:', error.response?.data || error.message);
+        } finally {
+          setIsAutosaving(false);
+          payloadRef.current = null;
+        }
+      } else {
+        setIsAutosaving(false);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }, [sectionId, isPublishing]);
+
+  const buildPayload = useCallback((status = 'draft') => {
+    const values = {
+      sectionName,
+      part1Id,
+      part2Id,
+      part3Id,
+      part4Id,
+      part1Name,
+      part2Name,
+      part3Name,
+      part4Name,
+      part1,
+      part2,
+      part3,
+      part4,
+      sectionId,
+    };
+    return {
+      SkillName: 'LISTENING',
+      SectionName: sectionName || 'Untitled Draft',
+      Status: status,
+      parts: buildListeningPayload(values).parts,
+    };
+  }, [sectionName, part1Id, part2Id, part3Id, part4Id, part1Name, part2Name, part3Name, part4Name, part1, part2, part3, part4, sectionId]);
+
+  // Autosave on any state change
+  useEffect(() => {
+    if (!isFetching && detail) {
+      try {
+        const payload = buildPayload('draft');
+        scheduleAutosave(payload);
+      } catch (e) {
+        console.warn('[LISTENING UPDATE AUTOSAVE] Payload build failed:', e.message);
+      }
+    }
+  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isFetching, detail]);
+
+  const handleSaveAsDraft = async () => {
+    try {
+      const payload = buildPayload('draft');
+      setIsSubmitting(true);
+      await QuestionApi.update({ sectionId, payload });
+      message.success('Draft saved successfully');
+      navigate(-1);
+    } catch (err) {
+      console.error('[LISTENING UPDATE SAVE DRAFT] Failed:', err);
+      message.error(err?.response?.data?.message || 'Failed to save draft');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      const values = {
+        sectionName, part1Id, part2Id, part3Id, part4Id,
+        part1Name, part2Name, part3Name, part4Name,
+        part1, part2, part3, part4, sectionId,
+      };
+      const payload = buildListeningPayload(values);
+      payload.Status = 'published';
+
+      isPublishingRef.current = true;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      payloadRef.current = null;
+
+      setIsPublishing(true);
+      updateListeningGroup(
+        { sectionId, payload },
+        {
+          onSuccess: () => {
+            message.success('Updated Listening successfully!');
+            navigate(-1);
+          },
+          onError: () => message.error('Failed to update Listening'),
+        }
+      );
+    } catch (err) {
+      console.error('[LISTENING UPDATE PUBLISH] Failed:', err);
+      message.error('Failed to publish');
+    } finally {
+      setIsPublishing(false);
+    }
+  };
+
+  const handleCancel = () => {
+    Modal.confirm({
+      title: 'Discard Changes?',
+      content: 'You have unsaved changes. Are you sure you want to go back?',
+      okText: 'Discard & Go Back',
+      cancelText: 'Keep Editing',
+      okButtonProps: { danger: true },
+      onOk: () => navigate(-1),
+      onCancel: () => {},
+    });
   };
 
   const renderHeader = (title, valid) => (
@@ -486,7 +691,7 @@ const UpdateListening = () => {
     );
   };
 
-  if (isFetching) return <p>Loading...</p>;
+  if (isFetching || !detail) return <p>Loading...</p>;
 
   return (
     <Form layout='vertical' style={{ paddingBottom: 40 }}>
@@ -900,14 +1105,17 @@ const UpdateListening = () => {
         </Card>
 
         <div className='flex justify-end gap-4'>
-          <Button onClick={() => navigate(-1)}>Cancel</Button>
+          <Button onClick={handleCancel}>Cancel</Button>
+          <Button loading={isSubmitting || isAutosaving} onClick={handleSaveAsDraft}>
+            <SaveOutlined /> Save as Draft
+          </Button>
           <Button
             type='primary'
-            loading={isPending}
+            loading={isPending || isAutosaving || isPublishing}
             className='bg-blue-900'
-            onClick={handleSaveAll}
+            onClick={handlePublish}
           >
-            Update
+            Publish
           </Button>
         </div>
       </Space>

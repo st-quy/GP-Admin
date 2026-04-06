@@ -1,6 +1,7 @@
 // UpdateReading.jsx
-import React, { useEffect, useState } from 'react';
-import { Form, Input, Button, Card, Space, Typography, message } from 'antd';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { Form, Input, Button, Card, Space, Typography, message, Modal } from 'antd';
+import { SaveOutlined } from '@ant-design/icons';
 
 import { buildFullReadingPayload } from '@features/questions/utils/buildQuestionPayload';
 import {
@@ -8,6 +9,7 @@ import {
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
 import { useNavigate, useParams } from 'react-router-dom';
+import { QuestionApi } from '@features/questions/api';
 
 import DropdownBlankOptions from '../CreateSkills/Reading/dropdown/DropdownBlankOptions';
 import DropdownEditor from '../CreateSkills/Reading/dropdown/DropdownEditor';
@@ -16,20 +18,29 @@ import MatchingEditor from '../CreateSkills/Reading/matching/MatchingEditor';
 import MatchingEditorPart4 from '../CreateSkills/Reading/matching/MatchingEditorPart4';
 import OrderingEditor from '../CreateSkills/Reading/ordering/OrderingEditor';
 
+const AUTOSAVE_DEBOUNCE_MS = 2000;
+
 const UpdateReading = () => {
   const navigate = useNavigate();
   const { id: sectionId } = useParams();
   const [form] = Form.useForm();
   const { data, isFetching } = useGetQuestionGroupDetail('READING', sectionId);
-  const { mutate: updateReading } = useUpdateQuestionGroup();
+  const { mutate: updateReading, isPending } = useUpdateQuestionGroup();
 
   const [dataLoaded, setDataLoaded] = useState(false);
   const [part1Content, setPart1Content] = useState('');
   const [part1Blanks, setPart1Blanks] = useState([]);
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const debounceTimerRef = useRef(null);
+  const payloadRef = useRef(null);
+  const isPublishingRef = useRef(false);
 
   /** WATCH PART 1 CONTENT + BLANKS */
   const watchPart1Content = Form.useWatch(['part1', 'content'], form);
   const watchPart1Blanks = Form.useWatch(['part1', 'blanks'], form);
+  const part3Mapping = Form.useWatch(['part3', 'mapping'], form);
+  const part4Mapping = Form.useWatch(['part4', 'mapping'], form);
 
   useEffect(() => {
     setPart1Content(watchPart1Content);
@@ -81,7 +92,6 @@ const UpdateReading = () => {
       let content =
         apiData.part1.AnswerContent?.content || apiData.part1.Content || '';
 
-      // remove parentheses
       content = content.replace(/\([^()]*\)/g, '');
 
       apiBlanks.forEach((opt) => {
@@ -93,14 +103,12 @@ const UpdateReading = () => {
         content = content.replace(bare, `[${key}]`);
       });
 
-      // remove parentheses only
       content = content.replace(/\([^()]*\)/g, '');
 
-      // chuẩn hoá newline nhưng giữ nguyên formatting
       content = content
-        .replace(/\r\n/g, '\n') // Windows → Unix newline
-        .replace(/[ ]+\n/g, '\n') // bỏ space trước newline
-        .replace(/\n{2,}/g, '\n') // bỏ newline dư
+        .replace(/\r\n/g, '\n')
+        .replace(/[ ]+\n/g, '\n')
+        .replace(/\n{2,}/g, '\n')
         .trim();
 
       const transformedBlanks = apiBlanks.map((opt) => {
@@ -139,17 +147,17 @@ const UpdateReading = () => {
     if (apiData.part4) {
       const AC = apiData.part4.AnswerContent;
 
-      const leftItems = AC.leftItems.map((t, i) => ({
-        id: `L-${i}-${Math.random()}`,
-        text: t.replace(/^\s*\d+\.\s*/, ''),
+      const leftItems = (AC.leftItems || []).map((t, i) => ({
+        id: i + 1,
+        text: typeof t === 'string' ? t.replace(/^\s*\d+\.\s*/, '') : t.text || '',
       }));
 
-      const rightItems = AC.rightItems.map((t, i) => ({
-        id: `R-${i}-${Math.random()}`,
-        text: t,
+      const rightItems = (AC.rightItems || []).map((t, i) => ({
+        id: i + 1,
+        text: typeof t === 'string' ? t : t.text || '',
       }));
 
-      const mapping = AC.correctAnswer.map((a) => {
+      const mapping = (AC.correctAnswer || []).map((a) => {
         const leftIndex = Number(a.key) - 1;
         const rightItem = rightItems.find((r) => r.text === a.value);
 
@@ -173,17 +181,17 @@ const UpdateReading = () => {
     if (apiData.part5) {
       const AC = apiData.part5.AnswerContent;
 
-      const leftItems = AC.leftItems.map((t, i) => ({
-        id: `L5-${i}-${Math.random()}`,
-        text: t,
+      const leftItems = (AC.leftItems || []).map((t, i) => ({
+        id: i + 1,
+        text: typeof t === 'string' ? t : t.text || '',
       }));
 
-      const rightItems = AC.rightItems.map((t, i) => ({
-        id: `R5-${i}-${Math.random()}`,
-        text: t,
+      const rightItems = (AC.rightItems || []).map((t, i) => ({
+        id: i + 1,
+        text: typeof t === 'string' ? t : t.text || '',
       }));
 
-      const mapping = AC.correctAnswer.map((a) => {
+      const mapping = (AC.correctAnswer || []).map((a) => {
         const leftIndex = leftItems.findIndex((l) => l.text === a.left);
         const rightItem = rightItems.find((r) => r.text === a.right);
 
@@ -221,12 +229,118 @@ const UpdateReading = () => {
     }
   }, [data, dataLoaded]);
 
+  /* ---------------- AUTOSAVE ---------------- */
+  const scheduleAutosave = useCallback((payload) => {
+    if (isPublishingRef.current) return;
+    payloadRef.current = payload;
+    setIsAutosaving(true);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      if (payloadRef.current) {
+        try {
+          console.log('[READING UPDATE AUTOSAVE] Sending...');
+          await QuestionApi.update({ sectionId, payload: payloadRef.current });
+          console.log('[READING UPDATE AUTOSAVE] Success');
+        } catch (error) {
+          console.error('[READING UPDATE AUTOSAVE] Failed:', error.response?.data || error.message);
+        } finally {
+          setIsAutosaving(false);
+          payloadRef.current = null;
+        }
+      } else {
+        setIsAutosaving(false);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }, [sectionId]);
+
+  const handleValuesChange = useCallback((changedValues, allValues) => {
+    if (isPublishingRef.current) return;
+    try {
+      const fullPayload = buildFullReadingPayload(allValues);
+      const payload = {
+        SkillName: 'READING',
+        SectionName: allValues.sectionName || 'Untitled Draft',
+        Status: 'draft',
+        parts: fullPayload.parts,
+      };
+      console.log('[READING UPDATE VALUES CHANGE] Changed:', Object.keys(changedValues).join(', '));
+      scheduleAutosave(payload);
+    } catch (e) {
+      console.warn('[READING UPDATE VALUES CHANGE] Payload build failed:', e.message);
+    }
+  }, [scheduleAutosave, isSubmitting, isPending]);
+
+  // Autosave when matching mapping changes
+  useEffect(() => {
+    if (isPublishingRef.current) return;
+    if (dataLoaded && (part3Mapping || part4Mapping)) {
+      const values = form.getFieldsValue(true);
+      try {
+        const fullPayload = buildFullReadingPayload(values);
+        const payload = {
+          SkillName: 'READING',
+          SectionName: values.sectionName || 'Untitled Draft',
+          Status: 'draft',
+          parts: fullPayload.parts,
+        };
+        scheduleAutosave(payload);
+      } catch (e) {
+        console.warn('[READING UPDATE MAPPING CHANGE] Payload build failed:', e.message);
+      }
+    }
+  }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending]);
+
+  /* ---------------- BUTTONS ---------------- */
+  const handleSaveAsDraft = async () => {
+    const values = form.getFieldsValue(true);
+    try {
+      const fullPayload = buildFullReadingPayload(values);
+      const payload = {
+        SkillName: 'READING',
+        SectionName: values.sectionName || 'Untitled Draft',
+        Status: 'draft',
+        parts: fullPayload.parts,
+      };
+      setIsSubmitting(true);
+      await QuestionApi.update({ sectionId, payload });
+      message.success('Draft saved successfully');
+      navigate(-1);
+    } catch (err) {
+      console.error('[READING UPDATE SAVE DRAFT] Failed:', err);
+      message.error(err?.response?.data?.message || 'Failed to save draft');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    Modal.confirm({
+      title: 'Discard Changes?',
+      content: 'You have unsaved changes. Are you sure you want to go back?',
+      okText: 'Discard & Go Back',
+      cancelText: 'Keep Editing',
+      okButtonProps: { danger: true },
+      onOk: () => navigate(-1),
+      onCancel: () => {},
+    });
+  };
+
   /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async () => {
     try {
       const values = await form.validateFields();
       const payload = buildFullReadingPayload(values);
+      payload.Status = 'published';
 
+      // Clear any pending autosave to prevent overwriting publish
+      isPublishingRef.current = true;
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      payloadRef.current = null;
+
+      setIsSubmitting(true);
       updateReading(
         { sectionId, payload },
         {
@@ -234,17 +348,27 @@ const UpdateReading = () => {
             message.success('Update reading section successfully!');
             navigate(-1);
           },
+          onError: (err) => {
+            message.error(err?.response?.data?.message || 'Update failed');
+          },
         }
       );
     } catch (err) {
       console.error(err);
+      if (err?.errorFields) {
+        message.error(`Validation failed: ${err.errorFields.map(f => f.name.join('.')).join(', ')}`);
+      } else {
+        message.error('Validation failed');
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   if (isFetching || !dataLoaded) return <div>Loading...</div>;
 
   return (
-    <Form form={form} layout='vertical'>
+    <Form form={form} layout='vertical' onValuesChange={handleValuesChange}>
       <Space direction='vertical' size='large' style={{ width: '100%' }}>
         {/* SECTION INFO */}
         <Card title='Section Information'>
@@ -513,9 +637,12 @@ const UpdateReading = () => {
         </Card>
 
         <div className='flex justify-end gap-4'>
-          <Button onClick={() => navigate(-1)}>Cancel</Button>
-          <Button type='primary' className='bg-blue-900' onClick={handleSubmit}>
-            Update
+          <Button onClick={handleCancel}>Cancel</Button>
+          <Button loading={isSubmitting || isAutosaving} onClick={handleSaveAsDraft}>
+            <SaveOutlined /> Save as Draft
+          </Button>
+          <Button type='primary' className='bg-blue-900' loading={isSubmitting || isAutosaving || isPending} onClick={handleSubmit}>
+            Publish
           </Button>
         </div>
       </Space>

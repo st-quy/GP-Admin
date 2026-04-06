@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Input, Button, Typography, Space, Select, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
@@ -9,29 +9,36 @@ const letterLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const MatchingEditor = ({ errors = {} }) => {
   const form = Form.useFormInstance();
 
-  // ⭐ KHÔNG dùng useWatch nữa
   const [leftItems, setLeftItems] = useState([]);
   const [rightItems, setRightItems] = useState([]);
   const [mapping, setMapping] = useState([]);
 
-  // ⭐ Khi form có giá trị từ bên ngoài (edit mode) → load vào state
+  // Load from form on mount
   useEffect(() => {
     const part = form.getFieldValue('part3') || {};
-    setLeftItems(part.leftItems || []);
-    setRightItems(part.rightItems || []);
-    setMapping(part.mapping || []);
+    if (part.leftItems?.length || part.rightItems?.length || part.mapping?.length) {
+      setLeftItems(part.leftItems || []);
+      setRightItems(part.rightItems || []);
+      setMapping(part.mapping || []);
+    }
   }, []);
 
-  // ⭐ Khi state thay đổi → sync vào form
+  // Sync local state → form (preserve existing fields)
   useEffect(() => {
+    const current = form.getFieldValue('part3') || {};
     form.setFieldsValue({
-      part3: { leftItems, rightItems, mapping },
+      part3: {
+        ...current,
+        leftItems,
+        rightItems,
+        mapping,
+      },
     });
   }, [leftItems, rightItems, mapping]);
 
   /* ---------------- LEFT ---------------- */
   const addLeftItem = () => {
-    const id = Date.now();
+    const id = leftItems.length + 1;
     setLeftItems((prev) => [...prev, { id, text: '' }]);
     setMapping((prev) => [...prev, { leftIndex: prev.length, rightId: null }]);
   };
@@ -56,7 +63,7 @@ const MatchingEditor = ({ errors = {} }) => {
 
   /* ---------------- RIGHT ---------------- */
   const addRightItem = () => {
-    setRightItems((prev) => [...prev, { id: Date.now(), text: '' }]);
+    setRightItems((prev) => [...prev, { id: prev.length + 1, text: '' }]);
   };
 
   const updateRightItem = (idx, text) => {

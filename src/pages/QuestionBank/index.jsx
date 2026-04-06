@@ -6,6 +6,7 @@ import {
   Pagination,
   Select,
   Dropdown,
+  Tag,
 } from 'antd';
 import {
   EditOutlined,
@@ -13,10 +14,11 @@ import {
   EyeOutlined,
   DownOutlined,
   PlusCircleOutlined,
+  CloudUploadOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-import { useDeleteSection, useGetSections } from '@features/sections/hooks';
+import { useDeleteSection, useGetSections, useUpdateSectionStatus } from '@features/sections/hooks';
 import { useSelector } from 'react-redux';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import useConfirm from '@shared/hook/useConfirm';
@@ -69,7 +71,6 @@ const QuestionBank = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedSkill, setSelectedSkill] = useState('');
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   const onSearchChange = (event) => {
     const rawValue = event.target.value;
@@ -106,6 +107,7 @@ const QuestionBank = () => {
 
   const { data: listSectionData, isLoading, refetch } = useGetSections(sectionParams);
   const { mutate: deleteSection } = useDeleteSection();
+  const { mutate: updateStatus } = useUpdateSectionStatus();
 
   const listPart = listSectionData?.data ?? [];
   const totalItems = listSectionData?.total ?? 0;
@@ -113,9 +115,15 @@ const QuestionBank = () => {
   const end = Math.min(page * pageSize, totalItems);
 
   const handleDeleteSection = (record) => {
+    const isPublished = record.Status === 'published';
+    const title = isPublished ? 'Delete Published Question' : 'Delete Question';
+    const message = isPublished
+      ? `Are you sure you want to delete the published question "${record.Name}"? This action cannot be undone.`
+      : `Are you sure you want to delete "${record.Name}"? This action cannot be undone.`;
+
     openConfirmModal({
-      title: 'Delete Question',
-      message: `Are you sure you want to delete "${record.Name}"? This action cannot be undone.`,
+      title,
+      message,
       okText: 'Delete',
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
@@ -148,6 +156,24 @@ const QuestionBank = () => {
       ),
     },
     {
+      title: <span className="font-bold text-[#637381]">STATUS</span>,
+      dataIndex: 'Status',
+      key: 'Status',
+      width: '100px',
+      align: 'center',
+      render: (status) => {
+        const isDraft = status === 'draft';
+        return (
+          <Tag
+            color={isDraft ? 'orange' : 'green'}
+            className="!m-0"
+          >
+            {isDraft ? 'Draft' : 'Published'}
+          </Tag>
+        );
+      },
+    },
+    {
       title: <span className="font-bold text-[#637381]">CREATION DAY</span>,
       dataIndex: 'createdAt',
       key: 'createdAt',
@@ -174,10 +200,11 @@ const QuestionBank = () => {
     {
       title: <span className="font-bold text-[#637381]">ACTIONS</span>,
       key: 'action',
-      width: '200px',
+      width: '250px',
       align: 'center',
       render: (_, record) => {
-        const canEdit = !record.Status?.includes('submited') && !record.Status?.includes('approved') && !record.Status?.includes('archived');
+        const isDraft = record.Status === 'draft';
+        const canEdit = isDraft;
 
         return (
           <div className="flex items-center justify-center gap-3">
@@ -205,28 +232,73 @@ const QuestionBank = () => {
               </button>
             )}
 
-            {canEdit && (
+            {isDraft && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleDeleteSection(record);
+                  const parts = record.Parts || [];
+                  const skillName = record?.Skill?.Name || '';
+                  let hasValidContent = false;
+
+                  if (skillName === 'GRAMMAR AND VOCABULARY') {
+                    hasValidContent = parts.some((p) => {
+                      const qs = p.Questions || [];
+                      return qs.some((q) => {
+                        if (q.Content?.trim()) return true;
+                        const ac = q.AnswerContent || {};
+                        if (ac.options?.some((o) => o.value?.trim())) return true;
+                        if (ac.leftItems?.length > 0 && ac.rightItems?.length > 0) return true;
+                        return false;
+                      });
+                    });
+                  } else if (skillName === 'WRITING') {
+                    hasValidContent = parts.some((p) => {
+                      const qs = p.Questions || [];
+                      return qs.some((q) => q.Content?.trim());
+                    });
+                  } else {
+                    hasValidContent = parts.some((p) => {
+                      const qs = p.Questions || [];
+                      return qs.some((q) => q.Content?.trim() || q.Value?.trim());
+                    });
+                  }
+
+                  if (!hasValidContent) {
+                    message.warning('Cannot publish: this section has no valid questions. Please add questions with content before publishing.');
+                    return;
+                  }
+                  openConfirmModal({
+                    title: 'Publish Question',
+                    message: `Are you sure you want to publish "${record.Name}"? It will be available for exam selection.`,
+                    okText: 'Publish',
+                    okButtonColor: '#52c41a',
+                    onConfirm: async () => {
+                      await updateStatus({ id: record.ID, Status: 'published' });
+                    },
+                  });
                 }}
                 className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
-                title="Delete Question"
+                title="Publish Question"
               >
-                <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
+                <CloudUploadOutlined style={{ fontSize: "20px", color: "#52c41a" }} />
               </button>
             )}
+
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDeleteSection(record);
+              }}
+              className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+              title="Delete Question"
+            >
+              <DeleteOutlined style={{ fontSize: "20px", color: "#FF4D4F" }} />
+            </button>
           </div>
         );
       },
     },
   ];
-
-  const rowSelection = {
-    selectedRowKeys,
-    onChange: (keys) => setSelectedRowKeys(keys),
-  };
 
   const createMenuItems = SKILL_OPTIONS.map((skill) => ({
     key: skill.value,
@@ -315,17 +387,7 @@ const QuestionBank = () => {
               dataSource={listPart}
               loading={isLoading}
               pagination={false}
-              rowSelection={rowSelection}
               scroll={{ x: 900 }}
-              onRow={(record) => ({
-                onClick: () => {
-                  setSelectedRowKeys((prev) =>
-                    prev.includes(record.ID)
-                      ? prev.filter((key) => key !== record.ID)
-                      : [...prev, record.ID]
-                  );
-                },
-              })}
             />
           </div>
 
