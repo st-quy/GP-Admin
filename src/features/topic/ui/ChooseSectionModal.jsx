@@ -11,6 +11,7 @@ const ChooseSectionModal = ({ open, onCancel, skillName, onSelect, selectedSecti
 
   const { data: response, isLoading } = useGetSections({
     skillName: skillName,
+    status: 'published',
     enabled: open,
   });
 

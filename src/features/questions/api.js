@@ -1,8 +1,26 @@
 import axiosInstance from '@shared/config/axios';
 
+export const SectionApi = {
+  createDraft: (skillName) => {
+    return axiosInstance.post('/sections/draft', { skillName });
+  },
+  getDraft: (skillName) => {
+    return axiosInstance.get(`/sections/draft/${skillName}`);
+  },
+  deleteDraft: (sectionId) => {
+    return axiosInstance.delete(`/sections/${sectionId}`);
+  },
+  updateStatus: (sectionId, status) => {
+    return axiosInstance.put(`/sections/${sectionId}/status`, { Status: status });
+  },
+};
+
 export const QuestionApi = {
   createQuestions: (payload) => {
     return axiosInstance.post('/questions', payload);
+  },
+  createSpeaking: (payload) => {
+    return axiosInstance.post('/questions/speaking', payload);
   },
   getAll: (params) => axiosInstance.get('/questions', { params }),
   getQuestionDetailApi: (id) => axiosInstance.get(`/questions/${id}`),

@@ -10,6 +10,7 @@ import axiosInstance from '@shared/config/axios';
 
 const { Dragger } = Upload;
 const { Text } = Typography;
+const DEFAULT_MAX_FILE_SIZE_MB = 10;
 
 const normalizeFileName = (url, fallbackName) => {
   if (!url) return fallbackName;
@@ -37,7 +38,7 @@ const MinioUploadDragger = ({
   bucketType,
   accept,
   allowedMimeTypes,
-  maxSizeMB = 10,
+  maxSizeMB = DEFAULT_MAX_FILE_SIZE_MB,
   title,
   hint,
   listType = 'text',
@@ -84,7 +85,7 @@ const MinioUploadDragger = ({
     }
 
     if (file.size / 1024 / 1024 > maxSizeMB) {
-      message.error(`File must be smaller than ${maxSizeMB}MB`);
+      message.error(`File size must be less than or equal to ${maxSizeMB}MB`);
       return Upload.LIST_IGNORE;
     }
 
@@ -105,53 +106,31 @@ const MinioUploadDragger = ({
 
         setFileList([pendingFile]);
 
-        const { data } = await axiosInstance.post('/presigned-url/upload-url', {
-          fileName: file.name,
-          type: bucketType,
-        });
+        // Use backend proxy upload instead of direct to MinIO to avoid CORS
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('folder', bucketType);
 
-        const { uploadUrl, fileUrl } = data;
-        const xhr = new XMLHttpRequest();
-
-        xhr.upload.onprogress = (event) => {
-          const total = event.total || file.size;
-          const percent = Math.round((event.loaded / total) * 100);
-
-          setFileList([
-            {
-              ...pendingFile,
-              percent,
+        try {
+          const { data: uploadData } = await axiosInstance.post('/presigned-url/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+            onUploadProgress: (event) => {
+              const total = event.total || file.size;
+              const percent = Math.round((event.loaded / total) * 100);
+              setFileList([{ ...pendingFile, percent }]);
+              onProgress?.({ percent });
             },
-          ]);
+          });
 
-          onProgress?.({ percent });
-        };
+          const { fileUrl: actualFileUrl } = uploadData;
 
-        xhr.onload = () => {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const uploadedFile = buildUploadedFile(fileUrl, file.name);
-            setFileList([uploadedFile]);
-            onChange?.(fileUrl);
-            onSuccess?.({ fileUrl });
-            return;
-          }
-
-          const error = new Error('Upload failed');
-          setFileList([]);
-          onError?.(error);
-          message.error('Upload failed');
-        };
-
-        xhr.onerror = () => {
-          const error = new Error('Upload failed');
-          setFileList([]);
-          onError?.(error);
-          message.error('Upload failed');
-        };
-
-        xhr.open('PUT', uploadUrl, true);
-        xhr.setRequestHeader('Content-Type', file.type);
-        xhr.send(file);
+          const uploadedFile = buildUploadedFile(actualFileUrl, file.name);
+          setFileList([uploadedFile]);
+          onChange?.(actualFileUrl);
+          onSuccess?.({ fileUrl: actualFileUrl });
+        } catch (uploadError) {
+          throw new Error('Upload failed');
+        }
       } catch (error) {
         setFileList([]);
         onError?.(error);
@@ -200,6 +179,7 @@ const MinioUploadDragger = ({
         <Text type='secondary'>
           {hint || 'Click or drag a file to upload'}
         </Text>
+        <Text type='secondary'>Maximum file size: {maxSizeMB}MB</Text>
         <div className='flex items-center gap-2 text-[#003087]'>
           <InboxOutlined />
           <Text className='!text-[#003087]'>Choose file</Text>
