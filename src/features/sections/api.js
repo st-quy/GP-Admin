@@ -20,4 +20,7 @@ export const SectionApi = {
   archiveSection: (id) => {
     return axiosInstance.put(`/sections/${id}/archive`);
   },
+  duplicateSection: (id) => {
+    return axiosInstance.post(`/sections/${id}/duplicate`);
+  },
 };

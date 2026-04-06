@@ -16,10 +16,11 @@ import {
   PlusCircleOutlined,
   CloudUploadOutlined,
   FolderAddOutlined,
+  CopyOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-import { useDeleteSection, useGetSections, useUpdateSectionStatus } from '@features/sections/hooks';
+import { useDeleteSection, useGetSections, useUpdateSectionStatus, useDuplicateSection } from '@features/sections/hooks';
 import { SectionApi } from '@features/sections/api';
 import { useSelector } from 'react-redux';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
@@ -110,6 +111,7 @@ const QuestionBank = () => {
   const { data: listSectionData, isLoading, refetch } = useGetSections(sectionParams);
   const { mutate: deleteSection } = useDeleteSection();
   const { mutate: updateStatus } = useUpdateSectionStatus();
+  const { mutate: duplicateSection, isPending: isDuplicating } = useDuplicateSection();
 
   const listPart = listSectionData?.data ?? [];
   const totalItems = listSectionData?.total ?? 0;
@@ -130,6 +132,18 @@ const QuestionBank = () => {
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
         await deleteSection(record.ID);
+      },
+    });
+  };
+
+  const handleDuplicateSection = (record) => {
+    openConfirmModal({
+      title: 'Duplicate Question Bank',
+      message: `Are you sure you want to duplicate "${record.Name}"? This will create a new editable draft.`,
+      okText: 'Duplicate',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        await duplicateSection(record.ID);
       },
     });
   };
@@ -340,7 +354,20 @@ const QuestionBank = () => {
               </span>
             )}
 
-            {/* 5. Delete - Always active */}
+            {/* 5. Duplicate - Always active */}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDuplicateSection(record);
+              }}
+              disabled={isDuplicating}
+              className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+              title="Duplicate Question Bank"
+            >
+              <CopyOutlined style={{ fontSize: "20px", color: "#003087" }} />
+            </button>
+
+            {/* 6. Delete - Always active */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
