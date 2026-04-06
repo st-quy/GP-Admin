@@ -10,6 +10,7 @@ import axiosInstance from '@shared/config/axios';
 
 const { Dragger } = Upload;
 const { Text } = Typography;
+const DEFAULT_MAX_FILE_SIZE_MB = 10;
 
 const normalizeFileName = (url, fallbackName) => {
   if (!url) return fallbackName;
@@ -37,7 +38,7 @@ const MinioUploadDragger = ({
   bucketType,
   accept,
   allowedMimeTypes,
-  maxSizeMB = 10,
+  maxSizeMB = DEFAULT_MAX_FILE_SIZE_MB,
   title,
   hint,
   listType = 'text',
@@ -84,7 +85,7 @@ const MinioUploadDragger = ({
     }
 
     if (file.size / 1024 / 1024 > maxSizeMB) {
-      message.error(`File must be smaller than ${maxSizeMB}MB`);
+      message.error(`File size must be less than or equal to ${maxSizeMB}MB`);
       return Upload.LIST_IGNORE;
     }
 
@@ -200,6 +201,7 @@ const MinioUploadDragger = ({
         <Text type='secondary'>
           {hint || 'Click or drag a file to upload'}
         </Text>
+        <Text type='secondary'>Maximum file size: {maxSizeMB}MB</Text>
         <div className='flex items-center gap-2 text-[#003087]'>
           <InboxOutlined />
           <Text className='!text-[#003087]'>Choose file</Text>
