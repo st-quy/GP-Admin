@@ -10,6 +10,10 @@ import { useCreateQuestion } from "@features/questions/hooks";
 import GrammarMatchingEditorForm from "./GrammarAndVocabulary/multiple-choice/GrammarMatchingEditorForm";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { QuestionApi, SectionApi } from "@features/questions/api";
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from "@shared/lib/questionInput";
 
 const { Panel } = Collapse;
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
@@ -318,9 +322,12 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
         <Form.Item
           label='Name'
           name='sectionName'
-          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true }]}>
-          <Input maxLength={255} placeholder={"Section Name Here..."} />
+          <Input
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
+            placeholder={"Section Name Here..."}
+          />
         </Form.Item>
       </Card>
 
@@ -329,10 +336,10 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
         <Form.Item
           label='Part Name'
           name='part1Name'
-          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true }]}
         >
-          <Input maxLength={255} />
+          <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
         </Form.Item>
 
         <Collapse accordion>
@@ -349,10 +356,13 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
               <Form.Item
                 name={['part1', idx, 'instruction']}
                 label='Instruction'
-                getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+                getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
                 rules={[{ required: true }]}
               >
-                <Input.TextArea maxLength={255} rows={2} />
+                <Input.TextArea
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
+                  rows={2}
+                />
               </Form.Item>
 
               <Form.List name={["part1", idx, "options"]}>
@@ -365,17 +375,34 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
                           {...field}
                           name={[field.name, "value"]}
                           style={{ flex: 1, marginBottom: 0 }}
-                          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+                          getValueFromEvent={(e) =>
+                            sanitizeQuestionInput(e.target.value)
+                          }
                           rules={[{ required: true, message: "Option is required" }]}
                         >
-                          <Input maxLength={255} placeholder={`Option ${LETTERS[optIdx]}`} />
+                          <Input
+                            maxLength={MAX_QUESTION_INPUT_LENGTH}
+                            placeholder={`Option ${LETTERS[optIdx]}`}
+                          />
                         </Form.Item>
                         {optIdx >= 3 && (
                           <DeleteOutlined style={{ color: "red", fontSize: 18, cursor: "pointer" }} onClick={() => remove(field.name)} />
                         )}
                       </div>
                     ))}
-                    <Button type='dashed' icon={<PlusOutlined />} onClick={() => add()} style={{ marginTop: 8 }}>Add option</Button>
+                    <Button
+                      type='dashed'
+                      icon={<PlusOutlined />}
+                      htmlType='button'
+                      onClick={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        add({ value: '' });
+                      }}
+                      style={{ marginTop: 8 }}
+                    >
+                      Add option
+                    </Button>
                   </>
                 )}
               </Form.List>
@@ -403,10 +430,10 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
         <Form.Item
           label='Part Name'
           name='part2Name'
-          getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+          getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
           rules={[{ required: true }]}
         >
-          <Input maxLength={255} />
+          <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
         </Form.Item>
 
         <Collapse accordion>
@@ -422,9 +449,13 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
             >
               <Form.Item label="Instruction Text" required rules={[{ required: true, message: 'Instruction is Required' }]}>
                 <Input.TextArea
-                  maxLength={255}
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
                   value={g.content}
-                  onChange={(e) => updateGroup(idx, { content: e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '') })}
+                  onChange={(e) =>
+                    updateGroup(idx, {
+                      content: sanitizeQuestionInput(e.target.value),
+                    })
+                  }
                   rows={2}
                 />
               </Form.Item>

@@ -20,6 +20,10 @@ import ListeningMatchingEditor from './Listening/ListeningMatchingEditor';
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 import { QuestionApi, SectionApi } from '@features/questions/api';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
@@ -717,11 +721,10 @@ const CreateListening = ({ draftId: propDraftId }) => {
           rules={[{ required: true, message: 'Section name is required' }]}
         >
           <Input
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             placeholder='e.g., Fitness Club Listening Test'
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
+              setSectionName(sanitizeQuestionInput(e.target.value));
             }}
           />
         </Form.Item>
@@ -739,10 +742,9 @@ const CreateListening = ({ draftId: propDraftId }) => {
             <Input
               placeholder='Enter Part 1 name...'
               value={part1Name}
-              maxLength={255}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                setPart1Name(sanitized)
+                setPart1Name(sanitizeQuestionInput(e.target.value));
               }}
             />
           </Form.Item>
@@ -765,12 +767,14 @@ const CreateListening = ({ draftId: propDraftId }) => {
                   <TextArea
                     rows={2}
                     value={q.instruction}
-                    maxLength={255}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
                     onChange={(e) => {
-                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                      updatePart1Field(q.id, 'instruction', sanitized)
-                    }
-                    }
+                      updatePart1Field(
+                        q.id,
+                        'instruction',
+                        sanitizeQuestionInput(e.target.value)
+                      );
+                    }}
                   />
                 </Form.Item>
 
@@ -795,8 +799,13 @@ const CreateListening = ({ draftId: propDraftId }) => {
                     <Input
                       className='flex-1'
                       value={o.value}
+                      maxLength={MAX_QUESTION_INPUT_LENGTH}
                       onChange={(e) =>
-                        updatePart1Option(q.id, o.id, e.target.value)
+                        updatePart1Option(
+                          q.id,
+                          o.id,
+                          sanitizeQuestionInput(e.target.value)
+                        )
                       }
                     />
 
@@ -814,6 +823,7 @@ const CreateListening = ({ draftId: propDraftId }) => {
                 <Button
                   size='small'
                   icon={<PlusOutlined />}
+                  htmlType='button'
                   onClick={() => addPart1Option(q.id)}
                   style={{ marginTop: 8 }}
                 >
@@ -841,11 +851,9 @@ const CreateListening = ({ draftId: propDraftId }) => {
             <Input
               placeholder='Enter Part 2 name...'
               value={part2Name}
-              maxLength={255}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart2Name(
-                  e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':?\n]/g, '')
-                )
+                setPart2Name(sanitizeQuestionInput(e.target.value))
               }
             />
           </Form.Item>
@@ -854,8 +862,12 @@ const CreateListening = ({ draftId: propDraftId }) => {
             <TextArea
               rows={2}
               value={part2.instruction}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart2({ ...part2, instruction: e.target.value })
+                setPart2({
+                  ...part2,
+                  instruction: sanitizeQuestionInput(e.target.value),
+                })
               }
             />
           </Form.Item>
@@ -892,11 +904,9 @@ const CreateListening = ({ draftId: propDraftId }) => {
             <Input
               placeholder='Enter Part 3 name...'
               value={part3Name}
-              maxLength={255}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart3Name(
-                  e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':?\n]/g, '')
-                )
+                setPart3Name(sanitizeQuestionInput(e.target.value))
               }
             />
           </Form.Item>
@@ -905,8 +915,12 @@ const CreateListening = ({ draftId: propDraftId }) => {
             <TextArea
               rows={2}
               value={part3.instruction}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart3({ ...part3, instruction: e.target.value })
+                setPart3({
+                  ...part3,
+                  instruction: sanitizeQuestionInput(e.target.value),
+                })
               }
             />
           </Form.Item>
@@ -943,11 +957,9 @@ const CreateListening = ({ draftId: propDraftId }) => {
             <Input
               placeholder='Enter Part 4 name...'
               value={part4Name}
-              maxLength={255}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart4Name(
-                  e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':?\n]/g, '')
-                )
+                setPart4Name(sanitizeQuestionInput(e.target.value))
               }
             />
           </Form.Item>
@@ -965,8 +977,13 @@ const CreateListening = ({ draftId: propDraftId }) => {
                   <TextArea
                     rows={2}
                     value={g.instruction}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
                     onChange={(e) =>
-                      updateGroupField(g.id, 'instruction', e.target.value)
+                      updateGroupField(
+                        g.id,
+                        'instruction',
+                        sanitizeQuestionInput(e.target.value)
+                      )
                     }
                   />
                 </Form.Item>
@@ -989,12 +1006,13 @@ const CreateListening = ({ draftId: propDraftId }) => {
                       <Form.Item label={`Sub question ${s.id}`} required>
                         <Input
                           value={s.content}
+                          maxLength={MAX_QUESTION_INPUT_LENGTH}
                           onChange={(e) =>
                             updateGroupSub(
                               g.id,
                               s.id,
                               'content',
-                              e.target.value
+                              sanitizeQuestionInput(e.target.value)
                             )
                           }
                         />
@@ -1010,12 +1028,13 @@ const CreateListening = ({ draftId: propDraftId }) => {
                           <Input
                             className='flex-1'
                             value={o.value}
+                            maxLength={MAX_QUESTION_INPUT_LENGTH}
                             onChange={(e) =>
                               updateGroupOption(
                                 g.id,
                                 s.id,
                                 o.id,
-                                e.target.value
+                                sanitizeQuestionInput(e.target.value)
                               )
                             }
                           />
@@ -1032,6 +1051,7 @@ const CreateListening = ({ draftId: propDraftId }) => {
                       <Button
                         size='small'
                         icon={<PlusOutlined />}
+                        htmlType='button'
                         onClick={() => addPart4Option(g.id, s.id)}
                         style={{ marginBottom: 12 }}
                       >
@@ -1060,6 +1080,7 @@ const CreateListening = ({ draftId: propDraftId }) => {
 
                 <Button
                   icon={<PlusOutlined />}
+                  htmlType='button'
                   onClick={() => addSubQuestion(g.id)}
                   style={{ marginTop: 10 }}
                 >
