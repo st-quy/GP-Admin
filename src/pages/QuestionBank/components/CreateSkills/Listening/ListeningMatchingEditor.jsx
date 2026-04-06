@@ -2,6 +2,10 @@
 import React from 'react';
 import { Row, Col, Input, Button, Typography, Space, Select, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { Text } = Typography;
 
@@ -91,7 +95,10 @@ const ListeningMatchingEditor = ({
                   <Input
                     placeholder={`Content ${idx + 1}`}
                     value={item.text}
-                    onChange={(e) => updateLeftItem(idx, e.target.value)}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
+                    onChange={(e) =>
+                      updateLeftItem(idx, sanitizeQuestionInput(e.target.value))
+                    }
                   />
 
                   <Button
@@ -108,6 +115,7 @@ const ListeningMatchingEditor = ({
           <Button
             style={{ width: '100%', marginTop: 10 }}
             icon={<PlusOutlined />}
+            htmlType='button'
             onClick={addLeftItem}
           >
             Add content
@@ -143,7 +151,10 @@ const ListeningMatchingEditor = ({
                   <Input
                     placeholder={`Option ${letterLabels[idx]}`}
                     value={item.text}
-                    onChange={(e) => updateRightItem(idx, e.target.value)}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
+                    onChange={(e) =>
+                      updateRightItem(idx, sanitizeQuestionInput(e.target.value))
+                    }
                   />
 
                   <Button
@@ -160,6 +171,7 @@ const ListeningMatchingEditor = ({
           <Button
             style={{ width: '100%', marginTop: 10 }}
             icon={<PlusOutlined />}
+            htmlType='button'
             onClick={addRightItem}
           >
             Add option
