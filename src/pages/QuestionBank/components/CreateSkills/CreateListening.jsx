@@ -241,11 +241,9 @@ const CreateListening = ({ draftId: propDraftId }) => {
     let cancelled = false;
     const loadDraft = async () => {
       try {
-        console.log('[LISTENING DRAFT] Loading draft:', draftId);
         const { data } = await QuestionApi.getDetail({ skillName: 'LISTENING', sectionId: draftId });
         if (cancelled) return;
         const d = data.data;
-        console.log('[LISTENING DRAFT] Raw API response:', JSON.stringify(d, null, 2));
 
         setSectionName(d.SectionName || '');
         setPart1Name(d.part1?.name || '');
@@ -372,9 +370,7 @@ const CreateListening = ({ draftId: propDraftId }) => {
           setPart4(groups);
         }
 
-        console.log('[LISTENING DRAFT] Form populated successfully');
       } catch (error) {
-        console.error('[LISTENING DRAFT] Failed to load draft:', error);
         message.error('Failed to load draft');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -414,11 +410,8 @@ const CreateListening = ({ draftId: propDraftId }) => {
     debounceTimerRef.current = setTimeout(async () => {
       if (payloadRef.current && draftIdRef.current) {
         try {
-          console.log('[LISTENING AUTOSAVE] Sending...');
           await QuestionApi.update({ sectionId: draftIdRef.current, payload: payloadRef.current });
-          console.log('[LISTENING AUTOSAVE] Success');
         } catch (error) {
-          console.error('[LISTENING AUTOSAVE] Failed:', error.response?.data || error.message);
         } finally {
           setIsAutosaving(false);
           payloadRef.current = null;
@@ -436,7 +429,6 @@ const CreateListening = ({ draftId: propDraftId }) => {
         const payload = buildPayload('draft');
         scheduleAutosave(payload);
       } catch (e) {
-        console.warn('[LISTENING AUTOSAVE] Payload build failed:', e.message);
       }
     }
   }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isLoading]);
@@ -454,7 +446,6 @@ const CreateListening = ({ draftId: propDraftId }) => {
         navigate(-1);
       }
     } catch (err) {
-      console.error('[LISTENING SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     } finally {
       setIsSubmitting(false);
@@ -471,7 +462,6 @@ const CreateListening = ({ draftId: propDraftId }) => {
         navigate(-1);
       }
     } catch (err) {
-      console.error('[LISTENING PUBLISH] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to publish');
     } finally {
       setIsSubmitting(false);
@@ -1105,13 +1095,10 @@ const RedirectToNewDraft = () => {
   useEffect(() => {
     const createAndRedirect = async () => {
       try {
-        console.log('[LISTENING REDIRECT] Creating draft...');
         const { data } = await SectionApi.createDraft('LISTENING');
         const sectionId = data.data.ID;
-        console.log('[LISTENING REDIRECT] Created draft:', sectionId, 'Redirecting to update...');
         navigate(`/questions/update/${sectionId}?skillName=LISTENING`, { replace: true });
       } catch (error) {
-        console.error('[LISTENING REDIRECT] Failed:', error);
         message.error('Failed to create draft');
       }
     };

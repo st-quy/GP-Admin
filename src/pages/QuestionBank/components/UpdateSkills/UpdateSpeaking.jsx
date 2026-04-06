@@ -63,8 +63,6 @@ const UpdateSpeaking = () => {
   const handleValuesChange = (changedValues, allValues) => {
     imagesRef.current = { ...imagesRef.current };
     const payload = buildPayload(allValues, imagesRef.current);
-    console.log('[UPDATE AUTOSAVE] allValues:', JSON.stringify(allValues, null, 2));
-    console.log('[UPDATE AUTOSAVE] payload:', JSON.stringify(payload, null, 2));
     scheduleAutosave(payload);
   };
 

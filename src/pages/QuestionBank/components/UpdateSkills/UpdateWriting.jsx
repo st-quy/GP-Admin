@@ -131,7 +131,6 @@ const UpdateWriting = () => {
       message.success('Draft saved successfully');
       navigate(-1);
     } catch (err) {
-      console.error('[WRITING SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     }
   };

@@ -38,11 +38,9 @@ const CreateWriting = ({ draftId: propDraftId }) => {
     let cancelled = false;
     const loadDraft = async () => {
       try {
-        console.log('[WRITING DRAFT] Loading draft:', draftId);
         const { data } = await QuestionApi.getDetail({ skillName: 'WRITING', sectionId: draftId });
         if (cancelled) return;
         const d = data.data;
-        console.log('[WRITING DRAFT] Raw API response:', JSON.stringify(d, null, 2));
 
         form.setFieldsValue({
           sectionName: d.SectionName || '',
@@ -77,9 +75,7 @@ const CreateWriting = ({ draftId: propDraftId }) => {
           },
         });
 
-        console.log('[WRITING DRAFT] Form populated successfully');
       } catch (error) {
-        console.error('[WRITING DRAFT] Failed to load draft:', error);
         message.error('Failed to load draft');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -96,11 +92,8 @@ const CreateWriting = ({ draftId: propDraftId }) => {
     debounceTimerRef.current = setTimeout(async () => {
       if (payloadRef.current && draftIdRef.current) {
         try {
-          console.log('[WRITING AUTOSAVE] Sending payload:', JSON.stringify(payloadRef.current, null, 2).substring(0, 500) + '...');
           await QuestionApi.update({ sectionId: draftIdRef.current, payload: payloadRef.current });
-          console.log('[WRITING AUTOSAVE] Success');
         } catch (error) {
-          console.error('[WRITING AUTOSAVE] Failed:', error.response?.data || error.message);
         } finally {
           setIsAutosaving(false);
           payloadRef.current = null;
@@ -121,10 +114,8 @@ const CreateWriting = ({ draftId: propDraftId }) => {
           Status: 'draft',
           parts: fullPayload.parts,
         };
-        console.log('[WRITING VALUES CHANGE] Triggered. Changed:', Object.keys(changedValues).join(', '));
         scheduleAutosave(payload);
       } catch (e) {
-        console.warn('[WRITING VALUES CHANGE] Payload build failed:', e.message);
       }
     }
   }, [scheduleAutosave]);
@@ -147,7 +138,6 @@ const CreateWriting = ({ draftId: propDraftId }) => {
         navigate(-1);
       }
     } catch (err) {
-      console.error('[WRITING SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     } finally {
       setIsSubmitting(false);
@@ -172,7 +162,6 @@ const CreateWriting = ({ draftId: propDraftId }) => {
         navigate(-1);
       }
     } catch (err) {
-      console.error('[WRITING PUBLISH] Failed:', err);
       if (err?.errorFields) {
         message.error(`Validation failed: ${err.errorFields.map(f => f.name.join('.')).join(', ')}`);
       } else {
@@ -312,13 +301,10 @@ const RedirectToNewDraft = () => {
   useEffect(() => {
     const createAndRedirect = async () => {
       try {
-        console.log('[WRITING REDIRECT] Creating draft for WRITING...');
         const { data } = await SectionApi.createDraft('WRITING');
         const sectionId = data.data.ID;
-        console.log('[WRITING REDIRECT] Created draft:', sectionId, 'Redirecting...');
         navigate(`/questions/create/writing/${sectionId}`, { replace: true });
       } catch (error) {
-        console.error('[WRITING REDIRECT] Failed:', error);
         message.error('Failed to create draft');
       }
     };

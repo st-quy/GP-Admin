@@ -375,7 +375,6 @@ const UpdateListening = () => {
         try {
           await QuestionApi.update({ sectionId, payload: payloadRef.current });
         } catch (error) {
-          console.error('[LISTENING UPDATE AUTOSAVE] Failed:', error.response?.data || error.message);
         } finally {
           setIsAutosaving(false);
           payloadRef.current = null;
@@ -418,7 +417,6 @@ const UpdateListening = () => {
         const payload = buildPayload('draft');
         scheduleAutosave(payload);
       } catch (e) {
-        console.warn('[LISTENING UPDATE AUTOSAVE] Payload build failed:', e.message);
       }
     }
   }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isFetching, detail]);
@@ -431,7 +429,6 @@ const UpdateListening = () => {
       message.success('Draft saved successfully');
       navigate(-1);
     } catch (err) {
-      console.error('[LISTENING UPDATE SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     } finally {
       setIsSubmitting(false);
@@ -467,7 +464,6 @@ const UpdateListening = () => {
         }
       );
     } catch (err) {
-      console.error('[LISTENING UPDATE PUBLISH] Failed:', err);
       message.error('Failed to publish');
     } finally {
       setIsPublishing(false);

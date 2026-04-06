@@ -59,11 +59,9 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
     let cancelled = false;
     const loadDraft = async () => {
       try {
-        console.log('[GRAMMARVOCAB DRAFT] Loading draft:', draftId);
         const { data } = await QuestionApi.getDetail({ skillName: 'GRAMMAR AND VOCABULARY', sectionId: draftId });
         if (cancelled) return;
         const d = data.data;
-        console.log('[GRAMMARVOCAB DRAFT] Raw API response:', JSON.stringify(d, null, 2));
 
         form.setFieldsValue({
           sectionName: d.SectionName || '',
@@ -99,9 +97,7 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
           setPart2Groups(groups);
         }
 
-        console.log('[GRAMMARVOCAB DRAFT] Form populated successfully');
       } catch (error) {
-        console.error('[GRAMMARVOCAB DRAFT] Failed to load draft:', error);
         message.error('Failed to load draft');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -198,11 +194,8 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
     debounceTimerRef.current = setTimeout(async () => {
       if (payloadRef.current && draftIdRef.current) {
         try {
-          console.log('[GRAMMARVOCAB AUTOSAVE] Sending payload...');
           await QuestionApi.update({ sectionId: draftIdRef.current, payload: payloadRef.current });
-          console.log('[GRAMMARVOCAB AUTOSAVE] Success');
         } catch (error) {
-          console.error('[GRAMMARVOCAB AUTOSAVE] Failed:', error.response?.data || error.message);
         } finally {
           setIsAutosaving(false);
           payloadRef.current = null;
@@ -217,10 +210,8 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
     if (draftIdRef.current) {
       try {
         const payload = buildPayload(allValues, 'draft');
-        console.log('[GRAMMARVOCAB VALUES CHANGE] Triggered. Changed:', Object.keys(changedValues).join(', '));
         scheduleAutosave(payload);
       } catch (e) {
-        console.warn('[GRAMMARVOCAB VALUES CHANGE] Payload build failed:', e.message);
       }
     }
   }, [buildPayload, scheduleAutosave]);
@@ -249,7 +240,6 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
         navigate(-1);
       }
     } catch (err) {
-      console.error('[GRAMMARVOCAB SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     } finally {
       setIsSubmitting(false);
@@ -269,7 +259,6 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
         navigate(-1);
       }
     } catch (err) {
-      console.error('[GRAMMARVOCAB PUBLISH] Failed:', err);
       if (err?.errorFields) {
         message.error(`Validation failed: ${err.errorFields.map(f => f.name.join('.')).join(', ')}`);
       } else {
@@ -482,13 +471,10 @@ const RedirectToNewDraft = () => {
   useEffect(() => {
     const createAndRedirect = async () => {
       try {
-        console.log('[GRAMMARVOCAB REDIRECT] Creating draft...');
         const { data } = await SectionApi.createDraft('GRAMMAR AND VOCABULARY');
         const sectionId = data.data.ID;
-        console.log('[GRAMMARVOCAB REDIRECT] Created draft:', sectionId);
         navigate(`/questions/create/grammar/${sectionId}`, { replace: true });
       } catch (error) {
-        console.error('[GRAMMARVOCAB REDIRECT] Failed:', error);
         message.error('Failed to create draft');
       }
     };

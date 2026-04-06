@@ -238,11 +238,8 @@ const UpdateReading = () => {
     debounceTimerRef.current = setTimeout(async () => {
       if (payloadRef.current) {
         try {
-          console.log('[READING UPDATE AUTOSAVE] Sending...');
           await QuestionApi.update({ sectionId, payload: payloadRef.current });
-          console.log('[READING UPDATE AUTOSAVE] Success');
         } catch (error) {
-          console.error('[READING UPDATE AUTOSAVE] Failed:', error.response?.data || error.message);
         } finally {
           setIsAutosaving(false);
           payloadRef.current = null;
@@ -263,10 +260,8 @@ const UpdateReading = () => {
         Status: 'draft',
         parts: fullPayload.parts,
       };
-      console.log('[READING UPDATE VALUES CHANGE] Changed:', Object.keys(changedValues).join(', '));
       scheduleAutosave(payload);
     } catch (e) {
-      console.warn('[READING UPDATE VALUES CHANGE] Payload build failed:', e.message);
     }
   }, [scheduleAutosave, isSubmitting, isPending]);
 
@@ -285,7 +280,6 @@ const UpdateReading = () => {
         };
         scheduleAutosave(payload);
       } catch (e) {
-        console.warn('[READING UPDATE MAPPING CHANGE] Payload build failed:', e.message);
       }
     }
   }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending]);
@@ -306,7 +300,6 @@ const UpdateReading = () => {
       message.success('Draft saved successfully');
       navigate(-1);
     } catch (err) {
-      console.error('[READING UPDATE SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     } finally {
       setIsSubmitting(false);

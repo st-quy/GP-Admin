@@ -52,11 +52,9 @@ const CreateReading = ({ draftId: propDraftId }) => {
     let cancelled = false;
     const loadDraft = async () => {
       try {
-        console.log('[READING DRAFT] Loading draft:', draftId);
         const { data } = await QuestionApi.getDetail({ skillName: 'READING', sectionId: draftId });
         if (cancelled) return;
         const d = data.data;
-        console.log('[READING DRAFT] Raw API response:', JSON.stringify(d, null, 2));
 
         // Map API keys (part1, part2, part3, part4, part5) to form keys (part1, part2A, part2B, part3, part4)
         const mapPartData = (partKey) => {
@@ -177,9 +175,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
         setDraftPart3(formValues.part3 || null);
         setDraftPart4(formValues.part4 || null);
 
-        console.log('[READING DRAFT] Form populated successfully');
       } catch (error) {
-        console.error('[READING DRAFT] Failed to load draft:', error);
         message.error('Failed to load draft');
       } finally {
         if (!cancelled) setIsLoading(false);
@@ -196,11 +192,8 @@ const CreateReading = ({ draftId: propDraftId }) => {
     debounceTimerRef.current = setTimeout(async () => {
       if (payloadRef.current && draftIdRef.current) {
         try {
-          console.log('[READING AUTOSAVE] Sending payload...');
           await QuestionApi.update({ sectionId: draftIdRef.current, payload: payloadRef.current });
-          console.log('[READING AUTOSAVE] Success');
         } catch (error) {
-          console.error('[READING AUTOSAVE] Failed:', error.response?.data || error.message);
         } finally {
           setIsAutosaving(false);
           payloadRef.current = null;
@@ -221,14 +214,10 @@ const CreateReading = ({ draftId: propDraftId }) => {
           Status: 'draft',
           parts: fullPayload.parts,
         };
-        console.log('[READING VALUES CHANGE] Triggered. Changed:', Object.keys(changedValues).join(', '));
         if (changedValues.part3 || changedValues.part4) {
-          console.log('[READING MAPPING DEBUG] part3:', JSON.stringify(allValues.part3?.mapping, null, 2));
-          console.log('[READING MAPPING DEBUG] part4:', JSON.stringify(allValues.part4?.mapping, null, 2));
         }
         scheduleAutosave(payload);
       } catch (e) {
-        console.warn('[READING VALUES CHANGE] Payload build failed:', e.message);
       }
     }
   }, [scheduleAutosave]);
@@ -245,11 +234,8 @@ const CreateReading = ({ draftId: propDraftId }) => {
           Status: 'draft',
           parts: fullPayload.parts,
         };
-        console.log('[READING MAPPING CHANGE] part3:', JSON.stringify(part3Mapping, null, 2));
-        console.log('[READING MAPPING CHANGE] part4:', JSON.stringify(part4Mapping, null, 2));
         scheduleAutosave(payload);
       } catch (e) {
-        console.warn('[READING MAPPING CHANGE] Payload build failed:', e.message);
       }
     }
   }, [part3Mapping, part4Mapping]);
@@ -271,7 +257,6 @@ const CreateReading = ({ draftId: propDraftId }) => {
         navigate(-1);
       }
     } catch (err) {
-      console.error('[READING SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     } finally {
       setIsSubmitting(false);
@@ -296,7 +281,6 @@ const CreateReading = ({ draftId: propDraftId }) => {
         navigate('/questions?skillName=READING', { replace: true });
       }
     } catch (err) {
-      console.error('[READING PUBLISH] Failed:', err);
       if (err?.errorFields) {
         message.error(`Validation failed: ${err.errorFields.map(f => f.errors?.[0] || f.name?.join('.')).join('; ')}`);
       } else {
@@ -612,13 +596,10 @@ const RedirectToNewDraft = () => {
   useEffect(() => {
     const createAndRedirect = async () => {
       try {
-        console.log('[READING REDIRECT] Creating draft...');
         const { data } = await SectionApi.createDraft('READING');
         const sectionId = data.data.ID;
-        console.log('[READING REDIRECT] Created draft:', sectionId);
         navigate(`/questions/create/reading/${sectionId}`, { replace: true });
       } catch (error) {
-        console.error('[READING REDIRECT] Failed:', error);
         message.error('Failed to create draft');
       }
     };

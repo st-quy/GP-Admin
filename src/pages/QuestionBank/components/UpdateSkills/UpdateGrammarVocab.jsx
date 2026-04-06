@@ -251,11 +251,8 @@ const UpdateGrammarVocab = () => {
     debounceTimerRef.current = setTimeout(async () => {
       if (payloadRef.current) {
         try {
-          console.log('[GRAMMARVOCAB UPDATE AUTOSAVE] Sending...');
           await QuestionApi.update({ sectionId, payload: payloadRef.current });
-          console.log('[GRAMMARVOCAB UPDATE AUTOSAVE] Success');
         } catch (error) {
-          console.error('[GRAMMARVOCAB UPDATE AUTOSAVE] Failed:', error.response?.data || error.message);
         } finally {
           setIsAutosaving(false);
           payloadRef.current = null;
@@ -281,7 +278,6 @@ const UpdateGrammarVocab = () => {
       message.success('Draft saved successfully');
       navigate(-1);
     } catch (err) {
-      console.error('[GRAMMARVOCAB SAVE DRAFT] Failed:', err);
       message.error(err?.response?.data?.message || 'Failed to save draft');
     }
   };
