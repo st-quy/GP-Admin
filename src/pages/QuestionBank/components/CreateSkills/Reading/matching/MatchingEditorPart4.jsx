@@ -1,5 +1,5 @@
 // Reading/matching/MatchingEditorPart4.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Input, Button, Typography, Space, Select, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
@@ -12,36 +12,43 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
   const form = Form.useFormInstance();
 
   /* ------------------------------------------
-   * LOCAL STATE — KHÔNG DÙNG useWatch NỮA
+   * LOCAL STATE
    * ------------------------------------------ */
   const [leftItems, setLeftItems] = useState([]);
   const [rightItems, setRightItems] = useState([]);
   const [mapping, setMapping] = useState([]);
 
   /* ------------------------------------------
-   * LOAD INITIAL DATA FROM FORM (EDIT MODE)
+   * LOAD INITIAL DATA FROM FORM
    * ------------------------------------------ */
   useEffect(() => {
     const part = form.getFieldValue('part4') || {};
-    setLeftItems(part.leftItems || []);
-    setRightItems(part.rightItems || []);
-    setMapping(part.mapping || []);
+    if (part.leftItems?.length || part.rightItems?.length || part.mapping?.length) {
+      setLeftItems(part.leftItems || []);
+      setRightItems(part.rightItems || []);
+      setMapping(part.mapping || []);
+    }
   }, []);
 
   /* ------------------------------------------
    * SYNC LOCAL STATE → FORM FIELD
    * ------------------------------------------ */
   useEffect(() => {
+    const current = form.getFieldValue('part4') || {};
     form.setFieldsValue({
-      part4: { leftItems, rightItems, mapping },
+      part4: {
+        ...current,
+        leftItems,
+        rightItems,
+        mapping,
+      },
     });
   }, [leftItems, rightItems, mapping]);
-
   /* ------------------------------------------
    * LEFT ITEMS
    * ------------------------------------------ */
   const addLeftItem = () => {
-    const id = Date.now();
+    const id = leftItems.length + 1;
 
     setLeftItems((prev) => [...prev, { id, text: '' }]);
 
@@ -77,7 +84,7 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
    * RIGHT ITEMS
    * ------------------------------------------ */
   const addRightItem = () => {
-    const id = Date.now();
+    const id = rightItems.length + 1;
     setRightItems((prev) => [...prev, { id, text: '' }]);
   };
 
