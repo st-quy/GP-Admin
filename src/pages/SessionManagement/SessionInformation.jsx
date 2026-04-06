@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from "react";
-import { Button, Tabs, message, Modal } from "antd";
+import { Button, Tabs, message } from "antd";
 import StudentMonitoring from "@features/session/ui/StudentModering";
 import StudentSessionTable from "@/features/session/ui/StudentSessionTable.jsx";
 import SearchInput from "@/app/components/SearchInput.jsx";
 import Details from "@features/session/ui/Details.jsx";
+import ConfirmationModal from "@shared/Modal/ConfirmationModal";
 import { useParams } from "react-router-dom";
 import { TableType } from "@features/session/constant/TableEnum";
 import {
@@ -16,6 +17,7 @@ const SessionInformation = ({ type }) => {
   const [searchKeyword, setSearchKeyword] = useState("");
   const { sessionId, studentId } = useParams();
   const [pendingCount, setPendingCount] = useState(0);
+  const [publishModalOpen, setPublishModalOpen] = useState(false);
 
   const { mutate: publishScores, isPending: isLoadingPublishScores } =
     usePublishScores(sessionId);
@@ -58,23 +60,7 @@ const SessionInformation = ({ type }) => {
   };
 
   const handlePublishScore = () => {
-    Modal.confirm({
-      title: "Are you sure you want to publish the score?",
-      content: "Once published, the score will be visible to all relevant students and cannot be edited.",
-      okText: "Publish",
-      cancelText: "Cancel",
-      centered: true,
-      width: 713,
-      okButtonProps: {
-        className: "!h-[50px] !rounded-full !bg-primaryColor !px-8 !text-white font-bold",
-      },
-      cancelButtonProps: {
-        className: "!h-[50px] !rounded-full !px-8 font-bold",
-      },
-      onOk() {
-        publishScores();
-      },
-    });
+    setPublishModalOpen(true);
   };
 
   const items = [
@@ -142,20 +128,24 @@ const SessionInformation = ({ type }) => {
               </div>
               {type === TableType.SESSION && (
                 <Button
-                  className={`!h-[50px] !w-[236px] !rounded-[50px] !border-none font-bold text-white transition-all
-                    ${data?.isPublished 
-                      ? "!bg-[#E5E7EB] !text-[#6B7280]" 
-                      : isAllGraded 
-                        ? "!bg-[#13C296]" 
-                        : "!bg-[#003087]"
+                  className={`!h-[50px] !w-[250px] !rounded-[50px] font-bold transition-all
+                    ${data?.isPublished
+                      ? "!bg-white !text-[#6B7280] !border-[#D1D5DB] !border-solid !border"
+                      : isAllGraded
+                        ? "!bg-[#13C296] !text-white !border-none"
+                        : "!bg-[#003087] !text-white !border-none"
                     }
-                    ${isLoadingPublishScores ? "cursor-not-allowed opacity-60" : "hover:scale-105"}
+                    ${isLoadingPublishScores ? "cursor-not-allowed opacity-60" : !data?.isPublished ? "hover:scale-105" : ""}
                   `}
                   onClick={handlePublishScore}
                   disabled={data?.isPublished}
                   loading={isLoadingPublishScores}
                 >
-                  {data?.isPublished ? "Published" : "Publish Score"}
+                  {data?.isPublished
+                    ? "Published Score"
+                    : isAllGraded
+                      ? "Ready to Publish Score"
+                      : "Publish Score"}
                 </Button>
               )}
             </div>
@@ -200,6 +190,19 @@ const SessionInformation = ({ type }) => {
           </div>
         </div>
       </div>
+
+      <ConfirmationModal
+        isOpen={publishModalOpen}
+        onClose={() => setPublishModalOpen(false)}
+        title="Are you sure to want publish the score?"
+        message="Once published, the score will be visible to all relevant students and cannot be edited."
+        okText="Publish"
+        okButtonColor="#003087"
+        onConfirm={() => {
+          publishScores();
+          setPublishModalOpen(false);
+        }}
+      />
     </div>
   );
 };
