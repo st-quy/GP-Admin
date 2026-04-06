@@ -19,6 +19,8 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
 
     let isCorrect = false;
 
+    let pointsForThisQuestion = 0;
+
     const logItem = {
       questionId,
       type,
@@ -49,7 +51,7 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
 
       if (stu && cor && stu === cor) {
         isCorrect = true;
-        totalPoints += pointsPerQuestion;
+        pointsForThisQuestion += pointsPerQuestion;
       }
     }
 
@@ -71,7 +73,7 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
         );
         if (matched) {
           isCorrect = true;
-          totalPoints += pointsPerQuestion;
+          pointsForThisQuestion += pointsPerQuestion;
         }
       });
     }
@@ -93,7 +95,7 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
       for (let i = 0; i < minLength; i++) {
         if (studentAnswers[i].key.trim() === correctAnswers[i].key.trim()) {
           isCorrect = true;
-          totalPoints += pointsPerQuestion;
+          pointsForThisQuestion += pointsPerQuestion;
         }
       }
     }
@@ -123,19 +125,14 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
       logItem.studentAnswer = studentAnswers;
       logItem.correctAnswer = correctAnswers;
 
-      let pointAdded = 0;
-
       correctAnswers.forEach((correct) => {
         const student = studentAnswers.find((s) => s.key === correct.key);
 
         if (student && student.value === correct.value) {
           isCorrect = true;
-          totalPoints += pointsPerQuestion; // each real gap = 50/29
-          pointAdded += pointsPerQuestion;
+          pointsForThisQuestion += pointsPerQuestion; // each real gap = 50/29
         }
       });
-
-      logItem.pointAdded = pointAdded;
     }
 
     // =====================================
@@ -153,7 +150,7 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
 
         if (stu && stu.answer.trim() === q.correctAnswer.trim()) {
           isCorrect = true;
-          totalPoints += pointsPerQuestion;
+          pointsForThisQuestion += pointsPerQuestion;
         }
       });
     }
@@ -161,8 +158,9 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
     // =====================================
     // FINALIZE
     // =====================================
+    totalPoints += pointsForThisQuestion;
     logItem.result = isCorrect ? "correct" : "incorrect";
-    logItem.pointAdded = isCorrect ? pointsPerQuestion : 0;
+    logItem.pointAdded = pointsForThisQuestion;
 
     logs.push(logItem);
   });
