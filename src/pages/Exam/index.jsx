@@ -253,35 +253,23 @@ const TopicListPage = () => {
       title: <span className="font-bold text-[#637381]">STATUS</span>,
       dataIndex: 'Status',
       key: 'Status',
-      width: '150px',
+      width: '120px',
       align: 'center',
-      render: (_, record) => {
-        const cfg = STATUS_CONFIG[record.Status] || {};
+      render: (status) => {
+        const statusMap = {
+          draft: { color: 'orange', label: 'Draft' },
+          submited: { color: 'blue', label: 'Submitted' },
+          approved: { color: 'green', label: 'Approved' },
+          rejected: { color: 'red', label: 'Rejected' },
+          archived: { color: 'default', label: 'Archived' },
+        };
 
-        const tagElement = (
-          <Tag
-            color={cfg.antColor}
-            className='font-semibold px-3 py-1 rounded-full border-none'
-          >
-            {cfg.label || record.Status}
+        const config = statusMap[status] || { color: 'default', label: status };
+        return (
+          <Tag color={config.color} className="!m-0">
+            {config.label}
           </Tag>
         );
-
-        if (record.Status === 'rejected') {
-          return (
-            <AntTooltip
-              title={
-                record.ReasonReject
-                  ? record.ReasonReject
-                  : 'No reject reason provided'
-              }
-            >
-              {tagElement}
-            </AntTooltip>
-          );
-        }
-
-        return tagElement;
       },
     },
     {
@@ -360,20 +348,7 @@ const TopicListPage = () => {
               </>
             )}
 
-            {canArchive && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleArchiveTopic(record);
-                }}
-                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
-                title="Archive Topic"
-              >
-                <FolderAddOutlined style={{ fontSize: "20px", color: "#637381" }} />
-              </button>
-            )}
-
-            {canEdit && (
+            {canEdit ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -384,6 +359,33 @@ const TopicListPage = () => {
               >
                 <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
               </button>
+            ) : (
+              <span
+                className="cursor-not-allowed opacity-40"
+                title="Archived or submitted topics cannot be edited"
+              >
+                <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
+              </span>
+            )}
+
+            {canArchive ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleArchiveTopic(record);
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Archive Topic"
+              >
+                <FolderAddOutlined style={{ fontSize: "20px", color: "#637381" }} />
+              </button>
+            ) : (
+              <span
+                className="cursor-not-allowed opacity-40"
+                title="Only approved or rejected topics can be archived"
+              >
+                <FolderAddOutlined style={{ fontSize: "20px", color: "#637381" }} />
+              </span>
             )}
 
             {(canEdit || isArchived || isRejected) && (
