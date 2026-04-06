@@ -15,10 +15,12 @@ import {
   DownOutlined,
   PlusCircleOutlined,
   CloudUploadOutlined,
+  FolderAddOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
 import { useDeleteSection, useGetSections, useUpdateSectionStatus } from '@features/sections/hooks';
+import { SectionApi } from '@features/sections/api';
 import { useSelector } from 'react-redux';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import useConfirm from '@shared/hook/useConfirm';
@@ -162,6 +164,13 @@ const QuestionBank = () => {
       width: '100px',
       align: 'center',
       render: (status) => {
+        if (status === 'archived') {
+          return (
+            <Tag color="default" className="!m-0">
+              Archived
+            </Tag>
+          );
+        }
         const isDraft = status === 'draft';
         return (
           <Tag
@@ -204,10 +213,12 @@ const QuestionBank = () => {
       align: 'center',
       render: (_, record) => {
         const isDraft = record.Status === 'draft';
-        const canEdit = isDraft;
+        const isPublished = record.Status === 'published';
+        const isArchived = record.Status === 'archived';
 
         return (
           <div className="flex items-center justify-center gap-3">
+            {/* 1. Review - Always active */}
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -219,7 +230,8 @@ const QuestionBank = () => {
               <EyeOutlined style={{ fontSize: "20px", color: "#003087" }} />
             </button>
 
-            {canEdit && (
+            {/* 2. Edit - Active for Draft */}
+            {isDraft ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -230,9 +242,46 @@ const QuestionBank = () => {
               >
                 <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
               </button>
+            ) : (
+              <span
+                className="cursor-not-allowed opacity-40"
+                title={isArchived ? "Archived sections are read-only" : "Published sections are read-only"}
+              >
+                <EditOutlined style={{ fontSize: "20px", color: "#003087" }} />
+              </span>
             )}
 
-            {isDraft && (
+            {/* 3. Archive - Active for Published */}
+            {isPublished ? (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openConfirmModal({
+                    title: 'Archive Question',
+                    message: `Archive "${record.Name}"? It will be removed from exam selection but can still be viewed or deleted.`,
+                    okText: 'Archive',
+                    okButtonColor: '#8c8c8c',
+                    onConfirm: async () => {
+                      await updateStatus({ id: record.ID, Status: 'archived' });
+                    },
+                  });
+                }}
+                className="cursor-pointer border-none bg-transparent transition-all hover:opacity-70"
+                title="Archive Question"
+              >
+                <FolderAddOutlined style={{ fontSize: "20px", color: "#8c8c8c" }} />
+              </button>
+            ) : (
+              <span
+                className="cursor-not-allowed opacity-40"
+                title={isArchived ? "Already archived" : "Only published sections can be archived"}
+              >
+                <FolderAddOutlined style={{ fontSize: "20px", color: "#8c8c8c" }} />
+              </span>
+            )}
+
+            {/* 4. Publish - Active for Draft */}
+            {isDraft ? (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -282,8 +331,16 @@ const QuestionBank = () => {
               >
                 <CloudUploadOutlined style={{ fontSize: "20px", color: "#52c41a" }} />
               </button>
+            ) : (
+              <span
+                className="cursor-not-allowed opacity-40"
+                title={isPublished ? "Already published" : "Archived sections cannot be published"}
+              >
+                <CloudUploadOutlined style={{ fontSize: "20px", color: "#52c41a" }} />
+              </span>
             )}
 
+            {/* 5. Delete - Always active */}
             <button
               onClick={(e) => {
                 e.stopPropagation();

@@ -17,4 +17,7 @@ export const SectionApi = {
   updateStatus: (id, Status) => {
     return axiosInstance.put(`/sections/${id}/status`, { Status });
   },
+  archiveSection: (id) => {
+    return axiosInstance.put(`/sections/${id}/archive`);
+  },
 };
