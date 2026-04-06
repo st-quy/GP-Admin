@@ -111,7 +111,7 @@ const Details = ({ type, isLoading, data }) => {
             <div className="flex flex-col gap-y-6 flex-1">
               {studentCol1.map((item, index) => (
                 <div key={index} className="flex items-center">
-                  <span className="w-[150px] text-[16px] text-[#374151] font-normal">
+                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className="text-[16px] text-[#1F2A37] font-semibold">
@@ -123,7 +123,7 @@ const Details = ({ type, isLoading, data }) => {
             <div className="flex flex-col gap-y-6 flex-1 mt-6 md:mt-0">
               {studentCol2.map((item, index) => (
                 <div key={index} className="flex items-center">
-                  <span className="w-[150px] text-[16px] text-[#374151] font-normal">
+                  <span className="w-[200px] text-center text-[16px] text-[#374151] font-normal">
                     {item.label}
                   </span>
                   <div className="text-[16px] text-[#1F2A37] font-semibold">

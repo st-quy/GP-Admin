@@ -261,6 +261,7 @@ body {
     font-weight: 500 !important;
     font-family: "Inter", sans-serif;
     color: #111827 !important;
+    text-align: center !important;
 }
 
 .figma-class-link {
