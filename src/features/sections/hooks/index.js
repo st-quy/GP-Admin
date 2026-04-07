@@ -60,3 +60,18 @@ export const useUpdateSectionStatus = () => {
     },
   });
 };
+
+export const useDuplicateSection = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => SectionApi.duplicateSection(id),
+    onSuccess: (response) => {
+      message.success(response.data.message || 'Question Bank duplicated successfully');
+      queryClient.invalidateQueries({ queryKey: ['sections'] });
+    },
+    onError: ({ response }) => {
+      const errorMsg = response?.data?.message || 'Failed to duplicate question bank';
+      message.error(errorMsg);
+    },
+  });
+};
