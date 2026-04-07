@@ -14,4 +14,13 @@ export const SectionApi = {
   deleteSection: (id) => {
     return axiosInstance.delete(`/sections/${id}`);
   },
+  updateStatus: (id, Status) => {
+    return axiosInstance.put(`/sections/${id}/status`, { Status });
+  },
+  archiveSection: (id) => {
+    return axiosInstance.put(`/sections/${id}/archive`);
+  },
+  duplicateSection: (id) => {
+    return axiosInstance.post(`/sections/${id}/duplicate`);
+  },
 };

@@ -1,5 +1,5 @@
 // UpdateGrammarVocab.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import {
   Card,
   Collapse,
@@ -9,17 +9,25 @@ import {
   Button,
   message,
   Spin,
+  Modal,
 } from 'antd';
 import { useNavigate, useParams } from 'react-router-dom';
+import { SaveOutlined } from '@ant-design/icons';
 import {
   useGetQuestionGroupDetail,
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
 import GrammarMatchingEditorForm from '../CreateSkills/GrammarAndVocabulary/multiple-choice/GrammarMatchingEditorForm';
 import { DeleteOutlined } from '@ant-design/icons';
+import { QuestionApi } from '@features/questions/api';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { Panel } = Collapse;
 const LETTERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+const AUTOSAVE_DEBOUNCE_MS = 2000;
 
 const UpdateGrammarVocab = () => {
   const navigate = useNavigate();
@@ -31,6 +39,10 @@ const UpdateGrammarVocab = () => {
     sectionId
   );
   const { mutate: updateGroup, isPending } = useUpdateQuestionGroup();
+
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const debounceTimerRef = useRef(null);
+  const payloadRef = useRef(null);
 
   /* ============================
         STATE
@@ -82,7 +94,23 @@ const UpdateGrammarVocab = () => {
         correctId:
           opts.findIndex((o) => o.value === q.AnswerContent.correctAnswer) + 1,
       };
-    });
+    }) || [];
+
+    // Pad to 25 questions so the full structure is always available
+    while (mappedPart1.length < 25) {
+      const idx = mappedPart1.length;
+      mappedPart1.push({
+        id: idx + 1,
+        questionId: null,
+        instruction: '',
+        options: [
+          { id: 1, label: 'A', value: '' },
+          { id: 2, label: 'B', value: '' },
+          { id: 3, label: 'C', value: '' },
+        ],
+        correctId: null,
+      });
+    }
 
     setPart1(mappedPart1);
 
@@ -106,7 +134,19 @@ const UpdateGrammarVocab = () => {
           rightId: `R-${right.indexOf(m.right)}`,
         })),
       };
-    });
+    }) || [];
+
+    // Pad to 5 groups
+    while (mappedPart2.length < 5) {
+      mappedPart2.push({
+        groupId: mappedPart2.length + 1,
+        questionId: null,
+        content: '',
+        leftItems: [],
+        rightItems: [],
+        mapping: [],
+      });
+    }
 
     setPart2Groups(mappedPart2);
   }, [data]);
@@ -152,6 +192,107 @@ const UpdateGrammarVocab = () => {
       {valid ? '✔' : '✖'}
     </span>
   );
+
+  /* ============================
+         AUTOSAVE
+  ============================ */
+  const buildPayload = useCallback((status = 'draft') => {
+    const part1Questions = part1.filter(Boolean).map((q, idx) => ({
+      ID: q.questionId,
+      Type: 'multiple-choice',
+      Sequence: idx + 1,
+      Content: q.instruction,
+      AnswerContent: {
+        title: q.instruction,
+        options: q.options.map((o) => ({
+          key: o.label,
+          value: o.value.trim(),
+        })),
+        correctAnswer: q.options[q.correctId - 1]?.value || '',
+      },
+    }));
+
+    const part2Questions = part2Groups.map((g, idx) => {
+      const left = g.leftItems.map((i) => i.text);
+      const right = g.rightItems.map((i) => i.text);
+
+      return {
+        ID: g.questionId,
+        Type: 'matching',
+        Sequence: idx + 26,
+        Content: g.content,
+        AnswerContent: {
+          content: g.content,
+          leftItems: left,
+          rightItems: right,
+          correctAnswer: g.mapping.map((m) => ({
+            left: left[g.leftItems.findIndex((x) => x.id === m.leftId)],
+            right: right[g.rightItems.findIndex((x) => x.id === m.rightId)],
+          })),
+        },
+      };
+    });
+
+    return {
+      SkillName: 'GRAMMAR AND VOCABULARY',
+      SectionName: sectionName || 'Untitled Draft',
+      Status: status,
+      parts: {
+        part1: { id: part1Id, name: part1Name, sequence: 1, questions: part1Questions },
+        part2: { id: part2Id, name: part2Name, sequence: 2, questions: part2Questions },
+      },
+    };
+  }, [part1, part2Groups, sectionName, part1Name, part2Name, part1Id, part2Id]);
+
+  const scheduleAutosave = useCallback((payload) => {
+    payloadRef.current = payload;
+    setIsAutosaving(true);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      if (payloadRef.current) {
+        try {
+          await QuestionApi.update({ sectionId, payload: payloadRef.current });
+        } catch (error) {
+        } finally {
+          setIsAutosaving(false);
+          payloadRef.current = null;
+        }
+      } else {
+        setIsAutosaving(false);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }, [sectionId]);
+
+  // Autosave on state changes
+  useEffect(() => {
+    if (data) {
+      const payload = buildPayload('draft');
+      scheduleAutosave(payload);
+    }
+  }, [part1, part2Groups, sectionName, part1Name, part2Name, data, buildPayload, scheduleAutosave]);
+
+  const handleSaveAsDraft = async () => {
+    try {
+      const payload = buildPayload('draft');
+      await QuestionApi.update({ sectionId, payload });
+      message.success('Draft saved successfully');
+      navigate(-1);
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Failed to save draft');
+    }
+  };
+
+  const handleCancel = () => {
+    Modal.confirm({
+      title: 'Discard Changes?',
+      content: 'You have unsaved changes. Are you sure you want to go back?',
+      okText: 'Discard & Go Back',
+      cancelText: 'Keep Editing',
+      okButtonProps: { danger: true },
+      onOk: () => navigate(-1),
+      onCancel: () => {},
+    });
+  };
 
   /* ============================
         SAVE — Build Payload
@@ -258,12 +399,10 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Section Name' required>
           <Input
             value={sectionName}
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
-            }
-            }
+              setSectionName(sanitizeQuestionInput(e.target.value));
+            }}
           />
         </Form.Item>
       </Card>
@@ -280,11 +419,11 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Part Name' required>
           <Input
             value={part1Name}
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
-            }} />
+              setPart1Name(sanitizeQuestionInput(e.target.value));
+            }}
+          />
         </Form.Item>
 
         <Collapse accordion>
@@ -309,10 +448,10 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={q.instruction}
-                  maxLength={255}
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
 
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                    const sanitized = sanitizeQuestionInput(e.target.value);
                     setPart1((prev) =>
                       prev.map((x) =>
                         x.id === q.id
@@ -337,9 +476,9 @@ const UpdateGrammarVocab = () => {
 
                   <Input
                     value={o.value}
-                    maxLength={255}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
                     onChange={(e) => {
-                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
+                      const sanitized = sanitizeQuestionInput(e.target.value);
                       setPart1((prev) =>
                         prev.map((x) =>
                           x.id === q.id
@@ -454,10 +593,9 @@ const UpdateGrammarVocab = () => {
         <Form.Item label='Part Name' required>
           <Input
             value={part2Name}
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
+              setPart2Name(sanitizeQuestionInput(e.target.value));
             }}
           />
         </Form.Item>
@@ -479,10 +617,11 @@ const UpdateGrammarVocab = () => {
                 <Input.TextArea
                   rows={2}
                   value={g.content}
-                  maxLength={255}
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
                   onChange={(e) => {
-                    const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                    setSectionName(sanitized)
+                    updateGroupState(idx, {
+                      content: sanitizeQuestionInput(e.target.value),
+                    });
                   }}
                 />
               </Form.Item>
@@ -545,9 +684,12 @@ const UpdateGrammarVocab = () => {
       </Card>
 
       <div className='flex justify-end gap-4 mt-6'>
-        <Button onClick={() => navigate(-1)}>Cancel</Button>
-        <Button type='primary' loading={isPending} onClick={handleSaveAll}>
-          Save
+        <Button onClick={handleCancel}>Cancel</Button>
+        <Button loading={isPending || isAutosaving} onClick={handleSaveAsDraft}>
+          <SaveOutlined /> Save as Draft
+        </Button>
+        <Button type='primary' loading={isPending || isAutosaving} onClick={handleSaveAll} className='bg-blue-900'>
+          Publish
         </Button>
       </div>
     </Form>

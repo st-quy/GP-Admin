@@ -11,34 +11,35 @@ const PAGE_COMPONENT = {
   speaking: {
     title: 'Create Speaking Questions',
     subTitle: 'Design questions for Speaking skill.',
-    component: <CreateSpeaking />,
+    component: (draftId) => <CreateSpeaking draftId={draftId} />,
   },
   reading: {
     title: 'Create Reading Questions',
     subTitle: 'Design questions for Reading skill.',
-    component: <CreateReading />,
+    component: () => <CreateReading />,
   },
   grammar: {
     title: 'Create Grammar Vocab Questions',
     subTitle: 'Design questions for Grammar and Vocabulary skill.',
-    component: <CreateGrammarVocab />,
+    component: () => <CreateGrammarVocab />,
   },
   writing: {
     title: 'Create Writing Questions',
     subTitle: 'Design questions for Writing skill.',
-    component: <CreateWriting />,
+    component: () => <CreateWriting />,
   },
   listening: {
     title: 'Create Listening Questions',
     subTitle: 'Design questions for Listening skill.',
-    component: <CreateListening />,
+    component: () => <CreateListening />,
   },
 };
 
 const CreateQuestion = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const skill = location.pathname.slice(location.pathname.lastIndexOf('/') + 1);
+  const { draftId } = useParams();
+  const skill = location.pathname.split('/').filter(Boolean).find((seg, i, arr) => arr[i - 1] === 'create');
 
   const page = PAGE_COMPONENT[skill];
 
@@ -49,7 +50,7 @@ const CreateQuestion = () => {
 
   return (
     <QuestionLayout title={page.title} subtitle={page.subTitle}>
-      {page.component}
+      {page.component(draftId)}
     </QuestionLayout>
   );
 };

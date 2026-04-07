@@ -1,5 +1,5 @@
 // CreateListening.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Input,
   Select,
@@ -9,23 +9,43 @@ import {
   Card,
   Space,
   Collapse,
+  Modal,
 } from 'antd';
-import { DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
 
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useCreateQuestion } from '@features/questions/hooks';
 
 import ListeningMatchingEditor from './Listening/ListeningMatchingEditor';
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
+import { QuestionApi, SectionApi } from '@features/questions/api';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { TextArea } = Input;
 const { Panel } = Collapse;
+const AUTOSAVE_DEBOUNCE_MS = 2000;
 
-const CreateListening = () => {
+const CreateListening = ({ draftId: propDraftId }) => {
   const navigate = useNavigate();
+  const { draftId: urlDraftId } = useParams();
+  const draftId = propDraftId || urlDraftId;
   const [form] = Form.useForm();
   const { mutate: createQuestion, isPending } = useCreateQuestion();
+
+  const [isAutosaving, setIsAutosaving] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(!!draftId);
+  const debounceTimerRef = useRef(null);
+  const payloadRef = useRef(null);
+  const draftIdRef = useRef(draftId);
+
+  useEffect(() => {
+    draftIdRef.current = draftId;
+  }, [draftId]);
 
   // ================================
   // PART NAME — NEW
@@ -218,6 +238,262 @@ const CreateListening = () => {
   };
 
   // =====================================
+  // LOAD DRAFT
+  // =====================================
+  useEffect(() => {
+    if (!draftId) return;
+    let cancelled = false;
+    const loadDraft = async () => {
+      try {
+        const { data } = await QuestionApi.getDetail({ skillName: 'LISTENING', sectionId: draftId });
+        if (cancelled) return;
+        const d = data.data;
+
+        setSectionName(d.SectionName || '');
+        setPart1Name(d.part1?.name || '');
+        setPart2Name(d.part2?.name || '');
+        setPart3Name(d.part3?.name || '');
+        setPart4Name(d.part4?.name || '');
+
+        // Part 1: Multiple Choice
+        if (d.part1?.questions) {
+          const p1 = d.part1.questions.map((q, idx) => {
+            const ac = q.AnswerContent || {};
+            const opts = (ac.options || []).map((o, i) => ({
+              id: i + 1,
+              label: String.fromCharCode(65 + i),
+              value: o.value || o,
+            }));
+            const correctVal = ac.correctAnswer;
+            const correctId = opts.findIndex(o => o.value === correctVal) + 1;
+            return {
+              id: idx + 1,
+              instruction: q.Content || '',
+              audioUrl: (q.AudioKeys || [])[0] || '',
+              options: opts.length > 0 ? opts : [
+                { id: 1, label: 'A', value: '' },
+                { id: 2, label: 'B', value: '' },
+                { id: 3, label: 'C', value: '' },
+              ],
+              correctId: correctId || null,
+            };
+          });
+          while (p1.length < 13) {
+            p1.push({
+              id: p1.length + 1,
+              instruction: '',
+              audioUrl: '',
+              options: [
+                { id: 1, label: 'A', value: '' },
+                { id: 2, label: 'B', value: '' },
+                { id: 3, label: 'C', value: '' },
+              ],
+              correctId: null,
+            });
+          }
+          setPart1(p1);
+        }
+
+        // Part 2: Matching
+        if (d.part2?.questions?.[0]) {
+          const q = d.part2.questions[0];
+          const ac = q.AnswerContent || {};
+          setPart2({
+            instruction: q.Content || '',
+            audioUrl: (q.AudioKeys || [])[0] || '',
+            leftItems: (ac.leftItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
+            rightItems: (ac.rightItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
+            mapping: (ac.correctAnswer || []).map((m, i) => ({
+              leftId: (ac.leftItems || []).indexOf(m.left) + 1,
+              rightId: (ac.rightItems || []).findIndex(t => (typeof t === 'string' ? t : t.text) === m.right) + 1,
+            })),
+          });
+        }
+
+        // Part 3: Matching
+        if (d.part3?.questions?.[0]) {
+          const q = d.part3.questions[0];
+          const ac = q.AnswerContent || {};
+          setPart3({
+            instruction: q.Content || '',
+            audioUrl: (q.AudioKeys || [])[0] || '',
+            leftItems: (ac.leftItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
+            rightItems: (ac.rightItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
+            mapping: (ac.correctAnswer || []).map((m, i) => ({
+              leftId: (ac.leftItems || []).indexOf(m.left) + 1,
+              rightId: (ac.rightItems || []).findIndex(t => (typeof t === 'string' ? t : t.text) === m.right) + 1,
+            })),
+          });
+        }
+
+        // Part 4: Groups
+        if (d.part4?.questions) {
+          const groups = d.part4.questions.map((q, gIdx) => {
+            const ac = q.AnswerContent || {};
+            return {
+              id: gIdx + 1,
+              instruction: q.Content || '',
+              audioUrl: (q.AudioKeys || [])[0] || '',
+              subQuestions: (ac.subQuestions || []).map((sq, sIdx) => {
+                const sqOpts = (sq.options || []).map((o, i) => ({
+                  id: i + 1,
+                  label: String.fromCharCode(65 + i),
+                  value: o.value || o,
+                }));
+                const sqCorrect = sqOpts.findIndex(o => o.value === sq.correctAnswer) + 1;
+                return {
+                  id: sIdx + 1,
+                  content: sq.content || '',
+                  options: sqOpts.length > 0 ? sqOpts : [
+                    { id: 1, label: 'A', value: '' },
+                    { id: 2, label: 'B', value: '' },
+                    { id: 3, label: 'C', value: '' },
+                  ],
+                  correctId: sqCorrect || null,
+                };
+              }),
+            };
+          });
+          while (groups.length < 2) {
+            groups.push({
+              id: groups.length + 1,
+              instruction: '',
+              audioUrl: '',
+              subQuestions: [{
+                id: 1,
+                content: '',
+                options: [
+                  { id: 1, label: 'A', value: '' },
+                  { id: 2, label: 'B', value: '' },
+                  { id: 3, label: 'C', value: '' },
+                ],
+                correctId: null,
+              }],
+            });
+          }
+          setPart4(groups);
+        }
+
+      } catch (error) {
+        message.error('Failed to load draft');
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+    loadDraft();
+    return () => { cancelled = true; };
+  }, [draftId]);
+
+  // =====================================
+  // AUTOSAVE
+  // =====================================
+  const buildPayload = useCallback((status = 'draft') => {
+    const values = {
+      sectionName,
+      part1Name,
+      part1,
+      part2Name,
+      part2,
+      part3Name,
+      part3,
+      part4Name,
+      part4,
+    };
+    return {
+      SkillName: 'LISTENING',
+      SectionName: sectionName || 'Untitled Draft',
+      Status: status,
+      parts: buildListeningPayload(values).parts,
+    };
+  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4]);
+
+  const scheduleAutosave = useCallback((payload) => {
+    payloadRef.current = payload;
+    setIsAutosaving(true);
+    if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+    debounceTimerRef.current = setTimeout(async () => {
+      if (payloadRef.current && draftIdRef.current) {
+        try {
+          await QuestionApi.update({ sectionId: draftIdRef.current, payload: payloadRef.current });
+        } catch (error) {
+        } finally {
+          setIsAutosaving(false);
+          payloadRef.current = null;
+        }
+      } else {
+        setIsAutosaving(false);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+  }, []);
+
+  // Autosave on any state change
+  useEffect(() => {
+    if (draftIdRef.current && !isLoading) {
+      try {
+        const payload = buildPayload('draft');
+        scheduleAutosave(payload);
+      } catch (e) {
+      }
+    }
+  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isLoading]);
+
+  // =====================================
+  // BUTTONS
+  // =====================================
+  const handleSaveAsDraft = async () => {
+    try {
+      const payload = buildPayload('draft');
+      if (draftIdRef.current) {
+        setIsSubmitting(true);
+        await QuestionApi.update({ sectionId: draftIdRef.current, payload });
+        message.success('Draft saved successfully');
+        navigate(-1);
+      }
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Failed to save draft');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    try {
+      const payload = buildPayload('published');
+      if (draftIdRef.current) {
+        setIsSubmitting(true);
+        await QuestionApi.update({ sectionId: draftIdRef.current, payload });
+        message.success('Created Listening successfully!');
+        navigate(-1);
+      }
+    } catch (err) {
+      message.error(err?.response?.data?.message || 'Failed to publish');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleCancel = () => {
+    Modal.confirm({
+      title: 'Discard Changes?',
+      content: 'You have unsaved changes. Are you sure you want to go back?',
+      okText: 'Discard & Go Back',
+      cancelText: 'Keep Editing',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        if (draftIdRef.current) {
+          try {
+            await SectionApi.deleteDraft(draftIdRef.current);
+          } catch (e) {
+            console.error('Failed to discard draft:', e);
+          }
+        }
+        navigate(-1);
+      },
+      onCancel: () => {},
+    });
+  };
+
+  // =====================================
   // VALIDATION ICONS
   // =====================================
   const renderHeader = (title, valid) => (
@@ -295,47 +571,6 @@ const CreateListening = () => {
   const valid3 = validateMatching(part3, part3Name);
   const valid4 = validatePart4();
 
-  // =====================================
-  // SAVE ALL
-  // =====================================
-  const handleSaveAll = async () => {
-    if (!valid1 || !valid2 || !valid3 || !valid4) {
-      return message.error('Please complete all parts before saving!');
-    }
-
-    const values = {
-      sectionName,
-      part1Name,
-      part1,
-      part2Name,
-      part2,
-      part3Name,
-      part3,
-      part4Name,
-      part4,
-    };
-
-    const payload = buildListeningPayload(values);
-
-    createQuestion(payload, {
-      onSuccess: () => {
-        message.success('Created Listening successfully!');
-        navigate(-1);
-      },
-      onError: () => message.error('Failed to create listening'),
-    });
-  };
-  // Generate Excel-like labels: A, B, ..., Z, AA, AB, ...
-  const generateLabel = (num) => {
-    let label = '';
-    while (num > 0) {
-      let rem = (num - 1) % 26;
-      label = String.fromCharCode(65 + rem) + label;
-      num = Math.floor((num - 1) / 26);
-    }
-    return label;
-  };
-
   // Add option to a question (no max)
   const addPart1Option = (qId) => {
     setPart1((prev) =>
@@ -350,7 +585,7 @@ const CreateListening = () => {
             ...q.options,
             {
               id: nextIndex,
-              label: generateLabel(nextIndex),
+              label: generateLabel(nextIndex - 1),
               value: '',
             },
           ],
@@ -377,7 +612,7 @@ const CreateListening = () => {
         const reindexed = filtered.map((o, index) => ({
           ...o,
           id: index + 1,
-          label: generateLabel(index + 1),
+          label: generateLabel(index),
         }));
 
         return {
@@ -408,7 +643,7 @@ const CreateListening = () => {
               ...s.options,
               {
                 id: nextIndex,
-                label: generateLabel(nextIndex),
+                label: generateLabel(nextIndex - 1),
                 value: '',
               },
             ],
@@ -439,7 +674,7 @@ const CreateListening = () => {
           const reindexed = filtered.map((o, index) => ({
             ...o,
             id: index + 1,
-            label: generateLabel(index + 1),
+            label: generateLabel(index),
           }));
 
           return {
@@ -456,9 +691,27 @@ const CreateListening = () => {
     );
   };
 
+  // Generate Excel-like labels: A, B, ..., Z, AA, AB, ...
+  const generateLabel = (num) => {
+    let label = '';
+    while (num > 0) {
+      let rem = (num - 1) % 26;
+      label = String.fromCharCode(65 + rem) + label;
+      num = Math.floor((num - 1) / 26);
+    }
+    return label;
+  };
+
   // =====================================
   // RENDER
   // =====================================
+  if (!draftId && !isLoading) {
+    return <RedirectToNewDraft />;
+  }
+  if (isLoading) {
+    return <div style={{ padding: 40, textAlign: 'center' }}>Loading draft...</div>;
+  }
+
   return (
     <Form layout='vertical' form={form}>
       <Card title='Section Information'>
@@ -468,11 +721,10 @@ const CreateListening = () => {
           rules={[{ required: true, message: 'Section name is required' }]}
         >
           <Input
-            maxLength={255}
+            maxLength={MAX_QUESTION_INPUT_LENGTH}
             placeholder='e.g., Fitness Club Listening Test'
             onChange={(e) => {
-              const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-              setSectionName(sanitized)
+              setSectionName(sanitizeQuestionInput(e.target.value));
             }}
           />
         </Form.Item>
@@ -490,10 +742,9 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 1 name...'
               value={part1Name}
-              maxLength={255}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) => {
-                const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                setPart1Name(sanitized)
+                setPart1Name(sanitizeQuestionInput(e.target.value));
               }}
             />
           </Form.Item>
@@ -516,12 +767,14 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={q.instruction}
-                    maxLength={255}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
                     onChange={(e) => {
-                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_()"':]/g, '');
-                      updatePart1Field(q.id, 'instruction', sanitized)
-                    }
-                    }
+                      updatePart1Field(
+                        q.id,
+                        'instruction',
+                        sanitizeQuestionInput(e.target.value)
+                      );
+                    }}
                   />
                 </Form.Item>
 
@@ -546,8 +799,13 @@ const CreateListening = () => {
                     <Input
                       className='flex-1'
                       value={o.value}
+                      maxLength={MAX_QUESTION_INPUT_LENGTH}
                       onChange={(e) =>
-                        updatePart1Option(q.id, o.id, e.target.value)
+                        updatePart1Option(
+                          q.id,
+                          o.id,
+                          sanitizeQuestionInput(e.target.value)
+                        )
                       }
                     />
 
@@ -565,6 +823,7 @@ const CreateListening = () => {
                 <Button
                   size='small'
                   icon={<PlusOutlined />}
+                  htmlType='button'
                   onClick={() => addPart1Option(q.id)}
                   style={{ marginTop: 8 }}
                 >
@@ -592,7 +851,10 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 2 name...'
               value={part2Name}
-              onChange={(e) => setPart2Name(e.target.value)}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
+              onChange={(e) =>
+                setPart2Name(sanitizeQuestionInput(e.target.value))
+              }
             />
           </Form.Item>
 
@@ -600,8 +862,12 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part2.instruction}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart2({ ...part2, instruction: e.target.value })
+                setPart2({
+                  ...part2,
+                  instruction: sanitizeQuestionInput(e.target.value),
+                })
               }
             />
           </Form.Item>
@@ -638,7 +904,10 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 3 name...'
               value={part3Name}
-              onChange={(e) => setPart3Name(e.target.value)}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
+              onChange={(e) =>
+                setPart3Name(sanitizeQuestionInput(e.target.value))
+              }
             />
           </Form.Item>
 
@@ -646,8 +915,12 @@ const CreateListening = () => {
             <TextArea
               rows={2}
               value={part3.instruction}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
               onChange={(e) =>
-                setPart3({ ...part3, instruction: e.target.value })
+                setPart3({
+                  ...part3,
+                  instruction: sanitizeQuestionInput(e.target.value),
+                })
               }
             />
           </Form.Item>
@@ -684,7 +957,10 @@ const CreateListening = () => {
             <Input
               placeholder='Enter Part 4 name...'
               value={part4Name}
-              onChange={(e) => setPart4Name(e.target.value)}
+              maxLength={MAX_QUESTION_INPUT_LENGTH}
+              onChange={(e) =>
+                setPart4Name(sanitizeQuestionInput(e.target.value))
+              }
             />
           </Form.Item>
 
@@ -701,8 +977,13 @@ const CreateListening = () => {
                   <TextArea
                     rows={2}
                     value={g.instruction}
+                    maxLength={MAX_QUESTION_INPUT_LENGTH}
                     onChange={(e) =>
-                      updateGroupField(g.id, 'instruction', e.target.value)
+                      updateGroupField(
+                        g.id,
+                        'instruction',
+                        sanitizeQuestionInput(e.target.value)
+                      )
                     }
                   />
                 </Form.Item>
@@ -725,12 +1006,13 @@ const CreateListening = () => {
                       <Form.Item label={`Sub question ${s.id}`} required>
                         <Input
                           value={s.content}
+                          maxLength={MAX_QUESTION_INPUT_LENGTH}
                           onChange={(e) =>
                             updateGroupSub(
                               g.id,
                               s.id,
                               'content',
-                              e.target.value
+                              sanitizeQuestionInput(e.target.value)
                             )
                           }
                         />
@@ -746,12 +1028,13 @@ const CreateListening = () => {
                           <Input
                             className='flex-1'
                             value={o.value}
+                            maxLength={MAX_QUESTION_INPUT_LENGTH}
                             onChange={(e) =>
                               updateGroupOption(
                                 g.id,
                                 s.id,
                                 o.id,
-                                e.target.value
+                                sanitizeQuestionInput(e.target.value)
                               )
                             }
                           />
@@ -768,6 +1051,7 @@ const CreateListening = () => {
                       <Button
                         size='small'
                         icon={<PlusOutlined />}
+                        htmlType='button'
                         onClick={() => addPart4Option(g.id, s.id)}
                         style={{ marginBottom: 12 }}
                       >
@@ -796,6 +1080,7 @@ const CreateListening = () => {
 
                 <Button
                   icon={<PlusOutlined />}
+                  htmlType='button'
                   onClick={() => addSubQuestion(g.id)}
                   style={{ marginTop: 10 }}
                 >
@@ -808,19 +1093,39 @@ const CreateListening = () => {
 
         {/* SAVE ALL */}
         <div className='flex justify-end gap-4 mb-10'>
-          <Button onClick={() => navigate(-1)}>Cancel</Button>
+          <Button onClick={handleCancel}>Cancel</Button>
+          <Button loading={isSubmitting || isAutosaving} onClick={handleSaveAsDraft}>
+            <SaveOutlined /> Save as Draft
+          </Button>
           <Button
             type='primary'
-            onClick={handleSaveAll}
-            loading={isPending}
+            onClick={handlePublish}
+            loading={isSubmitting || isAutosaving || isPending}
             className='bg-blue-900'
           >
-            Save
+            Publish
           </Button>
         </div>
       </Space>
     </Form>
   );
+};
+
+const RedirectToNewDraft = () => {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const createAndRedirect = async () => {
+      try {
+        const { data } = await SectionApi.createDraft('LISTENING');
+        const sectionId = data.data.ID;
+        navigate(`/questions/update/${sectionId}?skillName=LISTENING`, { replace: true });
+      } catch (error) {
+        message.error('Failed to create draft');
+      }
+    };
+    createAndRedirect();
+  }, []);
+  return <div style={{ padding: 40, textAlign: 'center' }}>Creating draft...</div>;
 };
 
 export default CreateListening;

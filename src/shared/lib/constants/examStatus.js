@@ -8,6 +8,7 @@ export const EXAM_STATUSES = {
     SUBMITED: 'submited',
     APPROVED: 'approved',
     REJECTED: 'rejected',
+    ARCHIVED: 'archived',
 };
 
 /**
@@ -41,6 +42,13 @@ export const STATUS_CONFIG = {
         border: '#ffccc7',
         label: 'Rejected',
         antColor: 'error',
+    },
+    [EXAM_STATUSES.ARCHIVED]: {
+        color: '#637381',
+        bg: '#F4F6F8',
+        border: '#DFE4EA',
+        label: 'Archived',
+        antColor: 'processing',
     },
 };
 
