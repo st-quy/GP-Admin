@@ -422,7 +422,9 @@ const CreateExamPage = () => {
     useEffect(() => {
         if (user && !topicId) {
             const creatorName = [user.firstName, user.lastName].filter(Boolean).join(' ');
-            form.setFieldsValue({ creator: creatorName });
+            // Missing before: the UI only prefilled Creator on new topics even
+            // though the backend now saves both CreatedBy and UpdatedBy.
+            form.setFieldsValue({ creator: creatorName, editor: creatorName });
         }
     }, [user, form, topicId]);
 
