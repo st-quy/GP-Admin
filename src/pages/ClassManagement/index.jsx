@@ -107,7 +107,7 @@ const ClassManagement = () => {
       title: 'CLASS NAME',
       dataIndex: 'className',
       key: 'className',
-      align: 'left',
+      align: 'center',
       render: (text, record) => (
         <Tooltip title={text}>
           <Link to={`/class/${record.ID}`} className='figma-class-link font-medium'>

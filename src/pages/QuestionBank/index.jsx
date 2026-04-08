@@ -221,7 +221,7 @@ const QuestionBank = () => {
       dataIndex: 'Name',
       key: 'Name',
       width: '300px',
-      align: 'left',
+      align: 'center',
       ellipsis: true,
       render: (text) => (
         <span className="font-medium text-primaryTextColor">{text}</span>

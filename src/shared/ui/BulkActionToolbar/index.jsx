@@ -17,8 +17,7 @@ const BulkActionToolbar = ({
   onClearSelection,
   visible = false
 }) => {
-  if (!visible || selectedCount === 0) return null;
-
+  // Always render the component but control visibility with CSS
   return (
     <div className={`bulk-action-toolbar ${visible ? 'slide-up' : 'slide-down'}`}>
       <div className="bulk-action-toolbar-content">
@@ -65,6 +64,8 @@ const BulkActionToolbar = ({
           animation-fill-mode: forwards;
           animation-duration: 0.3s;
           animation-timing-function: ease-out;
+          pointer-events: ${props => props.visible ? 'auto' : 'none'};
+          opacity: ${props => props.visible ? '1' : '0'};
         }
 
         .bulk-action-toolbar-content {

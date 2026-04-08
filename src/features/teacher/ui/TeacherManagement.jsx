@@ -98,7 +98,7 @@ const TeacherManagement = () => {
         dataIndex: 'fullname',
         key: 'name',
         width: '200px',
-        align: 'left',
+        align: 'center',
         render: (text, record) => (
           <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
             <Link
@@ -123,7 +123,7 @@ const TeacherManagement = () => {
         dataIndex: 'email',
         key: 'email',
         width: '200px',
-        align: 'left',
+        align: 'center',
         ellipsis: true,
         render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
       },
