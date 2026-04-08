@@ -64,8 +64,20 @@ const BulkActionToolbar = ({
           animation-fill-mode: forwards;
           animation-duration: 0.3s;
           animation-timing-function: ease-out;
-          pointer-events: ${props => props.visible ? 'auto' : 'none'};
-          opacity: ${props => props.visible ? '1' : '0'};
+          pointer-events: none;
+          opacity: 0;
+        }
+
+        .bulk-action-toolbar.slide-up {
+          pointer-events: auto;
+          opacity: 1;
+          animation-name: slideUp;
+        }
+
+        .bulk-action-toolbar.slide-down {
+          pointer-events: none;
+          opacity: 0;
+          animation-name: slideDown;
         }
 
         .bulk-action-toolbar-content {
