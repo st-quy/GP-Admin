@@ -92,39 +92,41 @@ const TeacherManagement = () => {
     });
   };
 
-  const columns = [
-    {
-      title: <span className="font-bold text-[#637381]">TEACHER NAME</span>,
-      dataIndex: 'fullname',
-      key: 'name',
-      width: '200px',
-      render: (text, record) => (
-        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
-          <Link
-            to={`/teacher/edit/${record.ID}`}
-            className='bg-transparent border-none p-0 cursor-pointer font-medium text-primaryColor underline underline-offset-4 hover:opacity-80'
-          >
-            {`${record.firstName} ${record.lastName}` || 'Unknown'}
-          </Link>
-        </div>
-      ),
-    },
-    {
-      title: <span className="font-bold text-[#637381]">TEACHER ID</span>,
-      dataIndex: 'teacherCode',
-      key: 'id',
-      width: '120px',
-      align: 'center',
-      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
-    },
-    {
-      title: <span className="font-bold text-[#637381]">EMAIL</span>,
-      dataIndex: 'email',
-      key: 'email',
-      width: '200px',
-      ellipsis: true,
-      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
-    },
+    const columns = [
+      {
+        title: <span className="font-bold text-[#637381]">TEACHER NAME</span>,
+        dataIndex: 'fullname',
+        key: 'name',
+        width: '200px',
+        align: 'left',
+        render: (text, record) => (
+          <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
+            <Link
+              to={`/teacher/edit/${record.ID}`}
+              className='bg-transparent border-none p-0 cursor-pointer font-medium text-primaryColor underline underline-offset-4 hover:opacity-80'
+            >
+              {`${record.firstName} ${record.lastName}` || 'Unknown'}
+            </Link>
+          </div>
+        ),
+      },
+      {
+        title: <span className="font-bold text-[#637381]">TEACHER ID</span>,
+        dataIndex: 'teacherCode',
+        key: 'id',
+        width: '120px',
+        align: 'center',
+        render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
+      },
+      {
+        title: <span className="font-bold text-[#637381]">EMAIL</span>,
+        dataIndex: 'email',
+        key: 'email',
+        width: '200px',
+        align: 'left',
+        ellipsis: true,
+        render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
+      },
     {
       title: <span className="font-bold text-[#637381]">PHONE</span>,
       dataIndex: 'phone',

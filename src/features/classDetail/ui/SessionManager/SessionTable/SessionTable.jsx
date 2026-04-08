@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { Table, Input, Select, message, Pagination } from "antd";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, CopyOutlined, ExportOutlined, RetweetOutlined } from "@ant-design/icons";
+import BulkActionToolbar from "@shared/ui/BulkActionToolbar";
 
 const SessionTable = ({ data, columns, isLoading }) => {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   const handleSearchChange = (e) => {
     const rawValue = e.target.value;
@@ -85,8 +87,52 @@ const SessionTable = ({ data, columns, isLoading }) => {
     setCurrentPage(1);
   };
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
+  const handleBulkUpdateStatus = () => {
+    message.warning(`Batch status update for ${selectedRowKeys.length} sessions not fully implemented in UI yet.`);
+    setSelectedRowKeys([]);
+  };
+
+  const handleBulkClone = () => {
+    message.info(`Cloning ${selectedRowKeys.length} sessions...`);
+    setSelectedRowKeys([]);
+  };
+
+  const handleBulkExport = () => {
+    message.info(`Exporting report for ${selectedRowKeys.length} sessions...`);
+    setSelectedRowKeys([]);
+  };
+
+  const bulkActions = [
+    {
+      label: 'Update Status',
+      icon: <RetweetOutlined />,
+      onClick: handleBulkUpdateStatus,
+    },
+    {
+      label: 'Clone',
+      icon: <CopyOutlined />,
+      onClick: handleBulkClone,
+    },
+    {
+      label: 'Export Report',
+      icon: <ExportOutlined />,
+      onClick: handleBulkExport,
+    },
+  ];
+
   return (
     <div className="mt-4">
+      <BulkActionToolbar
+        visible={selectedRowKeys.length > 0}
+        selectedCount={selectedRowKeys.length}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedRowKeys([])}
+      />
       <div className="mb-6 flex items-center gap-4">
         <Input
           placeholder="Search sessions..."
@@ -113,6 +159,7 @@ const SessionTable = ({ data, columns, isLoading }) => {
           scroll={{ x: "max-content" }}
           className="w-full"
           loading={isLoading}
+          rowSelection={rowSelection}
         />
       </div>
 

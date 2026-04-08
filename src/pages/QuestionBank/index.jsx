@@ -27,6 +27,7 @@ import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import useConfirm from '@shared/hook/useConfirm';
 import SearchInput from '@/app/components/SearchInput.jsx';
 import { message } from 'antd';
+import BulkActionToolbar from '@shared/ui/BulkActionToolbar';
 
 const { Text, Title } = Typography;
 
@@ -74,6 +75,8 @@ const QuestionBank = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedSkill, setSelectedSkill] = useState('');
+
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   const onSearchChange = (event) => {
     const rawValue = event.target.value;
@@ -148,12 +151,77 @@ const QuestionBank = () => {
     });
   };
 
+  const handleBulkPublish = () => {
+    openConfirmModal({
+      title: 'Publish Selected Questions',
+      message: `Are you sure you want to publish ${selectedRowKeys.length} selected questions?`,
+      okText: 'Publish All',
+      okButtonColor: '#52c41a',
+      onConfirm: async () => {
+        try {
+          for (const id of selectedRowKeys) {
+            const section = listPart.find(s => s.ID === id);
+            if (section && section.Status === 'draft') {
+              await updateStatus({ id, Status: 'published' });
+            }
+          }
+          message.success(`${selectedRowKeys.length} questions processed for publishing`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (error) {
+          message.error('Failed to publish some questions');
+        }
+      },
+    });
+  };
+
+  const handleBulkDelete = () => {
+    openConfirmModal({
+      title: 'Delete Selected Questions',
+      message: `Are you sure you want to delete ${selectedRowKeys.length} selected questions? This action cannot be undone.`,
+      okText: 'Delete All',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          for (const id of selectedRowKeys) {
+            await deleteSection(id);
+          }
+          message.success(`${selectedRowKeys.length} questions deleted successfully`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (error) {
+          message.error('Failed to delete some questions');
+        }
+      },
+    });
+  };
+
+  const bulkActions = [
+    {
+      label: 'Publish',
+      icon: <CloudUploadOutlined />,
+      onClick: handleBulkPublish,
+    },
+    {
+      label: 'Delete',
+      icon: <DeleteOutlined />,
+      onClick: handleBulkDelete,
+      danger: true,
+    },
+  ];
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
   const columns = [
     {
-      title: <span className="font-bold text-[#637381]">TOPIC NAME</span>,
+      title: <span className="font-bold text-[#637381]">SECTION NAME</span>,
       dataIndex: 'Name',
       key: 'Name',
       width: '300px',
+      align: 'left',
       ellipsis: true,
       render: (text) => (
         <span className="font-medium text-primaryTextColor">{text}</span>
@@ -407,6 +475,13 @@ const QuestionBank = () => {
     <div className="figma-page-container">
       <div className="figma-content-wrapper">
         <ModalComponent />
+
+        <BulkActionToolbar
+          visible={selectedRowKeys.length > 0}
+          selectedCount={selectedRowKeys.length}
+          actions={bulkActions}
+          onClearSelection={() => setSelectedRowKeys([])}
+        />
         
         <div className="py-8">
           <div className="mb-10 flex flex-col md:flex-row justify-between items-start gap-4">
@@ -472,6 +547,7 @@ const QuestionBank = () => {
               loading={isLoading}
               pagination={false}
               scroll={{ x: 900 }}
+              rowSelection={rowSelection}
             />
           </div>
 

@@ -44,6 +44,7 @@ import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import { STATUS_CONFIG } from '@shared/lib/constants/examStatus';
 import SearchInput from "@/app/components/SearchInput.jsx";
 import { StatCard } from "../../features/dashboard/components/StatCard";
+import BulkActionToolbar from '@shared/ui/BulkActionToolbar';
 
 const { Text } = Typography;
 
@@ -56,6 +57,9 @@ const TopicListPage = () => {
     : (typeof role === 'string' && (role.toLowerCase() === 'admin' || role.toLowerCase() === 'superadmin'));
     
   const { openConfirmModal, ModalComponent } = useConfirm();
+
+  // Selection
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -244,6 +248,7 @@ const TopicListPage = () => {
       dataIndex: 'Name',
       key: 'Name',
       width: '300px',
+      align: 'left',
       ellipsis: true,
       render: (text) => (
         <span className="font-medium text-primaryTextColor">{text}</span>
@@ -429,11 +434,86 @@ const TopicListPage = () => {
   const start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const end = Math.min(page * pageSize, total);
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
+  const handleBulkApprove = () => {
+    openConfirmModal({
+      title: 'Approve Selected Exams',
+      message: `Are you sure you want to approve ${selectedRowKeys.length} selected exams?`,
+      okText: 'Approve All',
+      okButtonColor: '#52c41a',
+      onConfirm: async () => {
+        try {
+          // Sequential loop for now since backend lacks batch endpoint
+          for (const id of selectedRowKeys) {
+            await updateTopic({ id, data: { Status: 'approved' } });
+          }
+          message.success(`${selectedRowKeys.length} exams approved successfully`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (error) {
+          message.error('Failed to approve some exams');
+        }
+      },
+    });
+  };
+
+  const handleBulkDelete = () => {
+    openConfirmModal({
+      title: 'Delete Selected Exams',
+      message: `Are you sure you want to delete ${selectedRowKeys.length} selected exams? This action cannot be undone.`,
+      okText: 'Delete All',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          for (const id of selectedRowKeys) {
+            const topic = topics.find(t => t.ID === id);
+            if (topic && ['approved', 'submited'].includes(topic.Status)) {
+              continue; // Skip restricted
+            }
+            await deleteTopicSectionsByTopicId.mutateAsync(id);
+            await deleteTopic.mutateAsync(id);
+          }
+          message.success(`${selectedRowKeys.length} exams processed for deletion`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (error) {
+          message.error('Failed to delete some exams');
+        }
+      },
+    });
+  };
+
+  const bulkActions = [
+    {
+      label: 'Approve',
+      icon: <CheckCircleOutlined />,
+      onClick: handleBulkApprove,
+      disabled: !isAdmin,
+    },
+    {
+      label: 'Delete',
+      icon: <DeleteOutlined />,
+      onClick: handleBulkDelete,
+      danger: true,
+    },
+  ];
+
   return (
     <div className="figma-page-container">
       <div className="figma-content-wrapper">
         <ModalComponent />
         
+        <BulkActionToolbar
+          visible={selectedRowKeys.length > 0}
+          selectedCount={selectedRowKeys.length}
+          actions={bulkActions}
+          onClearSelection={() => setSelectedRowKeys([])}
+        />
+
         <div className="py-8">
           <div className="mb-10 flex flex-col md:flex-row justify-between items-start gap-4">
             <div>
@@ -559,6 +639,7 @@ const TopicListPage = () => {
               dataSource={topics}
               loading={isLoading}
               pagination={false}
+              rowSelection={rowSelection}
             />
           </div>
 

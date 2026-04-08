@@ -15,6 +15,8 @@ import UpdateClassModal from '@features/classManagement/ui/Modal/UpdateClass';
 import DeleteClassModal from '@features/classManagement/ui/Modal/DeleteClass';
 import { useSelector } from 'react-redux';
 import PreviewExam from '@shared/ui/PreviewExam';
+import BulkActionToolbar from '@shared/ui/BulkActionToolbar';
+import { message } from 'antd';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
@@ -25,6 +27,9 @@ const ClassManagement = () => {
   const [isOpen, setIsOpen] = useState('');
   const [dataClass, setClassData] = useState(null);
   
+  // Selection
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -66,6 +71,36 @@ const ClassManagement = () => {
       setCurrentPage(1);
     }
   };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
+  const handleBulkExport = () => {
+    message.info(`Exporting ${selectedRowKeys.length} selected classes...`);
+    // Mock export or loop
+    setSelectedRowKeys([]);
+  };
+
+  const handleBulkDelete = () => {
+    message.warning(`Bulk delete for ${selectedRowKeys.length} classes not fully implemented in BE yet.`);
+    setSelectedRowKeys([]);
+  };
+
+  const bulkActions = [
+    {
+      label: 'Export',
+      icon: <ExportOutlined />,
+      onClick: handleBulkExport,
+    },
+    {
+      label: 'Delete',
+      icon: <DeleteOutlined />,
+      onClick: handleBulkDelete,
+      danger: true,
+    },
+  ];
 
   const columns = [
     {
@@ -121,6 +156,13 @@ const ClassManagement = () => {
   return (
     <div className='figma-page-container'>
       <div className='figma-content-wrapper'>
+        <BulkActionToolbar
+          visible={selectedRowKeys.length > 0}
+          selectedCount={selectedRowKeys.length}
+          actions={bulkActions}
+          onClearSelection={() => setSelectedRowKeys([])}
+        />
+        
         <div className='figma-header-section'>
           <div>
             <h1 className='figma-title'>Class Management</h1>
@@ -184,6 +226,7 @@ const ClassManagement = () => {
           onParamsChange={onParamsChange}
           currentPage={currentPage}
           pageSize={pageSize}
+          rowSelection={rowSelection}
         />
       </div>
         
