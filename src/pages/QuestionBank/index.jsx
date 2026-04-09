@@ -20,7 +20,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-import { useDeleteSection, useGetSections, useUpdateSectionStatus, useDuplicateSection } from '@features/sections/hooks';
+import { useDeleteSection, useGetSections, useUpdateSectionStatus, useDuplicateSection, useBulkPublishSections, useBulkDeleteSections, useBulkDuplicateSections } from '@features/sections/hooks';
 import { SectionApi } from '@features/sections/api';
 import { useSelector } from 'react-redux';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
@@ -75,6 +75,7 @@ const QuestionBank = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [selectedSkill, setSelectedSkill] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
 
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
@@ -106,6 +107,7 @@ const QuestionBank = () => {
 
   const sectionParams = {
     skillName: selectedSkill && validSkills.has(selectedSkill) ? selectedSkill : undefined,
+    status: statusFilter || undefined,
     searchName: debouncedSearch || undefined,
     page,
     pageSize,
@@ -115,6 +117,9 @@ const QuestionBank = () => {
   const { mutate: deleteSection } = useDeleteSection();
   const { mutate: updateStatus } = useUpdateSectionStatus();
   const { mutate: duplicateSection, isPending: isDuplicating } = useDuplicateSection();
+  const { mutateAsync: bulkPublishSections } = useBulkPublishSections();
+  const { mutateAsync: bulkDeleteSections } = useBulkDeleteSections();
+  const { mutateAsync: bulkDuplicateSections } = useBulkDuplicateSections();
 
   const listPart = listSectionData?.data ?? [];
   const totalItems = listSectionData?.total ?? 0;
@@ -159,13 +164,12 @@ const QuestionBank = () => {
       okButtonColor: '#52c41a',
       onConfirm: async () => {
         try {
-          for (const id of selectedRowKeys) {
-            const section = listPart.find(s => s.ID === id);
-            if (section && section.Status === 'draft') {
-              await updateStatus({ id, Status: 'published' });
-            }
+          const response = await bulkPublishSections(selectedRowKeys);
+          if (response?.data?.partialSuccess) {
+            message.warning(response.data.message);
+          } else {
+            message.success(`${selectedRowKeys.length} questions published successfully`);
           }
-          message.success(`${selectedRowKeys.length} questions processed for publishing`);
           setSelectedRowKeys([]);
           refetch();
         } catch (error) {
@@ -183,14 +187,35 @@ const QuestionBank = () => {
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
         try {
-          for (const id of selectedRowKeys) {
-            await deleteSection(id);
+          const response = await bulkDeleteSections(selectedRowKeys);
+          if (response?.data?.partialSuccess) {
+            message.warning(response.data.message);
+          } else {
+            message.success(`${selectedRowKeys.length} questions deleted successfully`);
           }
-          message.success(`${selectedRowKeys.length} questions deleted successfully`);
           setSelectedRowKeys([]);
           refetch();
         } catch (error) {
           message.error('Failed to delete some questions');
+        }
+      },
+    });
+  };
+
+  const handleBulkDuplicate = () => {
+    openConfirmModal({
+      title: 'Duplicate Selected Questions',
+      message: `Are you sure you want to duplicate ${selectedRowKeys.length} selected questions?`,
+      okText: 'Duplicate All',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        try {
+          await bulkDuplicateSections(selectedRowKeys);
+          message.success(`${selectedRowKeys.length} questions duplicated successfully`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (error) {
+          message.error('Failed to duplicate some questions');
         }
       },
     });
@@ -201,6 +226,11 @@ const QuestionBank = () => {
       label: 'Publish',
       icon: <CloudUploadOutlined />,
       onClick: handleBulkPublish,
+    },
+    {
+      label: 'Duplicate',
+      icon: <CopyOutlined />,
+      onClick: handleBulkDuplicate,
     },
     {
       label: 'Delete',
@@ -512,11 +542,28 @@ const QuestionBank = () => {
                   options={SKILL_FILTER_OPTIONS}
                 />
               </div>
+              <div className="status-select-wrapper">
+                <Select
+                  value={statusFilter}
+                  onChange={(val) => {
+                    setStatusFilter(val);
+                    setPage(1);
+                  }}
+                  className="figma-status-select"
+                  options={[
+                    { value: '', label: 'All Status' },
+                    { value: 'draft', label: 'Draft' },
+                    { value: 'published', label: 'Published' },
+                    { value: 'archived', label: 'Archived' },
+                  ]}
+                />
+              </div>
             </div>
           </div>
 
           <style>{`
-            .skill-select-wrapper .ant-select-selector {
+            .skill-select-wrapper .ant-select-selector,
+            .status-select-wrapper .ant-select-selector {
               height: 48px !important;
               display: flex !important;
               align-items: center !important;
@@ -527,12 +574,15 @@ const QuestionBank = () => {
               padding: 0 12px !important;
             }
             .skill-select-wrapper .ant-select-selection-item,
-            .skill-select-wrapper .ant-select-selection-placeholder {
+            .skill-select-wrapper .ant-select-selection-placeholder,
+            .status-select-wrapper .ant-select-selection-item,
+            .status-select-wrapper .ant-select-selection-placeholder {
               line-height: 46px !important;
               display: flex !important;
               align-items: center !important;
             }
-            .figma-skill-select.ant-select {
+            .figma-skill-select.ant-select,
+            .figma-status-select.ant-select {
               width: 180px !important;
               height: 48px !important;
               margin: 0 !important;

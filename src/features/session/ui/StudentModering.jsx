@@ -146,20 +146,24 @@ const StudentMonitoring = ({
       title: "Student Name",
       dataIndex: "studentName",
       key: "studentName",
+      align: "center",
     },
     {
       title: "Student ID",
       dataIndex: "studentId",
       key: "studentId",
+      align: "center",
     },
     {
       title: "Class Name",
       dataIndex: "className",
       key: "className",
+      align: "center",
     },
     {
       title: "Action",
       key: "action",
+      align: "center",
       render: (_, record) => (
         <div className="flex justify-center space-x-4">
           <img

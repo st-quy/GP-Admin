@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button, Space, Divider, Typography } from 'antd';
 import { CloseOutlined } from '@ant-design/icons';
 
@@ -17,9 +17,25 @@ const BulkActionToolbar = ({
   onClearSelection,
   visible = false
 }) => {
-  // Always render the component but control visibility with CSS
+  const [shouldAnimate, setShouldAnimate] = useState(false);
+  const wasVisibleRef = useRef(false);
+
+  useEffect(() => {
+    if (visible) {
+      wasVisibleRef.current = true;
+    }
+    if (wasVisibleRef.current) {
+      setShouldAnimate(true);
+    }
+  }, [visible]);
+
+  const getAnimationClass = () => {
+    if (!shouldAnimate) return 'bulk-action-toolbar-static';
+    return `bulk-action-toolbar ${visible ? 'slide-up' : 'slide-down'}`;
+  };
+
   return (
-    <div className={`bulk-action-toolbar ${visible ? 'slide-up' : 'slide-down'}`}>
+    <div className={getAnimationClass()}>
       <div className="bulk-action-toolbar-content">
         <Space split={<Divider type="vertical" className="border-gray-300 h-6" />}>
           <Space size="middle">
@@ -55,7 +71,8 @@ const BulkActionToolbar = ({
       </div>
 
       <style>{`
-        .bulk-action-toolbar {
+        .bulk-action-toolbar,
+        .bulk-action-toolbar-static {
           position: fixed;
           bottom: 40px;
           left: 50%;
@@ -66,6 +83,10 @@ const BulkActionToolbar = ({
           animation-timing-function: ease-out;
           pointer-events: none;
           opacity: 0;
+        }
+
+        .bulk-action-toolbar-static {
+          visibility: hidden;
         }
 
         .bulk-action-toolbar.slide-up {

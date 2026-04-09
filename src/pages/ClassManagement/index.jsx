@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ExportOutlined, ImportOutlined } from '@ant-design/icons';
 import {
   useGetAllClass,
+  useDeleteClassBulk,
   handleImportClick,
   fileInputRef,
   handleExportExcel,
@@ -39,11 +40,13 @@ const ClassManagement = () => {
 
   const teacherId = user?.role.includes('admin') ? null : userId;
   
-  const { data: response, isLoading } = useGetAllClass({
+  const { data: response, isLoading, refetch } = useGetAllClass({
     teacherId,
     page: currentPage,
     limit: pageSize
   });
+
+  const { mutate: deleteBulkClasses } = useDeleteClassBulk();
 
   const classList = response?.data || [];
   const totalItems = response?.total || 0;
@@ -77,30 +80,39 @@ const ClassManagement = () => {
     onChange: (keys) => setSelectedRowKeys(keys),
   };
 
-  const handleBulkExport = () => {
-    message.info(`Exporting ${selectedRowKeys.length} selected classes...`);
-    // Mock export or loop
-    setSelectedRowKeys([]);
-  };
+    const handleBulkDelete = () => {
+      const hasSessions = classList.some(cls => 
+        selectedRowKeys.includes(cls.ID) && cls.numberOfSessions > 0
+      );
+      
+      if (hasSessions) {
+        message.error('Cannot delete class(es) that contain sessions. Please remove all sessions first.');
+        return;
+      }
+      
+      deleteBulkClasses(selectedRowKeys, {
+        onSuccess: () => {
+          message.success(`${selectedRowKeys.length} class(es) deleted successfully`);
+          setSelectedRowKeys([]);
+        },
+        onError: (error) => {
+          if (error.response?.data?.message) {
+            message.error(error.response.data.message);
+          } else {
+            message.error('Failed to delete classes');
+          }
+        }
+      });
+    };
 
-  const handleBulkDelete = () => {
-    message.warning(`Bulk delete for ${selectedRowKeys.length} classes not fully implemented in BE yet.`);
-    setSelectedRowKeys([]);
-  };
-
-  const bulkActions = [
-    {
-      label: 'Export',
-      icon: <ExportOutlined />,
-      onClick: handleBulkExport,
-    },
-    {
-      label: 'Delete',
-      icon: <DeleteOutlined />,
-      onClick: handleBulkDelete,
-      danger: true,
-    },
-  ];
+   const bulkActions = [
+     {
+       label: 'Delete',
+       icon: <DeleteOutlined />,
+       onClick: handleBulkDelete,
+       danger: true,
+     },
+   ];
 
   const columns = [
     {

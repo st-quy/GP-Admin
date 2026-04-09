@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { Table, Input, Select, message, Pagination } from "antd";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
-import { SearchOutlined, CopyOutlined, ExportOutlined, RetweetOutlined } from "@ant-design/icons";
+import { SearchOutlined, DeleteOutlined } from "@ant-design/icons";
 import BulkActionToolbar from "@shared/ui/BulkActionToolbar";
 
-const SessionTable = ({ data, columns, isLoading }) => {
+const SessionTable = ({ data, columns, isLoading, onBulkDelete, selectedRowKeys, setSelectedRowKeys }) => {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+  const [selectedSessions, setSelectedSessions] = useState([]);
 
   const handleSearchChange = (e) => {
     const rawValue = e.target.value;
@@ -87,41 +87,28 @@ const SessionTable = ({ data, columns, isLoading }) => {
     setCurrentPage(1);
   };
 
+  const handleSelectionChange = (keys, records) => {
+    setSelectedRowKeys(keys);
+    setSelectedSessions(records);
+  };
+
   const rowSelection = {
     selectedRowKeys,
-    onChange: (keys) => setSelectedRowKeys(keys),
+    onChange: handleSelectionChange,
   };
 
-  const handleBulkUpdateStatus = () => {
-    message.warning(`Batch status update for ${selectedRowKeys.length} sessions not fully implemented in UI yet.`);
-    setSelectedRowKeys([]);
-  };
-
-  const handleBulkClone = () => {
-    message.info(`Cloning ${selectedRowKeys.length} sessions...`);
-    setSelectedRowKeys([]);
-  };
-
-  const handleBulkExport = () => {
-    message.info(`Exporting report for ${selectedRowKeys.length} sessions...`);
-    setSelectedRowKeys([]);
+  const handleBulkDelete = () => {
+    if (onBulkDelete) {
+      onBulkDelete(selectedSessions);
+    }
   };
 
   const bulkActions = [
     {
-      label: 'Update Status',
-      icon: <RetweetOutlined />,
-      onClick: handleBulkUpdateStatus,
-    },
-    {
-      label: 'Clone',
-      icon: <CopyOutlined />,
-      onClick: handleBulkClone,
-    },
-    {
-      label: 'Export Report',
-      icon: <ExportOutlined />,
-      onClick: handleBulkExport,
+      label: 'Delete',
+      icon: <DeleteOutlined />,
+      onClick: handleBulkDelete,
+      danger: true,
     },
   ];
 
@@ -131,7 +118,10 @@ const SessionTable = ({ data, columns, isLoading }) => {
         visible={selectedRowKeys.length > 0}
         selectedCount={selectedRowKeys.length}
         actions={bulkActions}
-        onClearSelection={() => setSelectedRowKeys([])}
+        onClearSelection={() => {
+          setSelectedRowKeys([]);
+          setSelectedSessions([]);
+        }}
       />
       <div className="mb-6 flex items-center gap-4">
         <Input

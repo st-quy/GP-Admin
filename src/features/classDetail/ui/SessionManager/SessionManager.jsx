@@ -2,17 +2,20 @@ import React, { useState } from "react";
 import ActionModal from "../SessionModal/ActionModal/ActionModal";
 import DeleteModal from "../SessionModal/DeleteModal/DeleteModal";
 import { Link } from "react-router-dom";
-import { useClassDetailQuery } from "../../hooks/useClassDetail";
+import { useClassDetailQuery, useBulkDeleteSessionsMutation } from "../../hooks/useClassDetail";
 import { useParams } from "react-router-dom";
-import { Button, Tooltip } from "antd";
+import { Button, Tooltip, message } from "antd";
 import { DeleteOutlined, EditOutlined } from "@ant-design/icons";
 import SessionTable from "./SessionTable/SessionTable";
 import { formatDateTime } from "@shared/lib/utils/formatString";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
+import useConfirm from "@shared/hook/useConfirm";
 
 const SessionManager = () => {
   const { classId } = useParams();
   const { data, isLoading } = useClassDetailQuery(classId);
+  const { openConfirmModal, ModalComponent } = useConfirm();
+  const { mutateAsync: bulkDeleteSessions } = useBulkDeleteSessionsMutation();
 
   const [modalState, setModalState] = useState({
     create: false,
@@ -20,6 +23,7 @@ const SessionManager = () => {
     delete: false,
   });
   const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
 
   const openModal = (type, session = null) => {
     setSelectedSession(session);
@@ -29,6 +33,43 @@ const SessionManager = () => {
   const closeModal = (type) => {
     setModalState((prev) => ({ ...prev, [type]: false }));
     setSelectedSession(null);
+  };
+
+  const handleBulkDelete = (selectedRecords) => {
+    const sessionsWithParticipants = selectedRecords.filter(
+      (s) => s.SessionParticipants && s.SessionParticipants.length > 0
+    );
+    const deletableSessions = selectedRecords.filter(
+      (s) => !s.SessionParticipants || s.SessionParticipants.length === 0
+    );
+
+    if (sessionsWithParticipants.length > 0) {
+      const names = sessionsWithParticipants.map(s => s.sessionName).join(', ');
+      message.warning(`Cannot delete sessions with participants: ${names}`);
+    }
+
+    if (deletableSessions.length === 0) {
+      setSelectedRowKeys([]);
+      return;
+    }
+
+    const deletableIds = deletableSessions.map(s => s.ID);
+    
+    openConfirmModal({
+      title: `Delete ${deletableIds.length} Session${deletableIds.length > 1 ? 's' : ''}?`,
+      message: `Are you sure you want to delete ${deletableIds.length} session${deletableIds.length > 1 ? 's' : ''}? This action cannot be undone.`,
+      okText: 'Delete',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          await bulkDeleteSessions(deletableIds);
+          message.success(`${deletableIds.length} session(s) deleted successfully`);
+          setSelectedRowKeys([]);
+        } catch (error) {
+          message.error('Failed to delete some sessions');
+        }
+      },
+    });
   };
 
   const sessionColumns = [
@@ -122,6 +163,7 @@ const SessionManager = () => {
 
   return (
     <>
+      <ModalComponent />
       <div className="flex w-full items-center justify-between pt-8">
         <div>
           <h4 className="figma-title">
@@ -145,6 +187,9 @@ const SessionManager = () => {
             data={data.Sessions}
             columns={sessionColumns}
             isLoading={isLoading}
+            onBulkDelete={handleBulkDelete}
+            selectedRowKeys={selectedRowKeys}
+            setSelectedRowKeys={setSelectedRowKeys}
           />
         )}
       </div>

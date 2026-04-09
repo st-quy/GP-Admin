@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ClassApi, ExcelApi } from "../api";
+import axiosInstance from "@shared/config/axios";
 import { message } from "antd";
 import { useSelector } from "react-redux";
 import * as XLSX from "xlsx";
@@ -158,6 +159,21 @@ export const useDeleteClass = () => {
     },
     onError: ({ response }) => {
       message.error("Can't delete this class because it has sessions");
+    },
+  });
+};
+
+export const useDeleteClassBulk = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (classIds) => {
+      const response = await axiosInstance.delete('/classes', {
+        data: { classIds }
+      });
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes"] });
     },
   });
 };

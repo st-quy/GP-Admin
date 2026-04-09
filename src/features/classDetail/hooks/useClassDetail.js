@@ -98,3 +98,21 @@ export const useGetTopics = (params) => {
     },
   });
 };
+
+export const useBulkDeleteSessionsMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (sessionIds) => {
+      const response = await ClassDetailApi.bulkDeleteSessions(sessionIds);
+      return response.data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classDetail"] });
+    },
+    onError: (error) => {
+      const msg = error?.response?.data?.message || "Failed to delete sessions. Please try again.";
+      message.error(msg);
+    },
+  });
+};

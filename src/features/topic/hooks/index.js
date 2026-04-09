@@ -180,3 +180,54 @@ export const useDuplicateTopic = () => {
     },
   });
 };
+
+export const useBulkUpdateTopicsStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ids, status }) => TopicApi.bulkUpdateStatus(ids, status),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onError: (error) => {
+      const msg = error?.response?.data?.message || "Failed to bulk update topics";
+      message.error(msg);
+    },
+  });
+};
+
+export const useBulkDeleteTopics = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids) => TopicApi.bulkDelete(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onError: (error) => {
+      const msg = error?.response?.data?.message || "Failed to bulk delete topics";
+      message.error(msg);
+    },
+  });
+};
+
+export const useBulkDuplicateTopics = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids) => TopicApi.bulkDuplicate(ids),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["topics"] });
+    },
+    onError: (error) => {
+      const msg = error?.response?.data?.message || "Failed to bulk duplicate topics";
+      message.error(msg);
+    },
+  });
+};

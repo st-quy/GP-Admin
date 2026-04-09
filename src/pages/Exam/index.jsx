@@ -38,6 +38,9 @@ import {
   useDeleteTopicSectionByTopicId,
   useUpdateTopic,
   useDuplicateTopic,
+  useBulkUpdateTopicsStatus,
+  useBulkDeleteTopics,
+  useBulkDuplicateTopics,
 } from '../../features/topic/hooks';
 import useConfirm from '@shared/hook/useConfirm';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
@@ -108,6 +111,9 @@ const TopicListPage = () => {
   const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
   const { mutateAsync: updateTopic } = useUpdateTopic();
   const { mutateAsync: duplicateTopic } = useDuplicateTopic();
+  const { mutateAsync: bulkUpdateTopics } = useBulkUpdateTopicsStatus();
+  const { mutateAsync: bulkDeleteTopics } = useBulkDeleteTopics();
+  const { mutateAsync: bulkDuplicateTopics } = useBulkDuplicateTopics();
 
   const counts = {
     Submited: data?.statusCounts?.submited || 0,
@@ -447,15 +453,31 @@ const TopicListPage = () => {
       okButtonColor: '#52c41a',
       onConfirm: async () => {
         try {
-          // Sequential loop for now since backend lacks batch endpoint
-          for (const id of selectedRowKeys) {
-            await updateTopic({ id, data: { Status: 'approved' } });
-          }
+          await bulkUpdateTopics({ ids: selectedRowKeys, status: 'approved' });
           message.success(`${selectedRowKeys.length} exams approved successfully`);
           setSelectedRowKeys([]);
           refetch();
         } catch (error) {
           message.error('Failed to approve some exams');
+        }
+      },
+    });
+  };
+
+  const handleBulkReject = () => {
+    openConfirmModal({
+      title: 'Reject Selected Exams',
+      message: `Are you sure you want to reject ${selectedRowKeys.length} selected exams?`,
+      okText: 'Reject All',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          await bulkUpdateTopics({ ids: selectedRowKeys, status: 'rejected' });
+          message.success(`${selectedRowKeys.length} exams rejected successfully`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (error) {
+          message.error('Failed to reject some exams');
         }
       },
     });
@@ -469,19 +491,35 @@ const TopicListPage = () => {
       okButtonColor: '#FF4D4F',
       onConfirm: async () => {
         try {
-          for (const id of selectedRowKeys) {
-            const topic = topics.find(t => t.ID === id);
-            if (topic && ['approved', 'submited'].includes(topic.Status)) {
-              continue; // Skip restricted
-            }
-            await deleteTopicSectionsByTopicId.mutateAsync(id);
-            await deleteTopic.mutateAsync(id);
+          const response = await bulkDeleteTopics(selectedRowKeys);
+          if (response?.data?.partialSuccess) {
+            message.warning(response.data.message);
+          } else {
+            message.success(`${selectedRowKeys.length} exams deleted successfully`);
           }
-          message.success(`${selectedRowKeys.length} exams processed for deletion`);
           setSelectedRowKeys([]);
           refetch();
         } catch (error) {
           message.error('Failed to delete some exams');
+        }
+      },
+    });
+  };
+
+  const handleBulkDuplicate = () => {
+    openConfirmModal({
+      title: 'Duplicate Selected Exams',
+      message: `Are you sure you want to duplicate ${selectedRowKeys.length} selected exams?`,
+      okText: 'Duplicate All',
+      okButtonColor: '#003087',
+      onConfirm: async () => {
+        try {
+          await bulkDuplicateTopics(selectedRowKeys);
+          message.success(`${selectedRowKeys.length} exams duplicated successfully`);
+          setSelectedRowKeys([]);
+          refetch();
+        } catch (error) {
+          message.error('Failed to duplicate some exams');
         }
       },
     });
@@ -493,6 +531,18 @@ const TopicListPage = () => {
       icon: <CheckCircleOutlined />,
       onClick: handleBulkApprove,
       disabled: !isAdmin,
+    },
+    {
+      label: 'Reject',
+      icon: <CloseCircleOutlined />,
+      onClick: handleBulkReject,
+      danger: true,
+      disabled: !isAdmin,
+    },
+    {
+      label: 'Duplicate',
+      icon: <CopyOutlined />,
+      onClick: handleBulkDuplicate,
     },
     {
       label: 'Delete',

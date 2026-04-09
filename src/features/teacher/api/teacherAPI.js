@@ -20,3 +20,6 @@ export const getTeachers = async (data) => {
 export const deleteTeachers = async (id) => {
   return await axiosInstance.delete(`/users/delete/${id}`);
 };
+export const bulkDeleteTeachers = async (ids) => {
+  return await axiosInstance.post('/users/bulk-delete', { ids });
+};
