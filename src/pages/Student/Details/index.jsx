@@ -1,38 +1,56 @@
-import React, { useState } from "react";
-import { Card, Descriptions, Divider, Table, Input, Row, Col } from "antd";
+import React, { useState, useEffect } from "react";
+import { Card, Descriptions, Divider, Table, Input, Row, Col, Spin } from "antd";
 import { useParams } from "react-router-dom";
-import { useFetchProfile } from "@features/auth/hooks";
+import { useFetchProfile, useStudentAssessmentHistory } from "@features/auth/hooks";
 
 const StudentDetail = () => {
   const { studentId } = useParams();
+  const [searchKeyword, setSearchKeyword] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
 
-  const { data } = useFetchProfile(studentId);
+  const { data: profileData, isLoading: isProfileLoading } = useFetchProfile(studentId);
 
-  const items = data && [
+  const { data: historyData, isLoading: isHistoryLoading } = useStudentAssessmentHistory(studentId, {
+    page,
+    limit: pageSize,
+    searchKeyword: debouncedSearch,
+  });
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchKeyword);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchKeyword]);
+
+  const items = profileData && [
     {
       key: "1",
       label: "Student name",
-      children: data.firstName + " " + data.lastName || "No information",
+      children: profileData.firstName + " " + profileData.lastName || "No information",
     },
     {
       key: "2",
       label: "Email",
-      children: data.email || "No information",
+      children: profileData.email || "No information",
     },
     {
       key: "3",
       label: "Student ID",
-      children: data.studentCode || "No information",
+      children: profileData.studentCode || "No information",
     },
     {
       key: "4",
       label: "Phone",
-      children: data.phone || "No information",
+      children: profileData.phone || "No information",
     },
     {
       key: "5",
       label: "Class name",
-      children: data.class || "No information",
+      children: profileData.class || "No information",
     },
   ];
 
@@ -42,111 +60,73 @@ const StudentDetail = () => {
       dataIndex: "sessionName",
       key: "sessionName",
       ellipsis: true,
+      render: (_, record) => record.Session?.sessionName || "-",
     },
     {
       title: "Grammar & Vocabulary",
-      dataIndex: "grammarVocabulary",
-      key: "grammarVocabulary",
+      dataIndex: "GrammarVocabulary",
+      key: "GrammarVocabulary",
       ellipsis: true,
+      render: (val) => val ?? "-",
     },
     {
       title: "Listening",
-      dataIndex: "listening",
-      key: "listening",
+      dataIndex: "Listening",
+      key: "Listening",
       ellipsis: true,
+      render: (val) => val ?? "-",
     },
     {
       title: "Reading",
-      dataIndex: "reading",
-      key: "reading",
+      dataIndex: "Reading",
+      key: "Reading",
       ellipsis: true,
+      render: (val) => val ?? "-",
     },
     {
       title: "Speaking",
-      dataIndex: "speaking",
-      key: "speaking",
+      dataIndex: "Speaking",
+      key: "Speaking",
       ellipsis: true,
+      render: (val) => val ?? "-",
     },
     {
       title: "Writing",
-      dataIndex: "writing",
-      key: "writing",
+      dataIndex: "Writing",
+      key: "Writing",
       ellipsis: true,
+      render: (val) => val ?? "-",
     },
     {
       title: "Total",
-      dataIndex: "total",
-      key: "total",
+      dataIndex: "Total",
+      key: "Total",
       ellipsis: true,
+      render: (val) => val ?? "-",
     },
     {
       title: "Level",
-      dataIndex: "level",
-      key: "level",
+      dataIndex: "Level",
+      key: "Level",
       ellipsis: true,
+      render: (val) => val ?? "-",
     },
   ];
 
-  const initialData = [
-    {
-      key: "1",
-      sessionName: "SPRING_P1_2025",
-      grammarVocabulary: 43,
-      listening: 50,
-      reading: 46,
-      speaking: 3,
-      writing: 3,
-      total: 3,
-      level: "C",
-    },
-    {
-      key: "2",
-      sessionName: "FALL_P3_2024",
-      grammarVocabulary: 44,
-      listening: 23,
-      reading: 5,
-      speaking: 3,
-      writing: 3,
-      total: 3,
-      level: "B2",
-    },
-    {
-      key: "3",
-      sessionName: "FALL_P2_2024",
-      grammarVocabulary: 46,
-      listening: 23,
-      reading: 3,
-      speaking: 3,
-      writing: 3,
-      total: 3,
-      level: "B2",
-    },
-    {
-      key: "4",
-      sessionName: "FALL_P1_2024",
-      grammarVocabulary: 31,
-      listening: 24,
-      reading: 3,
-      speaking: 3,
-      writing: 3,
-      total: 3,
-      level: "B1",
-    },
-  ];
+  const tableData = historyData?.data || [];
+  const pagination = historyData?.pagination || { totalItems: 0, totalPages: 1, currentPage: 1, pageSize: 10 };
 
-  const [datat, setData] = useState(initialData);
-
-  const onSearchChange = (e) => {
-    const value = e.target.value.toLowerCase();
-    const filteredData = initialData.filter((item) =>
-      item.sessionName.toLowerCase().includes(value)
+  if (isProfileLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Spin size="large" />
+      </div>
     );
-    setData(filteredData);
-  };
+  }
 
   return (
     <>
-      {data && (
+      {profileData && (
         <div className="p-8">
           <Row gutter={[16, 16]}>
             <Col xs={24}>
@@ -164,14 +144,33 @@ const StudentDetail = () => {
               <div className="text-gray-500 mb-4">View student details.</div>
               <Input
                 placeholder="Search by session name"
-                onChange={onSearchChange}
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
                 style={{ marginBottom: 16, width: "100%", maxWidth: 300 }}
               />
               <Table
                 columns={columns}
-                dataSource={datat}
-                pagination={{ pageSize: 10 }}
+                dataSource={tableData}
+                loading={isHistoryLoading}
+                rowKey="ID"
                 scroll={{ x: 800 }}
+                pagination={{
+                  current: pagination.currentPage,
+                  pageSize: pagination.pageSize,
+                  total: pagination.totalItems,
+                  showSizeChanger: true,
+                  showTotal: (total, range) => `${range[0]}-${range[1]} of ${total} items`,
+                  onChange: (newPage, newPageSize) => {
+                    setPage(newPage);
+                    setPageSize(newPageSize);
+                  },
+                  itemRender: (current, type, originalElement) => {
+                    if (type === 'prev' || type === 'next') {
+                      return <span className="cursor-pointer px-2">{originalElement}</span>;
+                    }
+                    return originalElement;
+                  }
+                }}
               />
             </Col>
           </Row>

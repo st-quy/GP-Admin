@@ -23,4 +23,9 @@ export const AuthApi = {
   changePassword: (userId, params) => {
     return axiosInstance.post(`/users/${userId}/change-password`, params);
   },
+  getStudentAssessmentHistory: (userId, { page = 1, limit = 10, searchKeyword = '' } = {}) => {
+    return axiosInstance.get(`/session-participants/user/${userId}`, {
+      params: { page, limit, searchKeyword },
+    });
+  },
 };

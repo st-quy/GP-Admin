@@ -10,11 +10,23 @@ import { jwtDecode } from 'jwt-decode';
 
 export const useFetchProfile = (studentId) => {
   return useQuery({
-    queryKey: ['profileDetail'],
+    queryKey: ['profileDetail', studentId],
     queryFn: async () => {
       const { data } = await AuthApi.getProfile(studentId);
       return data;
     },
+    enabled: Boolean(studentId),
+  });
+};
+
+export const useStudentAssessmentHistory = (studentId, { page = 1, limit = 10, searchKeyword = '' } = {}) => {
+  return useQuery({
+    queryKey: ['studentAssessmentHistory', studentId, page, limit, searchKeyword],
+    queryFn: async () => {
+      const { data } = await AuthApi.getStudentAssessmentHistory(studentId, { page, limit, searchKeyword });
+      return data;
+    },
+    enabled: Boolean(studentId),
   });
 };
 
