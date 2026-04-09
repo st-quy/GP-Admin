@@ -5,6 +5,7 @@ import {
   useDeleteTeacher,
   useFetchTeacherById,
   useFetchTeachers,
+  useBulkDeleteTeachers,
 } from '../hook/useTeacherQuery';
 import TeacherActionModal from './TeacherModal/ActionModal/TeacherActionModal';
 import useConfirm from '@shared/hook/useConfirm';
@@ -12,16 +13,19 @@ import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 import { useNavigate } from 'react-router-dom';
 import SearchInput from "@/app/components/SearchInput.jsx";
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import BulkActionToolbar from '@shared/ui/BulkActionToolbar';
 
 const TeacherManagement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
   const navigate = useNavigate();
   const { id: editingTeacherId } = useParams();
   const { openConfirmModal, ModalComponent } = useConfirm();
   const { mutateAsync: deleteTeacher } = useDeleteTeacher();
+  const { mutateAsync: bulkDeleteTeachers } = useBulkDeleteTeachers();
 
   const onSearchChange = (event) => {
     const rawValue = event.target.value;
@@ -92,39 +96,75 @@ const TeacherManagement = () => {
     });
   };
 
-  const columns = [
+  const handleBulkDelete = () => {
+    openConfirmModal({
+      title: 'Delete Selected Teachers',
+      message: `Are you sure you want to delete ${selectedRowKeys.length} selected teachers? This action cannot be undone.`,
+      okText: 'Delete All',
+      okButtonColor: '#FF4D4F',
+      onConfirm: async () => {
+        try {
+          await bulkDeleteTeachers(selectedRowKeys);
+          message.success(`${selectedRowKeys.length} teachers deleted successfully`);
+          setSelectedRowKeys([]);
+        } catch (error) {
+          message.error(
+            error?.response?.data?.message || 'Failed to delete teachers. Please try again.'
+          );
+        }
+      },
+    });
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
+  const bulkActions = [
     {
-      title: <span className="font-bold text-[#637381]">TEACHER NAME</span>,
-      dataIndex: 'fullname',
-      key: 'name',
-      width: '200px',
-      render: (text, record) => (
-        <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
-          <Link
-            to={`/teacher/edit/${record.ID}`}
-            className='bg-transparent border-none p-0 cursor-pointer font-medium text-primaryColor underline underline-offset-4 hover:opacity-80'
-          >
-            {`${record.firstName} ${record.lastName}` || 'Unknown'}
-          </Link>
-        </div>
-      ),
+      label: 'Delete',
+      icon: <DeleteOutlined />,
+      onClick: handleBulkDelete,
+      danger: true,
     },
-    {
-      title: <span className="font-bold text-[#637381]">TEACHER ID</span>,
-      dataIndex: 'teacherCode',
-      key: 'id',
-      width: '120px',
-      align: 'center',
-      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
-    },
-    {
-      title: <span className="font-bold text-[#637381]">EMAIL</span>,
-      dataIndex: 'email',
-      key: 'email',
-      width: '200px',
-      ellipsis: true,
-      render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
-    },
+  ];
+
+    const columns = [
+      {
+        title: <span className="font-bold text-[#637381]">TEACHER NAME</span>,
+        dataIndex: 'fullname',
+        key: 'name',
+        width: '200px',
+        align: 'center',
+        render: (text, record) => (
+          <div className='overflow-hidden text-ellipsis whitespace-nowrap'>
+            <Link
+              to={`/teacher/edit/${record.ID}`}
+              className='bg-transparent border-none p-0 cursor-pointer font-medium text-primaryColor underline underline-offset-4 hover:opacity-80'
+            >
+              {`${record.firstName} ${record.lastName}` || 'Unknown'}
+            </Link>
+          </div>
+        ),
+      },
+      {
+        title: <span className="font-bold text-[#637381]">TEACHER ID</span>,
+        dataIndex: 'teacherCode',
+        key: 'id',
+        width: '120px',
+        align: 'center',
+        render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
+      },
+      {
+        title: <span className="font-bold text-[#637381]">EMAIL</span>,
+        dataIndex: 'email',
+        key: 'email',
+        width: '200px',
+        align: 'center',
+        ellipsis: true,
+        render: (text) => <span className="font-medium text-primaryTextColor">{text}</span>
+      },
     {
       title: <span className="font-bold text-[#637381]">PHONE</span>,
       dataIndex: 'phone',
@@ -264,6 +304,13 @@ const TeacherManagement = () => {
         }
       `}</style>
 
+      <BulkActionToolbar
+        visible={selectedRowKeys.length > 0}
+        selectedCount={selectedRowKeys.length}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedRowKeys([])}
+      />
+
       <div className="figma-table-card figma-table-overrides w-full">
         <Table
           columns={columns}
@@ -272,6 +319,7 @@ const TeacherManagement = () => {
           scroll={{ x: "max-content" }}
           pagination={false}
           loading={isLoading || isTeacherDetailLoading || !teachersData}
+          rowSelection={rowSelection}
         />
       </div>
 

@@ -1,13 +1,15 @@
 import React, { useState } from "react";
 import { Table, Input, Select, message, Pagination } from "antd";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
-import { SearchOutlined } from "@ant-design/icons";
+import { SearchOutlined, DeleteOutlined } from "@ant-design/icons";
+import BulkActionToolbar from "@shared/ui/BulkActionToolbar";
 
-const SessionTable = ({ data, columns, isLoading }) => {
+const SessionTable = ({ data, columns, isLoading, onBulkDelete, selectedRowKeys, setSelectedRowKeys }) => {
   const [searchText, setSearchText] = useState("");
   const [statusFilter, setStatusFilter] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedSessions, setSelectedSessions] = useState([]);
 
   const handleSearchChange = (e) => {
     const rawValue = e.target.value;
@@ -85,8 +87,42 @@ const SessionTable = ({ data, columns, isLoading }) => {
     setCurrentPage(1);
   };
 
+  const handleSelectionChange = (keys, records) => {
+    setSelectedRowKeys(keys);
+    setSelectedSessions(records);
+  };
+
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: handleSelectionChange,
+  };
+
+  const handleBulkDelete = () => {
+    if (onBulkDelete) {
+      onBulkDelete(selectedSessions);
+    }
+  };
+
+  const bulkActions = [
+    {
+      label: 'Delete',
+      icon: <DeleteOutlined />,
+      onClick: handleBulkDelete,
+      danger: true,
+    },
+  ];
+
   return (
     <div className="mt-4">
+      <BulkActionToolbar
+        visible={selectedRowKeys.length > 0}
+        selectedCount={selectedRowKeys.length}
+        actions={bulkActions}
+        onClearSelection={() => {
+          setSelectedRowKeys([]);
+          setSelectedSessions([]);
+        }}
+      />
       <div className="mb-6 flex items-center gap-4">
         <Input
           placeholder="Search sessions..."
@@ -113,6 +149,7 @@ const SessionTable = ({ data, columns, isLoading }) => {
           scroll={{ x: "max-content" }}
           className="w-full"
           loading={isLoading}
+          rowSelection={rowSelection}
         />
       </div>
 

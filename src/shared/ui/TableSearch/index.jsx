@@ -12,7 +12,9 @@ const TableSearch = ({
   serverSide = false,
   onParamsChange,
   currentPage: currentPageProp = 1,
-  pageSize: pageSizeProp = 10
+  pageSize: pageSizeProp = 10,
+  rowSelection,
+  extraHeader
 }) => {
   const [localSearchText, setLocalSearchText] = useState('');
   
@@ -79,7 +81,7 @@ const TableSearch = ({
   return (
     <div className={isFigmaRedesign ? 'flex flex-col items-center w-full' : ''}>
       {/* 1. Search Bar Wrapper */}
-      <div className={isFigmaRedesign ? 'w-full mb-6 text-left' : 'mb-6 p-6 pb-0'}>
+      <div className={isFigmaRedesign ? 'w-full mb-6 text-left flex items-center justify-between' : 'mb-6 p-6 pb-0 flex items-center justify-between'}>
         <Input
           placeholder={placeholder}
           prefix={<SearchOutlined className={isFigmaRedesign ? 'text-[#6B7280] mr-2' : 'text-gray-400 mr-2'} />}
@@ -89,6 +91,7 @@ const TableSearch = ({
           className={isFigmaRedesign ? 'figma-search-input' : 'h-[44px] w-full max-w-[320px] rounded-lg border-gray-300 focus:border-[#003087] hover:border-[#003087] transition-all bg-[#F9FAFB]'}
           allowClear
         />
+        {extraHeader}
       </div>
 
       {/* 2. Table Card */}
@@ -103,6 +106,7 @@ const TableSearch = ({
             rowKey='ID'
             pagination={false}
             loading={isLoading}
+            rowSelection={rowSelection}
             className={isFigmaRedesign ? 'figma-table-overrides' : 'custom-modern-table'}
             scroll={{ x: 'max-content' }}
             locale={{

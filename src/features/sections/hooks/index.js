@@ -75,3 +75,45 @@ export const useDuplicateSection = () => {
     },
   });
 };
+
+export const useBulkPublishSections = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids) => SectionApi.bulkPublish(ids),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['sections'] });
+    },
+    onError: ({ response }) => {
+      const errorMsg = response?.data?.message || 'Failed to bulk publish sections';
+      message.error(errorMsg);
+    },
+  });
+};
+
+export const useBulkDeleteSections = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids) => SectionApi.bulkDelete(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sections'] });
+    },
+    onError: ({ response }) => {
+      const errorMsg = response?.data?.message || 'Failed to bulk delete sections';
+      message.error(errorMsg);
+    },
+  });
+};
+
+export const useBulkDuplicateSections = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids) => SectionApi.bulkDuplicate(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sections'] });
+    },
+    onError: ({ response }) => {
+      const errorMsg = response?.data?.message || 'Failed to bulk duplicate sections';
+      message.error(errorMsg);
+    },
+  });
+};

@@ -16,6 +16,9 @@ export const ClassDetailApi = {
   deleteSession: (sessionId) => {
     return axiosInstance.delete(`/sessions/${sessionId}`);
   },
+  bulkDeleteSessions: (sessionIds) => {
+    return axiosInstance.post(`/sessions/batch/delete`, { sessionIds });
+  },
   getSessionById: (sessionId) => {
     return axiosInstance.get(`/sessions/${sessionId}`);
   },

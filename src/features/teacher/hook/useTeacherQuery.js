@@ -5,6 +5,7 @@ import {
   updateTeachers,
   getTeacherById,
   deleteTeachers,
+  bulkDeleteTeachers,
 } from "../api/teacherAPI";
 
 // Fetch teachers
@@ -51,6 +52,19 @@ export const useDeleteTeacher = () => {
     mutationFn: (teacherId) => deleteTeachers(teacherId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
+    },
+  });
+};
+
+export const useBulkDeleteTeachers = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids) => bulkDeleteTeachers(ids),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+    },
+    onError: (error) => {
+      console.error("Error bulk deleting teachers:", error);
     },
   });
 };

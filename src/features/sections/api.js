@@ -23,4 +23,13 @@ export const SectionApi = {
   duplicateSection: (id) => {
     return axiosInstance.post(`/sections/${id}/duplicate`);
   },
+  bulkPublish: (ids) => {
+    return axiosInstance.post('/sections/bulk-publish', { ids });
+  },
+  bulkDelete: (ids) => {
+    return axiosInstance.delete('/sections/bulk', { data: { ids } });
+  },
+  bulkDuplicate: (ids) => {
+    return axiosInstance.post('/sections/bulk-duplicate', { ids });
+  },
 };

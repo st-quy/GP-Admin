@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { DeleteOutlined, EditOutlined, PlusOutlined, ExportOutlined, ImportOutlined } from '@ant-design/icons';
 import {
   useGetAllClass,
+  useDeleteClassBulk,
   handleImportClick,
   fileInputRef,
   handleExportExcel,
@@ -15,6 +16,8 @@ import UpdateClassModal from '@features/classManagement/ui/Modal/UpdateClass';
 import DeleteClassModal from '@features/classManagement/ui/Modal/DeleteClass';
 import { useSelector } from 'react-redux';
 import PreviewExam from '@shared/ui/PreviewExam';
+import BulkActionToolbar from '@shared/ui/BulkActionToolbar';
+import { message } from 'antd';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
@@ -25,6 +28,9 @@ const ClassManagement = () => {
   const [isOpen, setIsOpen] = useState('');
   const [dataClass, setClassData] = useState(null);
   
+  // Selection
+  const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
   // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -34,11 +40,13 @@ const ClassManagement = () => {
 
   const teacherId = user?.role.includes('admin') ? null : userId;
   
-  const { data: response, isLoading } = useGetAllClass({
+  const { data: response, isLoading, refetch } = useGetAllClass({
     teacherId,
     page: currentPage,
     limit: pageSize
   });
+
+  const { mutate: deleteBulkClasses } = useDeleteClassBulk();
 
   const classList = response?.data || [];
   const totalItems = response?.total || 0;
@@ -67,12 +75,51 @@ const ClassManagement = () => {
     }
   };
 
+  const rowSelection = {
+    selectedRowKeys,
+    onChange: (keys) => setSelectedRowKeys(keys),
+  };
+
+    const handleBulkDelete = () => {
+      const hasSessions = classList.some(cls => 
+        selectedRowKeys.includes(cls.ID) && cls.numberOfSessions > 0
+      );
+      
+      if (hasSessions) {
+        message.error('Cannot delete class(es) that contain sessions. Please remove all sessions first.');
+        return;
+      }
+      
+      deleteBulkClasses(selectedRowKeys, {
+        onSuccess: () => {
+          message.success(`${selectedRowKeys.length} class(es) deleted successfully`);
+          setSelectedRowKeys([]);
+        },
+        onError: (error) => {
+          if (error.response?.data?.message) {
+            message.error(error.response.data.message);
+          } else {
+            message.error('Failed to delete classes');
+          }
+        }
+      });
+    };
+
+   const bulkActions = [
+     {
+       label: 'Delete',
+       icon: <DeleteOutlined />,
+       onClick: handleBulkDelete,
+       danger: true,
+     },
+   ];
+
   const columns = [
     {
       title: 'CLASS NAME',
       dataIndex: 'className',
       key: 'className',
-      align: 'left',
+      align: 'center',
       render: (text, record) => (
         <Tooltip title={text}>
           <Link to={`/class/${record.ID}`} className='figma-class-link font-medium'>
@@ -121,6 +168,13 @@ const ClassManagement = () => {
   return (
     <div className='figma-page-container'>
       <div className='figma-content-wrapper'>
+        <BulkActionToolbar
+          visible={selectedRowKeys.length > 0}
+          selectedCount={selectedRowKeys.length}
+          actions={bulkActions}
+          onClearSelection={() => setSelectedRowKeys([])}
+        />
+        
         <div className='figma-header-section'>
           <div>
             <h1 className='figma-title'>Class Management</h1>
@@ -184,6 +238,7 @@ const ClassManagement = () => {
           onParamsChange={onParamsChange}
           currentPage={currentPage}
           pageSize={pageSize}
+          rowSelection={rowSelection}
         />
       </div>
         

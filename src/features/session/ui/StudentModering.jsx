@@ -3,6 +3,8 @@ import { Table, message, Pagination, Select } from "antd";
 import CheckCircleIcon from "@/assets/icons/check-circle.svg";
 import CloseCircleIcon from "@/assets/icons/close-circle.svg";
 import ConfirmationModal from "@shared/Modal/ConfirmationModal";
+import BulkActionToolbar from "@shared/ui/BulkActionToolbar";
+import { CheckCircleOutlined, CloseCircleOutlined } from "@ant-design/icons";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   useApproveRequest,
@@ -144,20 +146,24 @@ const StudentMonitoring = ({
       title: "Student Name",
       dataIndex: "studentName",
       key: "studentName",
+      align: "center",
     },
     {
       title: "Student ID",
       dataIndex: "studentId",
       key: "studentId",
+      align: "center",
     },
     {
       title: "Class Name",
       dataIndex: "className",
       key: "className",
+      align: "center",
     },
     {
       title: "Action",
       key: "action",
+      align: "center",
       render: (_, record) => (
         <div className="flex justify-center space-x-4">
           <img
@@ -181,27 +187,28 @@ const StudentMonitoring = ({
   const start = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
   const end = Math.min(currentPage * pageSize, total);
 
+  const bulkActions = [
+    {
+      label: 'Approve',
+      icon: <CheckCircleOutlined />,
+      onClick: () => handleBulkAction("approve"),
+    },
+    {
+      label: 'Reject',
+      icon: <CloseCircleOutlined />,
+      onClick: () => handleBulkAction("reject"),
+      danger: true,
+    },
+  ];
+
   return (
     <div className="w-full">
-      <div className="flex items-center min-h-[32px] mb-2">
-        {selectedRowKeys.length > 0 && (
-          <div className="flex items-center gap-2">
-            <div
-              className="text-[#003087] font-medium md:text-sm text-[10px] h-8 px-3 hover:underline hover:cursor-pointer"
-              onClick={() => handleBulkAction("approve")}
-            >
-              Approve
-            </div>
-            <div className="text-[#DFE4EA]">|</div>
-            <div
-              className="text-[#F23030] font-medium md:text-sm text-[10px] h-8 px-3 hover:underline hover:cursor-pointer"
-              onClick={() => handleBulkAction("reject")}
-            >
-              Reject
-            </div>
-          </div>
-        )}
-      </div>
+      <BulkActionToolbar
+        visible={selectedRowKeys.length > 0}
+        selectedCount={selectedRowKeys.length}
+        actions={bulkActions}
+        onClearSelection={() => setSelectedRowKeys([])}
+      />
 
       <div className="figma-table-card figma-table-overrides w-full">
         <Table
