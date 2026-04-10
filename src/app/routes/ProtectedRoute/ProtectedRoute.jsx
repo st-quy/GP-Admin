@@ -1,40 +1,62 @@
 import { LogoGreen } from '@assets/images';
-import { Layout, message, Modal } from 'antd';
+import { Layout, Menu, message, Modal } from 'antd';
+import {
+  ContactsOutlined,
+  ContainerOutlined,
+  DatabaseOutlined,
+  ExclamationCircleOutlined,
+  HomeOutlined,
+  ReadOutlined,
+} from '@ant-design/icons';
 import {
   Outlet,
   useLocation,
   useNavigate,
   matchRoutes,
-  Link,
   Navigate,
 } from 'react-router-dom';
-import { Breadcrumb } from '../../components/Breadcrumb/Breadcrumb'; // Restored import
+import { Breadcrumb } from '../../components/Breadcrumb/Breadcrumb';
 import PrivateRoute from '../PrivateRoute';
-import { useEffect, useState, useRef, useLayoutEffect, useMemo } from 'react';
+import ProfileMenu from '@features/auth/ui/ProfileMenu';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import {
-  LogoutOutlined,
-  ExclamationCircleOutlined,
-} from '@ant-design/icons';
 import { logout } from '@app/providers/reducer/auth/authSlice';
 import { useGetProfile } from '@features/auth/hooks';
+import Sider from 'antd/es/layout/Sider';
 
-const { Content } = Layout;
+const { Header, Content } = Layout;
 
 export const ProtectedRoute = () => {
   // @ts-ignore
-  const { isAuth, user, role, userId } = useSelector((state) => state.auth);
+  const { isAuth, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [currentKey, setCurrentKey] = useState('dashboard');
   const location = useLocation();
   const navigate = useNavigate();
 
   // Ensure user is loaded if auth exists but state is empty
-  useGetProfile(); 
+  useGetProfile();
 
-  // Sliding logic refs
-  const navRef = useRef(null);
-  const [sliderStyle, setSliderStyle] = useState({ left: 0, width: 0, opacity: 0 });
+  // Generate breadcrumb paths based on route matches
+  const routes = matchRoutes(PrivateRoute, location.pathname) || [];
+
+  const breadcrumbPaths = routes.map(({ pathname, params, route }) => {
+    let breadcrumb = route.breadcrumb;
+
+    return {
+      name: breadcrumb,
+      link: pathname,
+      index: route.children
+        ? route.children.some((child) => child.index)
+        : route.index,
+    };
+  });
+
+  // Function to handle navigation
+  const navigateTo = (key) => {
+    setCurrentKey(key);
+    navigate(`/${key}`);
+  };
 
   useEffect(() => {
     const path = location.pathname.split('/')[1];
@@ -46,65 +68,11 @@ export const ProtectedRoute = () => {
   }, [location.pathname]);
 
   const currentRoles = useMemo(() => {
-    return Array.isArray(user?.role)
-      ? user.role
-      : Array.isArray(role)
-        ? role
-        : [];
-  }, [user?.role, role]);
+    return Array.isArray(user?.role) ? user.role : [];
+  }, [user?.role]);
 
-  const navItems = useMemo(() => [
-    { key: 'dashboard', label: `Dashboard`, roles: ['superadmin', 'admin'] },
-    { key: 'teacher', label: `Teacher`, roles: ['superadmin', 'admin'] },
-    { key: 'questions', label: `Question Bank`, roles: ['superadmin', 'teacher', 'admin'] },
-    { key: 'exam', label: `Exam`, roles: ['superadmin', 'teacher', 'admin'] },
-    { key: 'class', label: `Class`, roles: ['teacher'] },
-  ], []);
-
-  const allowedOptions = useMemo(() => 
-    navItems.filter((option) =>
-      option.roles.some((menuRole) => currentRoles.includes(menuRole))
-    ), [navItems, currentRoles]
-  );
-
-  // Generate breadcrumb paths
-  const routes = matchRoutes(PrivateRoute, location.pathname) || [];
-  const breadcrumbPaths = routes.map(({ pathname, route }) => {
-    return {
-      name: route.breadcrumb,
-      link: pathname,
-      index: route.children ? route.children.some((child) => child.index) : route.index,
-    };
-  });
-
-  const requiredRoles = routes.find((route) => route.route?.role)?.route?.role || [];
-
-  // Smooth sliding animation effect
-  useLayoutEffect(() => {
-    if (navRef.current) {
-      const isNavPage = allowedOptions.some(item => item.key === currentKey);
-      if (!isNavPage) {
-        setSliderStyle(prev => ({ ...prev, opacity: 0 }));
-        return;
-      }
-
-      const timer = setTimeout(() => {
-        const activeItem = navRef.current.querySelector('.figma-navbar-item.active');
-        if (activeItem) {
-          setSliderStyle({
-            left: activeItem.offsetLeft,
-            width: activeItem.offsetWidth,
-            opacity: 1,
-          });
-        }
-      }, 0);
-      return () => clearTimeout(timer);
-    }
-  }, [currentKey, allowedOptions]);
-
-  useEffect(() => {
-    if (!isAuth) navigate('/login');
-  }, [isAuth, navigate]);
+  const requiredRoles =
+    routes.find((route) => route.route?.role)?.route?.role || [];
 
   // Role Authorization Check
   if (
@@ -113,6 +81,47 @@ export const ProtectedRoute = () => {
   ) {
     return <Navigate to='/unauthorized' replace />;
   }
+
+  const items = [
+    {
+      key: 'dashboard',
+      icon: <HomeOutlined />,
+      label: `Dashboard`,
+      roles: ['superadmin', 'admin'],
+    },
+    {
+      key: 'teacher',
+      icon: <ContactsOutlined />,
+      label: `Teacher Management`,
+      roles: ['superadmin', 'admin'],
+    },
+    {
+      key: 'questions',
+      icon: <DatabaseOutlined />,
+      label: `Question Bank`,
+      roles: ['superadmin', 'teacher', 'admin'],
+    },
+    {
+      key: 'exam',
+      icon: <ReadOutlined />,
+      label: `Exam`,
+      roles: ['superadmin', 'teacher', 'admin'],
+    },
+    {
+      key: 'class',
+      icon: <ContainerOutlined />,
+      label: `Class`,
+      roles: ['teacher'],
+    },
+  ];
+
+  const allowedOptions = items.filter((option) =>
+    option.roles.some((role) => user?.role?.includes(role))
+  );
+
+  useEffect(() => {
+    if (!isAuth) navigate('/login');
+  }, [isAuth, navigate]);
 
   const showLogoutConfirm = () => {
     Modal.confirm({
@@ -131,57 +140,53 @@ export const ProtectedRoute = () => {
     });
   };
 
-  const fullName = user ? `${user.firstName} ${user.lastName}` : 'Loading...';
+  const siderStyle = {
+    overflow: 'auto',
+    height: '100vh',
+    position: 'sticky',
+    insetInlineStart: 0,
+    top: 0,
+    bottom: 0,
+    scrollbarWidth: 'thin',
+    scrollbarGutter: 'stable',
+  };
 
   return (
-    <Layout className="figma-main-layout">
-      {/* --- APTIS-238: TOP NAVBAR --- */}
-      <header className="figma-navbar">
-        {/* Left: Logo (2x Size) */}
-        <div className="figma-navbar-logo-group" onClick={() => navigate('/')}>
-          <img src={LogoGreen} alt="Logo" style={{ height: '100px' }} /> 
-        </div>
+    <Layout hasSider>
+      <Sider
+        className='bg-white shadow-xl min-h-screen'
+        breakpoint='lg'
+        collapsedWidth='0'
+        width={250}
+        style={siderStyle}
+      >
+        <div className='flex flex-col justify-between h-full'>
+          <div className='w-full px-2 flex flex-col justify-start items-center p-4'>
+            <img
+              src={LogoGreen}
+              className='cursor-pointer w-24 pb-8'
+              onClick={() => navigate('/')}
+            />
 
-        {/* Middle: Navigation Pills with Sliding Highlight */}
-        <nav className="figma-navbar-nav-group" ref={navRef}>
-          <div 
-            className="nav-highlight-slider" 
-            style={{ 
-              left: `${sliderStyle.left}px`, 
-              width: `${sliderStyle.width}px`,
-              opacity: sliderStyle.opacity 
-            }} 
-          />
-          {allowedOptions.map((item) => (
-            <div
-              key={item.key}
-              className={`figma-navbar-item ${currentKey === item.key ? 'active' : ''}`}
-              onClick={() => navigate(`/${item.key}`)}
-            >
-              {item.label}
-            </div>
-          ))}
-        </nav>
-
-        {/* Right: User & Logout */}
-        <div className="figma-navbar-user-group">
-          <Link to="/profile" className="figma-navbar-username">
-            {fullName}
-          </Link>
-          <div className="figma-navbar-logout" onClick={showLogoutConfirm} title="Logout">
-            <LogoutOutlined style={{ fontSize: '24px' }} />
+            <Menu
+              theme='light'
+              items={allowedOptions}
+              className='!border-none'
+              onClick={(e) => navigateTo(e.key)}
+              selectedKeys={[currentKey]}
+            />
           </div>
+          <ProfileMenu />
         </div>
-      </header>
-
-      {/* Main Content Area */}
-      <Content className="figma-content-area">
-        {/* --- APTIS-238: GLOBAL BREADCRUMB --- */}
-        {location.pathname !== '/' && location.pathname !== '/dashboard' && (
-          <Breadcrumb paths={breadcrumbPaths} />
-        )}
-        <Outlet />
-      </Content>
+      </Sider>
+      <Layout className='p-0'>
+        <Header className='bg-white px-4 shadow-md flex justify-start items-end h-10'>
+          {location.pathname !== '/' && <Breadcrumb paths={breadcrumbPaths} />}
+        </Header>
+        <Content className=''>
+          <Outlet />
+        </Content>
+      </Layout>
     </Layout>
   );
 };
