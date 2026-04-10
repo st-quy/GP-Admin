@@ -357,6 +357,7 @@ const TeacherActionModal = ({
         destroyOnClose
         keyboard={true}
         maskClosable={true}
+        onCancel={handleCancel}
         confirmLoading={isOnAction}
         width={{
           xs: '90%',
