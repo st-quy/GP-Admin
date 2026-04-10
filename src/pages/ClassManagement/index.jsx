@@ -18,6 +18,7 @@ import { useSelector } from 'react-redux';
 import PreviewExam from '@shared/ui/PreviewExam';
 import BulkActionToolbar from '@shared/ui/BulkActionToolbar';
 import { message } from 'antd';
+import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 
 const ClassManagement = () => {
   const [dataExam, setDataExam] = useState(null);
@@ -34,16 +35,20 @@ const ClassManagement = () => {
   // Server-side pagination state
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [searchName, setSearchName] = useState('');
+
+  const debouncedSearch = useDebouncedValue(searchName, 500);
 
   // @ts-ignore
   const { userId, user } = useSelector((state) => state.auth);
 
-  const teacherId = user?.role.includes('admin') ? null : userId;
+  const teacherId = user?.role?.includes('admin') ? null : userId;
   
   const { data: response, isLoading, refetch } = useGetAllClass({
     teacherId,
     page: currentPage,
-    limit: pageSize
+    limit: pageSize,
+    searchName: debouncedSearch || undefined
   });
 
   const { mutate: deleteBulkClasses } = useDeleteClassBulk();
@@ -68,6 +73,7 @@ const ClassManagement = () => {
   };
 
   const onParamsChange = (params) => {
+    if (params.search !== undefined) setSearchName(params.search);
     if (params.page !== undefined) setCurrentPage(params.page);
     if (params.pageSize !== undefined) {
       setPageSize(params.pageSize);

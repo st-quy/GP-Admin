@@ -1,7 +1,7 @@
 import React from "react";
 import { Card, Typography } from "antd";
 
-const { Text, Title } = Typography;
+const { Text } = Typography;
 
 export const StatCard = ({
   icon,
@@ -13,31 +13,28 @@ export const StatCard = ({
 }) => {
   return (
     <Card
-      className={`h-[164px] rounded-[5px] border-none bg-white shadow-[0px_1px_3px_rgba(166,175,195,0.4)] transition-all duration-300 ${className}`}
-      bodyStyle={{ padding: "20px" }}
+      className={`h-[164px] w-full rounded-[12px] border border-[#E5E7EB] shadow-[0px_1px_2px_rgba(0,0,0,0.05)] transition-all duration-300 ${className}`}
+      bodyStyle={{ padding: 0, height: '100%' }}
     >
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-[14px] mb-4">
-          <div 
-            className="flex h-[50px] w-[50px] items-center justify-center rounded-[3px]"
-            style={{ backgroundColor: `${color}14` }}
-          >
-            {React.cloneElement(icon, { 
-              style: { fontSize: '26px', color: color } 
-            })}
-          </div>
-          <Text className="text-[16px] font-medium leading-[24px] text-[#111928]">
+      <div className="flex items-center justify-between h-full px-6">
+        <div className="flex flex-col justify-center">
+          <Text className="text-[14px] font-medium leading-[20px] text-[#4B5563]">
             {title}
           </Text>
-        </div>
-        
-        <div className="flex flex-col gap-1">
-          <span className="text-[24px] font-bold leading-[30px] text-[#111928]">
+          <span className="text-[24px] font-bold leading-[32px] text-[#4B5563]">
             {value}
           </span>
           {subtitle && (
-            <Text className="text-[14px] font-normal text-[#637381]">{subtitle}</Text>
+            <Text className="text-[12px] font-normal text-[#6B7280]">{subtitle}</Text>
           )}
+        </div>
+        <div 
+          className="flex h-[48px] w-[48px] items-center justify-center rounded-[8px] flex-shrink-0"
+          style={{ backgroundColor: `${color}14` }}
+        >
+          {React.cloneElement(icon, { 
+            style: { fontSize: '24px', color: color } 
+          })}
         </div>
       </div>
     </Card>

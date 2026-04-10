@@ -99,7 +99,7 @@ export const useGetAllClass = (params) => {
   return useQuery({
     queryKey: ["classes", params],
     queryFn: async () => {
-      const { data } = await ClassApi.getAll(params.teacherId, params.page, params.limit);
+      const { data } = await ClassApi.getAll(params.teacherId, params.page, params.limit, params.searchName);
       return data; // Return full response with data and total
     },
   });
