@@ -34,7 +34,7 @@ body {
     min-height: 100vh;
     position: relative;
     font-family: "Inter", sans-serif;
-    padding: 24px 32px 100px 32px;
+    padding: 16px 24px 60px 24px;
 }
 
 .figma-breadcrumb-card {
@@ -70,13 +70,13 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
 }
 
 .figma-title {
     font-weight: 700;
-    font-size: 30px;
-    line-height: 38px;
+    font-size: 24px;
+    line-height: 32px;
     color: #000000;
     margin: 0;
 }
@@ -131,15 +131,16 @@ body {
     border-bottom: 1px solid #eeeeee !important;
     color: #000000 !important;
     font-weight: 500 !important;
-    font-size: 16px !important;
-    height: 91px !important;
+    font-size: 14px !important;
+    height: 56px !important;
     text-transform: uppercase;
     font-family: "Inter", sans-serif;
+    padding: 16px 20px !important;
 }
 
 .figma-table-overrides .ant-table-tbody > tr > td {
     border-bottom: 1px solid #eeeeee !important;
-    padding: 24px 20px !important;
+    padding: 12px 20px !important;
     font-size: 14px !important;
     font-weight: 500 !important;
     font-family: "Inter", sans-serif;
@@ -167,7 +168,7 @@ body {
     display: flex;
     justify-content: flex-end;
     width: 100%;
-    margin: 32px 0 0 0;
+    margin: 16px 0 0 0;
 }
 
 .figma-pagination-box {

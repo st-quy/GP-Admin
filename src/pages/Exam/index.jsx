@@ -579,49 +579,36 @@ const TopicListPage = () => {
             </Button>
           </div>
 
-          <Row gutter={[20, 20]} className="mb-10">
-            <Col xs={24} sm={12} md={8} lg={4.8}>
+          <Row gutter={[16, 16]} className="mb-6">
+            <Col xs={24} sm={12} md={6}>
               <StatCard
                 icon={<ClockCircleOutlined />}
                 title="Submitted"
                 value={counts.Submited}
-                subtitle="Awaiting review"
                 color="#003087"
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={4.8}>
+            <Col xs={24} sm={12} md={6}>
               <StatCard
                 icon={<CheckCircleOutlined />}
                 title="Approved"
                 value={counts.approved}
-                subtitle="Ready for test"
                 color="#22AD5C"
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={4.8}>
+            <Col xs={24} sm={12} md={6}>
               <StatCard
                 icon={<ExclamationCircleOutlined />}
                 title="Draft"
                 value={counts.Draft}
-                subtitle="Work in progress"
                 color="#F2994A"
               />
             </Col>
-            <Col xs={24} sm={12} md={8} lg={4.8}>
-              <StatCard
-                icon={<CloseCircleOutlined />}
-                title="Rejected"
-                value={counts.Rejected}
-                subtitle="Requires revision"
-                color="#FF4D4F"
-              />
-            </Col>
-            <Col xs={24} sm={12} md={8} lg={4.8}>
+            <Col xs={24} sm={12} md={6}>
               <StatCard
                 icon={<FileTextOutlined />}
                 title="Archived"
                 value={counts.Archived}
-                subtitle="Historical data"
                 color="#637381"
               />
             </Col>
