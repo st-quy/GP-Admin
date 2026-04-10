@@ -9,12 +9,12 @@ const HeaderInfo = ({
 }) => {
   return (
     <>
-      <div className='flex justify-between items-center bg-white pb-4'>
-        <div className='w-full px-4 flex flex-col gap-1'>
+      <div className='flex justify-between items-center bg-white rounded-lg shadow-sm border border-gray-200 p-4'>
+        <div className='w-full flex flex-col gap-1'>
           <span className='text-xl font-semibold'>{title}</span>
           <span className='text-sm text-[#4B5563]'>{subtitle}</span>
         </div>
-        <div className='flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4 mx-4'>
+        <div className='flex flex-col md:flex-row justify-between items-start md:items-center gap-4'>
           {btnText && (
             <Button
               type='primary'

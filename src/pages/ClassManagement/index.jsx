@@ -187,7 +187,7 @@ const ClassManagement = () => {
             <p className='figma-subtitle'>Manage and organize both classes and individual sessions.</p>
           </div>
           
-          <div className='flex items-center gap-3 pt-4'>
+          <div className='flex items-center gap-3'>
             <Button
               className='figma-outline-btn'
               onClick={handleExport}

@@ -34,7 +34,37 @@ body {
     min-height: 100vh;
     position: relative;
     font-family: "Inter", sans-serif;
-    padding: 16px 24px 60px 24px;
+    padding: 12px 20px 32px 20px;
+}
+
+.figma-header-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6px;
+}
+
+.figma-title {
+    font-weight: 700;
+    font-size: 24px;
+    line-height: 28px;
+    color: #000000;
+    margin: 0;
+}
+
+.figma-subtitle {
+    font-weight: 500;
+    font-size: 14px;
+    line-height: 20px;
+    color: #637381;
+    margin-top: 4px;
+}
+
+.figma-pagination-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    width: 100%;
+    margin-top: 12px;
 }
 
 .figma-breadcrumb-card {
@@ -92,10 +122,10 @@ body {
 .figma-primary-btn {
     background: #003087 !important;
     border-radius: 50px !important;
-    height: 50px !important;
-    padding: 13px 28px !important;
+    height: 40px !important;
+    padding: 8px 20px !important;
     font-weight: 500 !important;
-    font-size: 16px !important;
+    font-size: 14px !important;
     color: #ffffff !important;
     border: none !important;
     display: flex;
@@ -107,21 +137,35 @@ body {
     background: #ffffff !important;
     border: 1px solid #003087 !important;
     border-radius: 50px !important;
-    height: 50px !important;
-    padding: 13px 28px !important;
+    height: 40px !important;
+    padding: 8px 20px !important;
     font-weight: 500 !important;
-    font-size: 16px !important;
+    font-size: 14px !important;
     color: #003087 !important;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
+/* Global spacing overrides */
+.mb-10 { margin-bottom: 16px !important; }
+.mb-8 { margin-bottom: 12px !important; }
+.mb-6 { margin-bottom: 8px !important; }
+.mt-10 { margin-top: 16px !important; }
+.mt-8 { margin-top: 12px !important; }
+.pb-10 { padding-bottom: 16px !important; }
+.pt-10 { padding-top: 16px !important; }
+.py-8 { padding-top: 12px !important; padding-bottom: 12px !important; }
+.px-6 { padding-left: 12px !important; padding-right: 12px !important; }
+.gap-4 { gap: 8px !important; }
+.gap-3 { gap: 6px !important; }
+.gutter-30 > * { gap: 16px !important; }
+
 .figma-table-card {
     background: #ffffff;
     box-shadow: 0px 4px 4px rgba(0, 0, 0, 0.1);
     border-radius: 10px 10px 0px 0px;
-    margin: 20px 0;
+    margin: 12px 0;
     padding: 0 !important;
     width: 100%;
 }
@@ -150,7 +194,11 @@ body {
 
 .figma-class-link {
     color: #003087 !important;
-    text-decoration: underline !important;
+    font-weight: 500;
+}
+
+.figma-class-link:hover {
+    text-decoration: underline;
 }
 
 .figma-search-input {
