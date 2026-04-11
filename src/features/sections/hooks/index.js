@@ -117,3 +117,14 @@ export const useBulkDuplicateSections = () => {
     },
   });
 };
+
+export const useGetAllTags = (options = {}) => {
+  return useQuery({
+    queryKey: ['sectionTags'],
+    queryFn: async () => {
+      const { data } = await SectionApi.getAllTags();
+      return data?.data || [];
+    },
+    ...options,
+  });
+};

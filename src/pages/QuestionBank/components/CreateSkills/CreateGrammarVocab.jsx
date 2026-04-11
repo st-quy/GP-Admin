@@ -32,6 +32,7 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -183,12 +184,13 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
       SkillName: "GRAMMAR AND VOCABULARY",
       SectionName: sectionName || 'Untitled Draft',
       Status: status,
+      tags: tags,
       parts: {
         part1: { name: part1Name, sequence: 1, questions: part1Questions },
         part2: { name: part2Name, sequence: 2, questions: part2Questions },
       },
     };
-  }, [part2Groups]);
+  }, [part2Groups, tags]);
 
   /* AUTOSAVE */
   const scheduleAutosave = useCallback((payload) => {
@@ -231,7 +233,7 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
         // Skip
       }
     }
-  }, [part2Groups]);
+  }, [part2Groups, tags]);
 
   const handleSaveAsDraft = async () => {
     const values = form.getFieldsValue(true);
@@ -327,6 +329,16 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
           <Input
             maxLength={MAX_QUESTION_INPUT_LENGTH}
             placeholder={"Section Name Here..."}
+          />
+        </Form.Item>
+        <Form.Item label='Tags'>
+          <Select
+            mode='tags'
+            placeholder='Add tags for this section'
+            value={tags}
+            onChange={setTags}
+            style={{ width: '100%' }}
+            tokenSeparators={[',']}
           />
         </Form.Item>
       </Card>

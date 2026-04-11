@@ -1,6 +1,6 @@
 // UpdateReading.jsx
 import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Form, Input, Button, Card, Space, Typography, message, Modal } from 'antd';
+import { Form, Input, Button, Card, Space, Typography, message, Modal, Select } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 
 import { buildFullReadingPayload } from '@features/questions/utils/buildQuestionPayload';
@@ -35,6 +35,7 @@ const UpdateReading = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const isPublishingRef = useRef(false);
+  const [tags, setTags] = useState([]);
 
   /** WATCH PART 1 CONTENT + BLANKS */
   const watchPart1Content = Form.useWatch(['part1', 'content'], form);
@@ -225,6 +226,15 @@ const UpdateReading = () => {
         setPart1Blanks(transformed.part1.blanks);
       }
 
+      const allTags = new Set();
+      Object.keys(data).filter(k => typeof k === 'string' && k.startsWith('part')).forEach(key => {
+        const part = data[key];
+        (part?.questions || []).forEach(q => {
+          (q.Tags || []).forEach(t => allTags.add(t));
+        });
+      });
+      setTags(Array.from(allTags));
+
       setDataLoaded(true);
     }
   }, [data, dataLoaded]);
@@ -258,12 +268,13 @@ const UpdateReading = () => {
         SkillName: 'READING',
         SectionName: allValues.sectionName || 'Untitled Draft',
         Status: 'draft',
+        tags: tags,
         parts: fullPayload.parts,
       };
       scheduleAutosave(payload);
     } catch (e) {
     }
-  }, [scheduleAutosave, isSubmitting, isPending]);
+  }, [scheduleAutosave, isSubmitting, isPending, tags]);
 
   // Autosave when matching mapping changes
   useEffect(() => {
@@ -276,13 +287,14 @@ const UpdateReading = () => {
           SkillName: 'READING',
           SectionName: values.sectionName || 'Untitled Draft',
           Status: 'draft',
+          tags: tags,
           parts: fullPayload.parts,
         };
         scheduleAutosave(payload);
       } catch (e) {
       }
     }
-  }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending]);
+  }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending, tags]);
 
   /* ---------------- BUTTONS ---------------- */
   const handleSaveAsDraft = async () => {
@@ -293,6 +305,7 @@ const UpdateReading = () => {
         SkillName: 'READING',
         SectionName: values.sectionName || 'Untitled Draft',
         Status: 'draft',
+        tags: tags,
         parts: fullPayload.parts,
       };
       setIsSubmitting(true);
@@ -324,6 +337,7 @@ const UpdateReading = () => {
       const values = await form.validateFields();
       const payload = buildFullReadingPayload(values);
       payload.Status = 'published';
+      payload.tags = tags;
 
       // Clear any pending autosave to prevent overwriting publish
       isPublishingRef.current = true;
@@ -371,6 +385,16 @@ const UpdateReading = () => {
             rules={[{ required: true }]}
           >
             <Input />
+          </Form.Item>
+          <Form.Item label='Tags'>
+            <Select
+              mode='tags'
+              placeholder='Add tags for this section'
+              value={tags}
+              onChange={setTags}
+              style={{ width: '100%' }}
+              tokenSeparators={[',']}
+            />
           </Form.Item>
         </Card>
 
