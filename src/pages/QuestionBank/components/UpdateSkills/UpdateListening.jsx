@@ -50,6 +50,7 @@ const UpdateListening = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const isPublishingRef = useRef(false);
+  const [tags, setTags] = useState([]);
 
   // ===============================
   // STATE
@@ -103,6 +104,15 @@ const UpdateListening = () => {
     const d = detail;
 
     setSectionName(d.SectionName);
+
+    const allTags = new Set();
+    Object.keys(d).filter(k => typeof k === 'string' && k.startsWith('part')).forEach(key => {
+      const part = d[key];
+      (part?.questions || []).forEach(q => {
+        (q.Tags || []).forEach(t => allTags.add(t));
+      });
+    });
+    setTags(Array.from(allTags));
 
     // ---- PART 1 ----
     setPart1Id(d.part1?.id);
@@ -406,9 +416,10 @@ const UpdateListening = () => {
       SkillName: 'LISTENING',
       SectionName: sectionName || 'Untitled Draft',
       Status: status,
+      tags: tags,
       parts: buildListeningPayload(values).parts,
     };
-  }, [sectionName, part1Id, part2Id, part3Id, part4Id, part1Name, part2Name, part3Name, part4Name, part1, part2, part3, part4, sectionId]);
+  }, [sectionName, part1Id, part2Id, part3Id, part4Id, part1Name, part2Name, part3Name, part4Name, part1, part2, part3, part4, sectionId, tags]);
 
   // Autosave on any state change
   useEffect(() => {
@@ -419,7 +430,7 @@ const UpdateListening = () => {
       } catch (e) {
       }
     }
-  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isFetching, detail]);
+  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isFetching, detail, tags]);
 
   const handleSaveAsDraft = async () => {
     try {
@@ -697,6 +708,16 @@ const UpdateListening = () => {
             value={sectionName}
             maxLength={MAX_QUESTION_INPUT_LENGTH}
             onChange={(e) => setSectionName(sanitizeQuestionInput(e.target.value))}
+          />
+        </Form.Item>
+        <Form.Item label='Tags'>
+          <Select
+            mode='tags'
+            placeholder='Add tags for this section'
+            value={tags}
+            onChange={setTags}
+            style={{ width: '100%' }}
+            tokenSeparators={[',']}
           />
         </Form.Item>
       </Card>

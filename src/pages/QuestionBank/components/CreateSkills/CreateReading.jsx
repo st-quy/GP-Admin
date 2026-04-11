@@ -1,6 +1,6 @@
 // CreateReading.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Form, Input, Button, Card, Space, Typography, message, Modal } from 'antd';
+import { Form, Input, Button, Card, Space, Typography, message, Modal, Select } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 
 import DropdownEditor from './Reading/dropdown/DropdownEditor';
@@ -32,6 +32,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -212,6 +213,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
           SkillName: 'READING',
           SectionName: allValues.sectionName || 'Untitled Draft',
           Status: 'draft',
+          tags: tags,
           parts: fullPayload.parts,
         };
         if (changedValues.part3 || changedValues.part4) {
@@ -220,7 +222,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
       } catch (e) {
       }
     }
-  }, [scheduleAutosave]);
+  }, [scheduleAutosave, tags]);
 
   // Autosave when matching mapping changes (useWatch doesn't trigger onValuesChange)
   useEffect(() => {
@@ -232,13 +234,14 @@ const CreateReading = ({ draftId: propDraftId }) => {
           SkillName: 'READING',
           SectionName: values.sectionName || 'Untitled Draft',
           Status: 'draft',
+          tags: tags,
           parts: fullPayload.parts,
         };
         scheduleAutosave(payload);
       } catch (e) {
       }
     }
-  }, [part3Mapping, part4Mapping]);
+  }, [part3Mapping, part4Mapping, tags]);
 
   const handleSaveAsDraft = async () => {
     const values = form.getFieldsValue(true);
@@ -248,6 +251,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
         SkillName: 'READING',
         SectionName: values.sectionName || 'Untitled Draft',
         Status: 'draft',
+        tags: tags,
         parts: fullPayload.parts,
       };
       if (draftIdRef.current) {
@@ -271,6 +275,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
         SkillName: 'READING',
         SectionName: values.sectionName,
         Status: 'published',
+        tags: tags,
         parts: fullPayload.parts,
       };
 
@@ -370,6 +375,16 @@ const CreateReading = ({ draftId: propDraftId }) => {
           </Form.Item>
           <Form.Item label='Description' name='description'>
             <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+          </Form.Item>
+          <Form.Item label='Tags'>
+            <Select
+              mode='tags'
+              placeholder='Add tags for this section'
+              value={tags}
+              onChange={setTags}
+              style={{ width: '100%' }}
+              tokenSeparators={[',']}
+            />
           </Form.Item>
         </Card>
 

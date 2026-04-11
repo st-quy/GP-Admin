@@ -43,6 +43,7 @@ const UpdateGrammarVocab = () => {
   const [isAutosaving, setIsAutosaving] = useState(false);
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
+  const [tags, setTags] = useState([]);
 
   /* ============================
         STATE
@@ -74,6 +75,15 @@ const UpdateGrammarVocab = () => {
     if (!data) return;
 
     setSectionName(data.SectionName);
+
+    const allTags = new Set();
+    Object.keys(data).filter(k => typeof k === 'string' && k.startsWith('part')).forEach(key => {
+      const part = data[key];
+      (part?.questions || []).forEach(q => {
+        (q.Tags || []).forEach(t => allTags.add(t));
+      });
+    });
+    setTags(Array.from(allTags));
 
     /* ---------- PART 1 ---------- */
     setPart1Id(data.part1?.PartID);
@@ -237,12 +247,13 @@ const UpdateGrammarVocab = () => {
       SkillName: 'GRAMMAR AND VOCABULARY',
       SectionName: sectionName || 'Untitled Draft',
       Status: status,
+      tags: tags,
       parts: {
         part1: { id: part1Id, name: part1Name, sequence: 1, questions: part1Questions },
         part2: { id: part2Id, name: part2Name, sequence: 2, questions: part2Questions },
       },
     };
-  }, [part1, part2Groups, sectionName, part1Name, part2Name, part1Id, part2Id]);
+  }, [part1, part2Groups, sectionName, part1Name, part2Name, part1Id, part2Id, tags]);
 
   const scheduleAutosave = useCallback((payload) => {
     payloadRef.current = payload;
@@ -269,7 +280,7 @@ const UpdateGrammarVocab = () => {
       const payload = buildPayload('draft');
       scheduleAutosave(payload);
     }
-  }, [part1, part2Groups, sectionName, part1Name, part2Name, data, buildPayload, scheduleAutosave]);
+  }, [part1, part2Groups, sectionName, part1Name, part2Name, data, buildPayload, scheduleAutosave, tags]);
 
   const handleSaveAsDraft = async () => {
     try {
@@ -403,6 +414,16 @@ const UpdateGrammarVocab = () => {
             onChange={(e) => {
               setSectionName(sanitizeQuestionInput(e.target.value));
             }}
+          />
+        </Form.Item>
+        <Form.Item label='Tags'>
+          <Select
+            mode='tags'
+            placeholder='Add tags for this section'
+            value={tags}
+            onChange={setTags}
+            style={{ width: '100%' }}
+            tokenSeparators={[',']}
           />
         </Form.Item>
       </Card>

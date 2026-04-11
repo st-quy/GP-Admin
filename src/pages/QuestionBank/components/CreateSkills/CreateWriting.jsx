@@ -1,6 +1,6 @@
 // CreateWriting.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Card, Button, message, Form, Input, Modal } from 'antd';
+import { Card, Button, message, Form, Input, Modal, Select } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -27,6 +27,7 @@ const CreateWriting = ({ draftId: propDraftId }) => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -112,13 +113,14 @@ const CreateWriting = ({ draftId: propDraftId }) => {
           SkillName: 'WRITING',
           SectionName: allValues.sectionName || 'Untitled Draft',
           Status: 'draft',
+          tags: tags,
           parts: fullPayload.parts,
         };
         scheduleAutosave(payload);
       } catch (e) {
       }
     }
-  }, [scheduleAutosave]);
+  }, [scheduleAutosave, tags]);
 
   const handleSaveAsDraft = async () => {
     const values = form.getFieldsValue(true);
@@ -128,6 +130,7 @@ const CreateWriting = ({ draftId: propDraftId }) => {
         SkillName: 'WRITING',
         SectionName: values.sectionName || 'Untitled Draft',
         Status: 'draft',
+        tags: tags,
         parts: fullPayload.parts,
       };
 
@@ -152,6 +155,7 @@ const CreateWriting = ({ draftId: propDraftId }) => {
         SkillName: 'WRITING',
         SectionName: values.sectionName,
         Status: 'published',
+        tags: tags,
         parts: fullPayload.parts,
       };
 
@@ -234,6 +238,16 @@ const CreateWriting = ({ draftId: propDraftId }) => {
           <Input
             maxLength={MAX_QUESTION_INPUT_LENGTH}
             placeholder='e.g., Fitness Club Writing Test'
+          />
+        </Form.Item>
+        <Form.Item label='Tags'>
+          <Select
+            mode='tags'
+            placeholder='Add tags for this section'
+            value={tags}
+            onChange={setTags}
+            style={{ width: '100%' }}
+            tokenSeparators={[',']}
           />
         </Form.Item>
       </Card>

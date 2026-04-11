@@ -4,6 +4,9 @@ export const SectionApi = {
   getList: (params = {}) => {
     return axiosInstance.get('/sections', { params });
   },
+  getAllTags: () => {
+    return axiosInstance.get('/sections/tags');
+  },
   getDetail: (id, skillName) => {
     return axiosInstance.get(`/sections/${id}`, {
       params: {

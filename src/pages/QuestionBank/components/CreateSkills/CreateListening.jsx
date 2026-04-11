@@ -12,7 +12,6 @@ import {
   Modal,
 } from 'antd';
 import { DeleteOutlined, PlusOutlined, SaveOutlined } from '@ant-design/icons';
-
 import { useNavigate, useParams } from 'react-router-dom';
 import { useCreateQuestion } from '@features/questions/hooks';
 
@@ -42,6 +41,7 @@ const CreateListening = ({ draftId: propDraftId }) => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
+  const [tags, setTags] = useState([]);
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -403,9 +403,10 @@ const CreateListening = ({ draftId: propDraftId }) => {
       SkillName: 'LISTENING',
       SectionName: sectionName || 'Untitled Draft',
       Status: status,
+      tags: tags,
       parts: buildListeningPayload(values).parts,
     };
-  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4]);
+  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, tags]);
 
   const scheduleAutosave = useCallback((payload) => {
     payloadRef.current = payload;
@@ -435,7 +436,7 @@ const CreateListening = ({ draftId: propDraftId }) => {
       } catch (e) {
       }
     }
-  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isLoading]);
+  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isLoading, tags]);
 
   // =====================================
   // BUTTONS
@@ -726,6 +727,16 @@ const CreateListening = ({ draftId: propDraftId }) => {
             onChange={(e) => {
               setSectionName(sanitizeQuestionInput(e.target.value));
             }}
+          />
+        </Form.Item>
+        <Form.Item label='Tags'>
+          <Select
+            mode='tags'
+            placeholder='Add tags for this section'
+            value={tags}
+            onChange={setTags}
+            style={{ width: '100%' }}
+            tokenSeparators={[',']}
           />
         </Form.Item>
       </Card>

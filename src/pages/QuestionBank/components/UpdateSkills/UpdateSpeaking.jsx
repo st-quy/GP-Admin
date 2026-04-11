@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Input, Button, Form, Card, Spin, message, Modal } from 'antd';
+import { Input, Button, Form, Card, Spin, message, Modal, Select } from 'antd';
 import { PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -31,6 +31,7 @@ const UpdateSpeaking = () => {
   const [isLoading, setIsLoading] = useState(true);
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
+  const [tags, setTags] = useState([]);
 
   const { data, isFetching } = useGetQuestionGroupDetail('SPEAKING', sectionId);
   const { mutate: updateSpeaking, isPending } = useUpdateQuestionGroup();
@@ -65,6 +66,15 @@ const UpdateSpeaking = () => {
     const payload = buildPayload(allValues, imagesRef.current);
     scheduleAutosave(payload);
   };
+
+  // Autosave when tags change
+  useEffect(() => {
+    if (data) {
+      const values = form.getFieldsValue(true);
+      const payload = buildPayload(values, imagesRef.current);
+      scheduleAutosave(payload);
+    }
+  }, [tags]);
 
   useEffect(() => {
     if (!data) return;
@@ -114,6 +124,17 @@ const UpdateSpeaking = () => {
     };
     setImages(imgs);
     imagesRef.current = imgs;
+
+    const allTags = new Set();
+    Object.keys(data).forEach(key => {
+      if (typeof key !== 'string' || !key.startsWith('part')) return;
+      const p = data[key];
+      (p?.questions || []).forEach(q => {
+        (q.Tags || []).forEach(t => allTags.add(t));
+      });
+    });
+    setTags(Array.from(allTags));
+
     setIsLoading(false);
   }, [data]);
 
@@ -130,6 +151,7 @@ const UpdateSpeaking = () => {
       SkillName: 'SPEAKING',
       SectionName: values?.sectionName || 'Untitled Draft',
       Status: status,
+      tags: tags,
       parts: {
         part1: { id: values?.parts?.part1?.id, name: values?.parts?.part1?.name, image: imgs?.part1, sequence: 1, questions: buildPartQuestions(values?.parts?.part1?.questions) },
         part2: { id: values?.parts?.part2?.id, name: values?.parts?.part2?.name, image: imgs?.part2, sequence: 2, questions: buildPartQuestions(values?.parts?.part2?.questions) },
@@ -309,17 +331,27 @@ const UpdateSpeaking = () => {
         <div className="py-8">
           <Form form={form} layout='vertical' onValuesChange={handleValuesChange} onFinish={handleSubmit}>
             <Card title='Section information' className='mb-5'>
-            <Form.Item
-              label='Name'
-              name='sectionName'
-              getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
-              rules={[{ required: true, message: 'Section name is required' }]}
-            >
-              <Input
-                maxLength={MAX_QUESTION_INPUT_LENGTH}
-                placeholder='Enter section name'
-              />
-            </Form.Item>
+              <Form.Item
+                label='Name'
+                name='sectionName'
+                getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
+                rules={[{ required: true, message: 'Section name is required' }]}
+              >
+                <Input
+                  maxLength={MAX_QUESTION_INPUT_LENGTH}
+                  placeholder='Enter section name'
+                />
+              </Form.Item>
+              <Form.Item label='Tags'>
+                <Select
+                  mode='tags'
+                  placeholder='Add tags for this section'
+                  value={tags}
+                  onChange={setTags}
+                  style={{ width: '100%' }}
+                  tokenSeparators={[',']}
+                />
+              </Form.Item>
             </Card>
 
             {renderPart('part1', 'Instruction 1')}

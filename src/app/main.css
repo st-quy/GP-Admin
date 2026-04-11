@@ -284,6 +284,25 @@ body {
     color: #637381;
 }
 
+/* Tags filter popover button */
+.tags-filter-btn {
+    height: 48px !important;
+    min-width: 180px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    font-size: 14px !important;
+    color: #333 !important;
+}
+
+.tags-filter-btn:hover {
+    border-color: #91d5ff !important;
+}
+
+.tags-filter-popover .ant-popover-inner {
+    padding: 12px !important;
+}
+
 .figma-symbol-btn {
     background: transparent !important;
     border: none !important;

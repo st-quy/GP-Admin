@@ -7,6 +7,9 @@ import {
   Select,
   Dropdown,
   Tag,
+  Popover,
+  Checkbox,
+  Space,
 } from 'antd';
 import {
   EditOutlined,
@@ -20,7 +23,7 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 
-import { useDeleteSection, useGetSections, useUpdateSectionStatus, useDuplicateSection, useBulkPublishSections, useBulkDeleteSections, useBulkDuplicateSections } from '@features/sections/hooks';
+import { useDeleteSection, useGetSections, useUpdateSectionStatus, useDuplicateSection, useBulkPublishSections, useBulkDeleteSections, useBulkDuplicateSections, useGetAllTags } from '@features/sections/hooks';
 import { SectionApi } from '@features/sections/api';
 import { useSelector } from 'react-redux';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
@@ -76,8 +79,11 @@ const QuestionBank = () => {
   const [pageSize, setPageSize] = useState(10);
   const [selectedSkill, setSelectedSkill] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
 
   const [selectedRowKeys, setSelectedRowKeys] = useState([]);
+
+  const { data: availableTags = [] } = useGetAllTags();
 
   const onSearchChange = (event) => {
     const rawValue = event.target.value;
@@ -109,6 +115,7 @@ const QuestionBank = () => {
     skillName: selectedSkill && validSkills.has(selectedSkill) ? selectedSkill : undefined,
     status: statusFilter || undefined,
     searchName: debouncedSearch || undefined,
+    tags: selectedTags.length > 0 ? selectedTags : undefined,
     page,
     pageSize,
   };
@@ -291,6 +298,30 @@ const QuestionBank = () => {
           >
             {isDraft ? 'Draft' : 'Published'}
           </Tag>
+        );
+      },
+    },
+    {
+      title: <span className="font-bold text-[#637381]">TAGS</span>,
+      key: 'Tags',
+      width: '200px',
+      align: 'center',
+      render: (_, record) => {
+        const tags = record.Tags || [];
+        if (!tags || tags.length === 0) {
+          return <span className="text-gray-400">—</span>;
+        }
+        return (
+          <div className="flex flex-wrap justify-center gap-1">
+            {tags.slice(0, 3).map((tag, idx) => (
+              <Tag key={idx} color="blue" className="!m-0 text-xs">
+                {tag}
+              </Tag>
+            ))}
+            {tags.length > 3 && (
+              <Tag className="!m-0 text-xs">+{tags.length - 3}</Tag>
+            )}
+          </div>
         );
       },
     },
@@ -558,6 +589,58 @@ const QuestionBank = () => {
                   ]}
                 />
               </div>
+              <Popover
+                placement="bottomLeft"
+                trigger="click"
+                overlayClassName="tags-filter-popover"
+                content={
+                  <div style={{ minWidth: 200, maxHeight: 300, overflowY: 'auto' }}>
+                    <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 500 }}>Filter by Tags</span>
+                      <Button type="link" size="small" onClick={() => { setSelectedTags([]); setPage(1); }}>
+                        Clear
+                      </Button>
+                    </div>
+                    <Checkbox.Group
+                      value={selectedTags}
+                      onChange={(vals) => {
+                        setSelectedTags(vals);
+                        setPage(1);
+                      }}
+                      style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                    >
+                      {availableTags.map(tag => (
+                        <Checkbox key={tag} value={tag}>
+                          {tag}
+                        </Checkbox>
+                      ))}
+                      {availableTags.length === 0 && (
+                        <div style={{ color: '#999', padding: '8px 0' }}>No tags available</div>
+                      )}
+                    </Checkbox.Group>
+                  </div>
+                }
+              >
+                <Button
+                  className="tags-filter-btn"
+                  style={{
+                    height: 48,
+                    border: '1px solid #DFE4EA',
+                    borderRadius: 6,
+                    boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.1)',
+                    backgroundColor: '#ffffff',
+                    padding: '0 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ color: selectedTags.length > 0 ? '#000' : '#999' }}>
+                    {selectedTags.length > 0 ? `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''} selected` : 'Filter by tags'}
+                  </span>
+                  <DownOutlined style={{ color: '#637381' }} />
+                </Button>
+              </Popover>
             </div>
           </div>
 

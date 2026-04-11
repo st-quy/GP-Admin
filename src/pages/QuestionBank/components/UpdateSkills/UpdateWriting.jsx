@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useCallback, useState } from 'react';
-import { Card, Button, message, Form, Input, Modal } from 'antd';
+import { Card, Button, message, Form, Input, Modal, Select } from 'antd';
 import { SaveOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 
@@ -32,6 +32,7 @@ const UpdateWriting = () => {
   const [isAutosaving, setIsAutosaving] = useState(false);
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
+  const [tags, setTags] = useState([]);
 
   // --- MAP API → FORM VALUES ---
   useEffect(() => {
@@ -79,6 +80,15 @@ const UpdateWriting = () => {
         q2_wordLimit: detail.part4?.q2_wordLimit || '',
       },
     });
+
+    const allTags = new Set();
+    Object.keys(detail).filter(k => typeof k === 'string' && k.startsWith('part')).forEach(key => {
+      const part = detail[key];
+      (part?.questions || []).forEach(q => {
+        (q.Tags || []).forEach(t => allTags.add(t));
+      });
+    });
+    setTags(Array.from(allTags));
   }, [detail]);
 
   const scheduleAutosave = useCallback((payload) => {
@@ -108,13 +118,14 @@ const UpdateWriting = () => {
         SkillName: 'WRITING',
         SectionName: allValues.sectionName || 'Untitled Draft',
         Status: 'draft',
+        tags: tags,
         parts: fullPayload.parts,
       };
       scheduleAutosave(payload);
     } catch (e) {
       // Skip if form not ready
     }
-  }, [scheduleAutosave]);
+  }, [scheduleAutosave, tags]);
 
   const handleSaveAsDraft = async () => {
     const values = form.getFieldsValue(true);
@@ -124,6 +135,7 @@ const UpdateWriting = () => {
         SkillName: 'WRITING',
         SectionName: values.sectionName || 'Untitled Draft',
         Status: 'draft',
+        tags: tags,
         parts: fullPayload.parts,
       };
 
@@ -152,6 +164,7 @@ const UpdateWriting = () => {
       const values = await form.validateFields();
       const payload = buildWritingFullPayload(values);
       payload.Status = 'published';
+      payload.tags = tags;
 
       updateWritingGroup(
         { sectionId, payload },
@@ -220,6 +233,16 @@ const UpdateWriting = () => {
           <Input
             maxLength={MAX_QUESTION_INPUT_LENGTH}
             placeholder='e.g., Fitness Club Writing Test'
+          />
+        </Form.Item>
+        <Form.Item label='Tags'>
+          <Select
+            mode='tags'
+            placeholder='Add tags for this section'
+            value={tags}
+            onChange={setTags}
+            style={{ width: '100%' }}
+            tokenSeparators={[',']}
           />
         </Form.Item>
       </Card>

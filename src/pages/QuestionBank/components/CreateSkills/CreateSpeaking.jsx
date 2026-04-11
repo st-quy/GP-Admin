@@ -1,7 +1,7 @@
 // @ts-nocheck
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Input, Button, Form, Card, Modal, message } from 'antd';
-import { PlusOutlined, DeleteOutlined, SaveOutlined } from '@ant-design/icons';
+import { Input, Button, Form, Card, Modal, message, Select } from 'antd';
+import { PlusOutlined, DeleteOutlined, SaveOutlined, TagsOutlined } from '@ant-design/icons';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { QuestionApi, SectionApi } from '../../../../features/questions/api';
@@ -31,6 +31,7 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
   const draftDataRef = useRef(null);
+  const [tags, setTags] = useState([]);
 
   // Keep ref in sync
   useEffect(() => {
@@ -50,7 +51,7 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
         const d = data.data;
         const partMap = {};
         const imgMap = {};
-        const parts = Object.keys(d).filter((k) => k.startsWith('part'));
+        const parts = Object.keys(d).filter((k) => typeof k === 'string' && k.startsWith('part'));
 
         parts.forEach((key) => {
           const p = d[key];
@@ -133,6 +134,14 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
     }
   };
 
+  // Autosave when tags change
+  useEffect(() => {
+    if (draftIdRef.current && tags) {
+      const values = form.getFieldsValue(true);
+      scheduleAutosave(buildPayload(values, imagesRef.current));
+    }
+  }, [tags]);
+
   const buildPayload = (values, imgs, status = 'draft') => {
     const buildPartQuestions = (questions) =>
       (questions || []).map((q, idx) => ({
@@ -146,6 +155,7 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
       SkillName: 'SPEAKING',
       SectionName: values?.sectionName || 'Untitled Draft',
       Status: status,
+      tags: tags,
       parts: {
         part1: { name: values?.parts?.part1?.name, image: imgs?.part1, sequence: 1, questions: buildPartQuestions(values?.parts?.part1?.questions) },
         part2: { name: values?.parts?.part2?.name, image: imgs?.part2, sequence: 2, questions: buildPartQuestions(values?.parts?.part2?.questions) },
@@ -365,6 +375,16 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
           <Input
             maxLength={MAX_QUESTION_INPUT_LENGTH}
             placeholder='Enter section name'
+          />
+        </Form.Item>
+        <Form.Item label='Tags'>
+          <Select
+            mode='tags'
+            placeholder='Add tags for this section'
+            value={tags}
+            onChange={setTags}
+            style={{ width: '100%' }}
+            tokenSeparators={[',']}
           />
         </Form.Item>
       </Card>
