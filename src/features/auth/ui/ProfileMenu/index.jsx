@@ -13,8 +13,8 @@ const ProfileMenu = () => {
     switch (key) {
       case 'logout':
         localStorage.clear();
-        navigate('/login');
         dispatch(logout());
+        window.location.href = '/login';
         break;
       default:
         navigate(key);

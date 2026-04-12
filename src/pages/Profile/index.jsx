@@ -25,8 +25,8 @@ const ProfilePage = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate('/login');
     dispatch(logout());
+    window.location.href = '/login';
   };
 
   const handleFileChange = (event) => {

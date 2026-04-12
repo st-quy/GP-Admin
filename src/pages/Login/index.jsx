@@ -10,7 +10,6 @@ import { yupSync } from "@shared/lib/utils";
 import { useLogin } from "../../features/auth/hooks";
 import { useSelector } from "react-redux";
 import { loginSchema } from "./loginSchema";
-import LoginIllustration from "@assets/images/login-happy-student.png";
 
 const { Title, Text } = Typography;
 
@@ -129,21 +128,6 @@ const LoginPage = () => {
             </Form.Item>
           </Form>
         </Card>
-      </Col>
-
-      <Col
-        xs={0}
-        sm={0}
-        md={0}
-        lg={12}
-        xxl={12}
-        className="flex items-center lg:justify-start justify-center px-4 lg:pt-2 lg:pl-8"
-      >
-        <img
-          src={LoginIllustration}
-          alt="Login"
-          className="w-full max-w-[500px] lg:max-w-[600px] h-auto object-contain"
-        />
       </Col>
     </Row>
   );

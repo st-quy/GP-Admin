@@ -134,7 +134,7 @@ export const ProtectedRoute = () => {
       onOk() {
         localStorage.clear();
         dispatch(logout());
-        navigate('/login');
+        window.location.href = '/login';
         message.success('Logged out successfully');
       },
     });
