@@ -35,7 +35,7 @@ import {
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
-import ChooseSectionModal from "@features/topic/ui/ChooseSectionModal";
+import QuestionPickerPanel from "@features/topic/ui/QuestionPickerPanel";
 import PreviewExam from "@shared/ui/PreviewExam";
 import { useSelector } from "react-redux";
 import useConfirm from "@shared/hook/useConfirm";
@@ -347,115 +347,110 @@ const CreateExamPage = () => {
 
     const renderSelectedSectionUI = () => {
         const data = instructions.find(ins => ins.skill === selectedSkill);
-        if (!data) {
+        const selectedSection = data?.section;
+        
+        // DEBUG
+        console.log('renderSelectedSectionUI:', { isViewMode, selectedSkill, hasData: !!data, sectionName: selectedSection?.Name, parts: selectedSection?.Parts?.map(p => ({ content: p.Content, sub: p.SubContent })) });
+        
+        if (isViewMode) {
+            if (!selectedSection) {
+                return <div className="text-gray-400">No section selected</div>;
+            }
             return (
-                <div className="w-full h-[158px] border-[1px] border-dashed border-[#D1D5DB] rounded-lg flex flex-col items-center justify-center text-[#9CA3AF] cursor-pointer hover:bg-gray-50 transition-all gap-2"
-                     onClick={() => { if (!isViewMode) setOpenModal(true) }}>
-                    <span className="text-[27px] font-normal leading-[33px]">+</span>
-                    <span className="text-[21px] font-normal leading-[25px]">Instruction</span>
-                </div>
+                <Card className="border-[1px] border-[#E5E7EB] rounded-lg bg-[#FAFAFA]" bodyStyle={{ padding: 20 }}>
+                    <div className="mb-2">
+                        <Text className="text-[18px] font-semibold text-[#111827]">{selectedSection.Name}</Text>
+                    </div>
+                    <Text className="text-gray-500 block mb-4">{selectedSection.Description}</Text>
+                    <div className="space-y-2">
+                        {(selectedSection.Parts || []).map((part, idx) => (
+                            <div key={part.ID} className="flex items-center gap-2 p-2 bg-white rounded border border-[#E5E7EB]">
+                                <div className="w-6 h-6 rounded-full bg-[#003087] text-white flex items-center justify-center text-[12px] font-bold">
+                                    {idx + 1}
+                                </div>
+                                <Text className="text-[13px] font-medium">{part.Content}</Text>
+                                {part.SubContent && <Text className="text-[12px] text-gray-400 ml-1">— {part.SubContent}</Text>}
+                                <Tag color="default">{part.Questions?.length || 0}</Tag>
+                            </div>
+                        ))}
+                    </div>
+                </Card>
             );
         }
-        const { section } = data;
 
-        const questionCount = (section.Parts || []).reduce((acc, p) => acc + (p.Questions || []).length, 0);
-        const sectionTotalScore = (section.Parts || []).reduce((acc, p) => {
+        if (!selectedSection) {
+            return (
+                <QuestionPickerPanel 
+                    key={selectedSkill}
+                    skillName={selectedSkill}
+                    selectedSection={null}
+                    onSelectSection={(section) => handlePartSelect([section])}
+                    onRemoveSection={() => handlePartSelect([])}
+                />
+            );
+        }
+
+        const questionCount = (selectedSection.Parts || []).reduce((acc, p) => acc + (p.Questions || []).length, 0);
+        const sectionTotalScore = (selectedSection.Parts || []).reduce((acc, p) => {
             return acc + (p.Questions || []).reduce((qAcc, q) => qAcc + (questionScores[q.ID] ?? 1), 0);
         }, 0);
 
         return (
-            <div className="w-full">
-                <Card 
-                    className="border-[1px] border-[#E5E7EB] rounded-lg bg-[#FAFAFA]" 
-                    bodyStyle={{ padding: 20 }}
-                >
+            <div className="space-y-4">
+                <QuestionPickerPanel 
+                    key={selectedSkill}
+                    skillName={selectedSkill}
+                    selectedSection={selectedSection}
+                    onSelectSection={(section) => handlePartSelect([section])}
+                    onRemoveSection={() => handlePartSelect([])}
+                />
+                
+                <Card className="border-[1px] border-[#E5E7EB] rounded-lg bg-[#FAFAFA]" bodyStyle={{ padding: 20 }}>
                     <div className="flex justify-between items-center mb-4">
                         <div>
-                            <Text className="text-[18px] font-semibold text-[#111827]">{section.Name}</Text>
-                            <div className="mt-1">
-                                <Text strong className="text-[#003087]">
-                                    {questionCount} questions · Total: {sectionTotalScore.toFixed(1)} pts
-                                </Text>
-                            </div>
+                            <Text strong className="text-[#003087]">
+                                {questionCount} questions · Total: {sectionTotalScore.toFixed(1)} pts
+                            </Text>
                         </div>
                         {!isViewMode && (
                             <Button 
                                 type="link" 
                                 danger 
-                                onClick={(e) => { e.stopPropagation(); handlePartSelect([]); }}
+                                onClick={() => handlePartSelect([])}
                                 className="font-medium"
                             >
                                 Remove Section
                             </Button>
                         )}
                     </div>
-                    <Text className="text-gray-500 mb-6 block">{section.Description}</Text>
                     
-                    <div className="mt-6 space-y-4">
-                        {(section.Parts || []).map((part) => (
+                    <div className="space-y-4">
+                        {(selectedSection.Parts || []).map((part) => (
                             <div key={part.ID} className="p-4 border-[1px] border-[#E5E7EB] rounded-lg bg-white shadow-sm">
                                 <Text className="font-bold text-[#111827] block mb-2">{part.Content}</Text>
-                                {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                    <Text className="text-gray-400 text-sm block mb-4">{part.SubContent}</Text>
-                                )}
+                                {part.SubContent && <Text className="text-gray-400 text-sm block mb-4">{part.SubContent}</Text>}
                                 
                                 {!(selectedSkill === "READING" || selectedSkill === "WRITING") && (
-                                    <div className="mt-2">
-                                        <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[restrictToVerticalAxis]} onDragEnd={(event) => {
-                                            if (isViewMode) return;
-                                            const { active, over } = event;
-                                            if (!over || active.id === over.id) return;
-                                            const questions = [...(part.Questions || [])];
-                                            const oldIdx = questions.findIndex(q => q.ID === active.id);
-                                            const newIdx = questions.findIndex(q => q.ID === over.id);
-                                            if (oldIdx === -1 || newIdx === -1) return;
-                                            const [moved] = questions.splice(oldIdx, 1);
-                                            questions.splice(newIdx, 0, moved);
-                                            setInstructions(prev => prev.map(ins => {
-                                                if (ins.skill !== selectedSkill) return ins;
-                                                return {
-                                                    ...ins,
-                                                    section: {
-                                                        ...ins.section,
-                                                        Parts: (ins.section.Parts || []).map(p => p.ID === part.ID ? { ...p, Questions: questions } : p),
-                                                    },
-                                                };
-                                            }));
-                                        }}>
-                                            <SortableContext items={(part.Questions || []).map(q => q.ID)} strategy={verticalListSortingStrategy}>
-                                                {(part.Questions || []).map((q, index) => (
-                                                    <SortableQuestionItem key={q.ID} id={q.ID}>
-                                                        {(listeners, attributes) => (
-                                                            <div className="flex items-start gap-3 mb-3 p-3 rounded-lg bg-[#F9FAFB] border-[1px] border-transparent hover:border-[#E5E7EB] transition-all">
-                                                                {!isViewMode && <HolderOutlined {...listeners} {...attributes} className="cursor-grab text-gray-400 mt-1" />}
-                                                                <div className="w-7 h-7 rounded-full bg-[#003087] text-white flex items-center justify-center font-bold text-[14px] shrink-0">
-                                                                    {(selectedSkill === "SPEAKING" && part.Content === "Part 4") ? "+" : (index + 1)}
-                                                                </div>
-                                                                <div className="flex-1">
-                                                                    <Text className="text-[15px] leading-[22px] text-[#374151]">{q.Content}</Text>
-                                                                    {shuffleAnswers && q.Type === 'multiple-choice' && (
-                                                                        <Tag color="orange" className="ml-2 text-[10px]">shuffled</Tag>
-                                                                    )}
-                                                                </div>
-                                                                {!isViewMode && (
-                                                                    <div className="shrink-0">
-                                                                        <input
-                                                                            type="number"
-                                                                            min="0"
-                                                                            max="50"
-                                                                            step="0.5"
-                                                                            value={questionScores[q.ID] ?? 1}
-                                                                            onChange={(e) => handleScoreChange(q.ID, parseFloat(e.target.value) || 1)}
-                                                                            style={{ width: '60px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #D1D5DB', textAlign: 'center' }}
-                                                                        />
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                        )}
-                                                    </SortableQuestionItem>
-                                                ))}
-                                            </SortableContext>
-                                        </DndContext>
+                                    <div className="mt-2 space-y-2">
+                                        {(part.Questions || []).map((q, index) => (
+                                            <div key={q.ID} className="flex items-center gap-3 p-2 rounded bg-[#F9FAFB] border border-[#E5E7EB]">
+                                                <div className="w-6 h-6 rounded-full bg-[#003087] text-white flex items-center justify-center text-[12px] font-bold shrink-0">
+                                                    {index + 1}
+                                                </div>
+                                                <Text className="text-[13px] flex-1 line-clamp-1">{q.Content}</Text>
+                                                {!isViewMode && (
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        max="50"
+                                                        step="0.5"
+                                                        value={questionScores[q.ID] ?? 1}
+                                                        onChange={(e) => handleScoreChange(q.ID, parseFloat(e.target.value) || 1)}
+                                                        className="w-16 p-1 text-center border border-[#D1D5DB] rounded text-[13px]"
+                                                    />
+                                                )}
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
@@ -709,7 +704,6 @@ const CreateExamPage = () => {
                     </div>
                 </ConfigProvider>
 
-                <ChooseSectionModal open={openModal} onCancel={() => setOpenModal(false)} skillName={selectedSkill} onSelect={handlePartSelect} selectedSectionId={selectedSectionBySkill[selectedSkill]} />
                 <PreviewExam isModalOpen={previewOpen} setIsModalOpen={setPreviewOpen} dataExam={previewData} fileData={null} setDataExam={setPreviewData} />
                 <ModalComponent />
                 <Modal 
