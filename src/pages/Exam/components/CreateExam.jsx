@@ -13,6 +13,7 @@ import {
     FormOutlined,
     InfoCircleOutlined,
     ArrowRightOutlined,
+    SwapOutlined,
 } from "@ant-design/icons";
 import {
     Card,
@@ -29,6 +30,8 @@ import {
     Row,
     Col,
     ConfigProvider,
+    Switch,
+    Tag,
 } from "antd";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useCreateTopic, useCreateTopicSection, useGetTopicWithRelations, useUpdateTopic, useUpdateTopicSection } from "@features/topic/hooks";
@@ -88,6 +91,10 @@ const CreateExamPage = () => {
     const [isDirty, setIsDirty] = useState(false);
     const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
     const pendingPath = useRef(null);
+
+    const [shuffleQuestions, setShuffleQuestions] = useState(false);
+    const [shuffleAnswers, setShuffleAnswers] = useState(false);
+    const [questionScores, setQuestionScores] = useState({});
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -162,7 +169,9 @@ const CreateExamPage = () => {
             const topicPayload = { 
                 Name: values.name.trim(), 
                 Status: 'draft',
-                Duration: values.duration
+                Duration: values.duration,
+                ShuffleQuestions: shuffleQuestions,
+                ShuffleAnswers: shuffleAnswers
             };
 
             if (topicId) {
@@ -196,7 +205,9 @@ const CreateExamPage = () => {
             const topicPayload = { 
                 Name: values.name.trim(), 
                 Status: 'submited',
-                Duration: values.duration
+                Duration: values.duration,
+                ShuffleQuestions: shuffleQuestions,
+                ShuffleAnswers: shuffleAnswers
             };
 
             let topicResponse;
@@ -230,6 +241,11 @@ const CreateExamPage = () => {
         setIsDirty(false);
         setLeaveConfirmOpen(false);
         navigate(pendingPath.current || '/exam');
+    };
+
+    const handleScoreChange = (questionId, score) => {
+        setQuestionScores(prev => ({ ...prev, [questionId]: score || 0 }));
+        setIsDirty(true);
     };
 
     const handlePartSelect = (sections) => {
@@ -341,6 +357,12 @@ const CreateExamPage = () => {
             );
         }
         const { section } = data;
+
+        const questionCount = (section.Parts || []).reduce((acc, p) => acc + (p.Questions || []).length, 0);
+        const sectionTotalScore = (section.Parts || []).reduce((acc, p) => {
+            return acc + (p.Questions || []).reduce((qAcc, q) => qAcc + (questionScores[q.ID] ?? 1), 0);
+        }, 0);
+
         return (
             <div className="w-full">
                 <Card 
@@ -348,7 +370,14 @@ const CreateExamPage = () => {
                     bodyStyle={{ padding: 20 }}
                 >
                     <div className="flex justify-between items-center mb-4">
-                        <Text className="text-[18px] font-semibold text-[#111827]">{section.Name}</Text>
+                        <div>
+                            <Text className="text-[18px] font-semibold text-[#111827]">{section.Name}</Text>
+                            <div className="mt-1">
+                                <Text strong className="text-[#003087]">
+                                    {questionCount} questions · Total: {sectionTotalScore.toFixed(1)} pts
+                                </Text>
+                            </div>
+                        </div>
                         {!isViewMode && (
                             <Button 
                                 type="link" 
@@ -397,12 +426,30 @@ const CreateExamPage = () => {
                                                 {(part.Questions || []).map((q, index) => (
                                                     <SortableQuestionItem key={q.ID} id={q.ID}>
                                                         {(listeners, attributes) => (
-                                                            <div className="flex items-start gap-4 mb-3 p-3 rounded-lg bg-[#F9FAFB] border-[1px] border-transparent hover:border-[#E5E7EB] transition-all">
+                                                            <div className="flex items-start gap-3 mb-3 p-3 rounded-lg bg-[#F9FAFB] border-[1px] border-transparent hover:border-[#E5E7EB] transition-all">
                                                                 {!isViewMode && <HolderOutlined {...listeners} {...attributes} className="cursor-grab text-gray-400 mt-1" />}
                                                                 <div className="w-7 h-7 rounded-full bg-[#003087] text-white flex items-center justify-center font-bold text-[14px] shrink-0">
                                                                     {(selectedSkill === "SPEAKING" && part.Content === "Part 4") ? "+" : (index + 1)}
                                                                 </div>
-                                                                <Text className="text-[15px] leading-[22px] text-[#374151]">{q.Content}</Text>
+                                                                <div className="flex-1">
+                                                                    <Text className="text-[15px] leading-[22px] text-[#374151]">{q.Content}</Text>
+                                                                    {shuffleAnswers && q.Type === 'multiple-choice' && (
+                                                                        <Tag color="orange" className="ml-2 text-[10px]">shuffled</Tag>
+                                                                    )}
+                                                                </div>
+                                                                {!isViewMode && (
+                                                                    <div className="shrink-0">
+                                                                        <input
+                                                                            type="number"
+                                                                            min="0"
+                                                                            max="50"
+                                                                            step="0.5"
+                                                                            value={questionScores[q.ID] ?? 1}
+                                                                            onChange={(e) => handleScoreChange(q.ID, parseFloat(e.target.value) || 1)}
+                                                                            style={{ width: '60px', padding: '4px 8px', borderRadius: '4px', border: '1px solid #D1D5DB', textAlign: 'center' }}
+                                                                        />
+                                                                    </div>
+                                                                )}
                                                             </div>
                                                         )}
                                                     </SortableQuestionItem>
@@ -439,20 +486,32 @@ const CreateExamPage = () => {
             creator: data.creator ? `${data.creator.firstName} ${data.creator.lastName}` : "Unknown",
             editor: data.updater ? `${data.updater.firstName} ${data.updater.lastName}` : "None"
         });
+
+        setShuffleQuestions(!!data.ShuffleQuestions);
+        setShuffleAnswers(!!data.ShuffleAnswers);
         
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
+        const scores = {};
         (data.Sections || []).forEach(section => {
             const skill = section.Skill?.Name;
             if (!skill) return;
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
             instructionsData.push({ skill, section });
+            const config = section.TopicSection?.ScoreConfig || section.TopicSection?.scoreConfig;
+            if (config) {
+                try {
+                    const parsed = typeof config === 'string' ? JSON.parse(config) : config;
+                    Object.assign(scores, parsed);
+                } catch (e) {}
+            }
         });
         setSelectedSectionBySkill(sectionsBySkill);
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
+        setQuestionScores(scores);
         setIsDirty(false);
     }, [topicData]);
 
@@ -534,6 +593,31 @@ const CreateExamPage = () => {
                                         </Form.Item>
                                     </Col>
                                 </Row>
+
+                                {!isViewMode && (
+                                    <div className="mt-6 p-4 bg-[#F0F5FF] rounded-lg border border-[#D0D5DD]">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <SwapOutlined style={{ color: '#003087', fontSize: '16px' }} />
+                                            <span className="text-[16px] font-semibold text-[#111827]">Exam Options</span>
+                                        </div>
+                                        <div className="flex flex-wrap items-center gap-6">
+                                            <div className="flex items-center gap-3">
+                                                <Switch 
+                                                    checked={shuffleQuestions} 
+                                                    onChange={(v) => { setShuffleQuestions(v); setIsDirty(true); }}
+                                                />
+                                                <span className="text-[14px] font-medium text-[#374151]">Shuffle Questions</span>
+                                            </div>
+                                            <div className="flex items-center gap-3">
+                                                <Switch 
+                                                    checked={shuffleAnswers} 
+                                                    onChange={(v) => { setShuffleAnswers(v); setIsDirty(true); }}
+                                                />
+                                                <span className="text-[14px] font-medium text-[#374151]">Shuffle Answers</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </Card>
 
                             <Card 
