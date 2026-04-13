@@ -10,6 +10,7 @@ import { useCreateQuestion } from "@features/questions/hooks";
 import GrammarMatchingEditorForm from "./GrammarAndVocabulary/multiple-choice/GrammarMatchingEditorForm";
 import { DeleteOutlined, PlusOutlined } from "@ant-design/icons";
 import { QuestionApi, SectionApi } from "@features/questions/api";
+import { useGetAllTags } from "@features/sections/hooks";
 import {
   MAX_QUESTION_INPUT_LENGTH,
   sanitizeQuestionInput,
@@ -33,6 +34,7 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -339,6 +341,11 @@ const CreateGrammarVocab = ({ draftId: propDraftId }) => {
             onChange={setTags}
             style={{ width: '100%' }}
             tokenSeparators={[',']}
+            options={existingTags.map((t) => ({ label: t, value: t }))}
+            showSearch
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
           />
         </Form.Item>
       </Card>

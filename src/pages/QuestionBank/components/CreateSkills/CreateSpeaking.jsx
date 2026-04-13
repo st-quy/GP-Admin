@@ -5,6 +5,7 @@ import { PlusOutlined, DeleteOutlined, SaveOutlined, TagsOutlined } from '@ant-d
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { QuestionApi, SectionApi } from '../../../../features/questions/api';
+import { useGetAllTags } from '@features/sections/hooks';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
@@ -32,6 +33,7 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
   const draftIdRef = useRef(draftId);
   const draftDataRef = useRef(null);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   // Keep ref in sync
   useEffect(() => {
@@ -385,6 +387,11 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
             onChange={setTags}
             style={{ width: '100%' }}
             tokenSeparators={[',']}
+            options={existingTags.map((t) => ({ label: t, value: t }))}
+            showSearch
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
           />
         </Form.Item>
       </Card>

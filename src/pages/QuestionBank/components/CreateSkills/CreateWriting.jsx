@@ -8,6 +8,7 @@ import WritingEditor from './Writing/WritingEditor';
 import { WRITING_PART_TYPES } from '@features/questions/constant/writingType';
 import { buildWritingFullPayload } from '@features/questions/utils/buildQuestionPayload';
 import { QuestionApi, SectionApi } from '@features/questions/api';
+import { useGetAllTags } from '@features/sections/hooks';
 import {
   MAX_QUESTION_INPUT_LENGTH,
   sanitizeQuestionInput,
@@ -28,6 +29,7 @@ const CreateWriting = ({ draftId: propDraftId }) => {
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -248,6 +250,11 @@ const CreateWriting = ({ draftId: propDraftId }) => {
             onChange={setTags}
             style={{ width: '100%' }}
             tokenSeparators={[',']}
+            options={existingTags.map((t) => ({ label: t, value: t }))}
+            showSearch
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
           />
         </Form.Item>
       </Card>

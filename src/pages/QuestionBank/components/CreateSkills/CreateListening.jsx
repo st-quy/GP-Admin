@@ -19,6 +19,7 @@ import ListeningMatchingEditor from './Listening/ListeningMatchingEditor';
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 import { QuestionApi, SectionApi } from '@features/questions/api';
+import { useGetAllTags } from '@features/sections/hooks';
 import {
   MAX_QUESTION_INPUT_LENGTH,
   sanitizeQuestionInput,
@@ -42,6 +43,7 @@ const CreateListening = ({ draftId: propDraftId }) => {
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -737,6 +739,11 @@ const CreateListening = ({ draftId: propDraftId }) => {
             onChange={setTags}
             style={{ width: '100%' }}
             tokenSeparators={[',']}
+            options={existingTags.map((t) => ({ label: t, value: t }))}
+            showSearch
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
           />
         </Form.Item>
       </Card>

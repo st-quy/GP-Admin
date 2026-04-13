@@ -15,6 +15,7 @@ import { buildFullReadingPayload } from '@features/questions/utils/buildQuestion
 import { useCreateQuestion } from '@features/questions/hooks';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QuestionApi, SectionApi } from '@features/questions/api';
+import { useGetAllTags } from '@features/sections/hooks';
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
@@ -33,6 +34,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
   const payloadRef = useRef(null);
   const draftIdRef = useRef(draftId);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   useEffect(() => {
     draftIdRef.current = draftId;
@@ -384,6 +386,11 @@ const CreateReading = ({ draftId: propDraftId }) => {
               onChange={setTags}
               style={{ width: '100%' }}
               tokenSeparators={[',']}
+              options={existingTags.map((t) => ({ label: t, value: t }))}
+              showSearch
+              filterOption={(input, option) =>
+                option.label.toLowerCase().includes(input.toLowerCase())
+              }
             />
           </Form.Item>
         </Card>
