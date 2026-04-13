@@ -95,6 +95,8 @@ const SessionTable = ({ data, columns, isLoading, onBulkDelete, selectedRowKeys,
   const rowSelection = {
     selectedRowKeys,
     onChange: handleSelectionChange,
+    columnWidth: 60,
+    columnIndex: 0,
   };
 
   const handleBulkDelete = () => {

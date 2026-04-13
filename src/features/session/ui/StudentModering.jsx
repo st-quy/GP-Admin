@@ -135,7 +135,8 @@ const StudentMonitoring = ({
     onChange: (selectedRowKeys) => {
       setSelectedRowKeys(selectedRowKeys);
     },
-    columnWidth: "50px",
+    columnWidth: 60,
+    columnIndex: 0,
     renderCell: (checked, record, index, originNode) => (
       <div className="flex justify-center">{originNode}</div>
     ),

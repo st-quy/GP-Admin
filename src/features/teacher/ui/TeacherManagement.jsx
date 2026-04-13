@@ -119,6 +119,8 @@ const TeacherManagement = () => {
   const rowSelection = {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
+    columnWidth: 60,
+    columnIndex: 0,
   };
 
   const bulkActions = [
