@@ -326,18 +326,6 @@ const QuestionBank = () => {
       },
     },
     {
-      title: <span className="font-bold text-[#637381]">CREATION DAY</span>,
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: '150px',
-      align: 'center',
-      render: (date) => (
-        <span className="font-medium text-primaryTextColor">
-          {date ? new Date(date).toLocaleDateString() : '—'}
-        </span>
-      ),
-    },
-    {
       title: <span className="font-bold text-[#637381]">UPDATE DATE</span>,
       dataIndex: 'updatedAt',
       key: 'updatedAt',

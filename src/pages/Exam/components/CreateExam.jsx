@@ -349,9 +349,6 @@ const CreateExamPage = () => {
         const data = instructions.find(ins => ins.skill === selectedSkill);
         const selectedSection = data?.section;
         
-        // DEBUG
-        console.log('renderSelectedSectionUI:', { isViewMode, selectedSkill, hasData: !!data, sectionName: selectedSection?.Name, parts: selectedSection?.Parts?.map(p => ({ content: p.Content, sub: p.SubContent })) });
-        
         if (isViewMode) {
             if (!selectedSection) {
                 return <div className="text-gray-400">No section selected</div>;
