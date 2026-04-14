@@ -33,6 +33,14 @@ const { TextArea } = Input;
 const { Panel } = Collapse;
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
+const extractAudioUrl = (audioKeys) => {
+  if (typeof audioKeys === 'string') return audioKeys;
+  if (typeof audioKeys === 'object' && audioKeys !== null) {
+    return audioKeys.hyperlink || audioKeys.text || audioKeys.url || '';
+  }
+  return '';
+};
+
 const UpdateListening = () => {
   const navigate = useNavigate();
   const { id: sectionId } = useParams();
@@ -128,7 +136,7 @@ const UpdateListening = () => {
           id: idx + 1,
           questionId: q.ID,
           instruction: q.Content || '',
-          audioUrl: q.AudioKeys || '',
+          audioUrl: extractAudioUrl(q.AudioKeys),
           options: [
             { id: 1, label: 'A', value: opts[0] || '' },
             { id: 2, label: 'B', value: opts[1] || '' },
@@ -168,7 +176,7 @@ const UpdateListening = () => {
       setPart2({
         questionId: part2Q?.ID,
         instruction: ac2?.content || '',
-        audioUrl: ac2?.audioKeys || '',
+        audioUrl: extractAudioUrl(ac2?.audioKeys),
         leftItems:
           ac2?.leftItems?.map((t, idx) => ({
             id: idx + 1,
@@ -207,7 +215,7 @@ const UpdateListening = () => {
       setPart3({
         questionId: part3Q?.ID,
         instruction: ac3?.content || '',
-        audioUrl: ac3?.audioKeys || '',
+        audioUrl: extractAudioUrl(ac3?.audioKeys),
         leftItems:
           ac3?.leftItems?.map((t, idx) => ({
             id: idx + 1,
@@ -247,7 +255,7 @@ const UpdateListening = () => {
           id: gIdx + 1,
           questionId: q.ID,
           instruction: q.Content || '',
-          audioUrl: q.AudioKeys || '',
+          audioUrl: extractAudioUrl(q.AudioKeys),
           subQuestions: ac.map((sc) => ({
             id: sc.ID,
             content: sc.content,
