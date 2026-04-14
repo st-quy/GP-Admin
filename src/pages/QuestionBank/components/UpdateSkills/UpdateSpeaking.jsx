@@ -8,6 +8,7 @@ import {
   useGetQuestionGroupDetail,
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
+import { useGetAllTags } from '@features/sections/hooks';
 import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 import { QuestionApi } from '@features/questions/api';
 
@@ -32,6 +33,7 @@ const UpdateSpeaking = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   const { data, isFetching } = useGetQuestionGroupDetail('SPEAKING', sectionId);
   const { mutate: updateSpeaking, isPending } = useUpdateQuestionGroup();
@@ -350,6 +352,11 @@ const UpdateSpeaking = () => {
                   onChange={setTags}
                   style={{ width: '100%' }}
                   tokenSeparators={[',']}
+                  options={existingTags.map((t) => ({ label: t, value: t }))}
+                  showSearch
+                  filterOption={(input, option) =>
+                    option.label.toLowerCase().includes(input.toLowerCase())
+                  }
                 />
               </Form.Item>
             </Card>

@@ -18,6 +18,7 @@ import {
   useGetQuestionGroupDetail,
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
+import { useGetAllTags } from '@features/sections/hooks';
 
 import { buildListeningPayload } from '@pages/QuestionBank/schemas/createQuestionSchema';
 import ListeningMatchingEditor from '../CreateSkills/Listening/ListeningMatchingEditor';
@@ -51,6 +52,7 @@ const UpdateListening = () => {
   const payloadRef = useRef(null);
   const isPublishingRef = useRef(false);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   // ===============================
   // STATE
@@ -718,6 +720,11 @@ const UpdateListening = () => {
             onChange={setTags}
             style={{ width: '100%' }}
             tokenSeparators={[',']}
+            options={existingTags.map((t) => ({ label: t, value: t }))}
+            showSearch
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
           />
         </Form.Item>
       </Card>

@@ -17,6 +17,7 @@ import {
   useGetQuestionGroupDetail,
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
+import { useGetAllTags } from '@features/sections/hooks';
 import GrammarMatchingEditorForm from '../CreateSkills/GrammarAndVocabulary/multiple-choice/GrammarMatchingEditorForm';
 import { DeleteOutlined } from '@ant-design/icons';
 import { QuestionApi } from '@features/questions/api';
@@ -44,6 +45,7 @@ const UpdateGrammarVocab = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   /* ============================
         STATE
@@ -424,6 +426,11 @@ const UpdateGrammarVocab = () => {
             onChange={setTags}
             style={{ width: '100%' }}
             tokenSeparators={[',']}
+            options={existingTags.map((t) => ({ label: t, value: t }))}
+            showSearch
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
           />
         </Form.Item>
       </Card>

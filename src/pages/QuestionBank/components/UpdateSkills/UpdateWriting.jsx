@@ -8,6 +8,7 @@ import {
   useGetQuestionGroupDetail,
   useUpdateQuestionGroup,
 } from '@features/questions/hooks';
+import { useGetAllTags } from '@features/sections/hooks';
 import { buildWritingFullPayload } from '@features/questions/utils/buildQuestionPayload';
 import WritingEditor from '../CreateSkills/Writing/WritingEditor';
 import { QuestionApi } from '@features/questions/api';
@@ -33,6 +34,7 @@ const UpdateWriting = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const [tags, setTags] = useState([]);
+  const { data: existingTags = [] } = useGetAllTags();
 
   // --- MAP API → FORM VALUES ---
   useEffect(() => {
@@ -243,6 +245,11 @@ const UpdateWriting = () => {
             onChange={setTags}
             style={{ width: '100%' }}
             tokenSeparators={[',']}
+            options={existingTags.map((t) => ({ label: t, value: t }))}
+            showSearch
+            filterOption={(input, option) =>
+              option.label.toLowerCase().includes(input.toLowerCase())
+            }
           />
         </Form.Item>
       </Card>
