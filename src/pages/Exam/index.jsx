@@ -108,7 +108,6 @@ const TopicListPage = () => {
   const totalItems = data?.totalItems || 0;
 
   const deleteTopic = useDeleteTopic();
-  const deleteTopicSectionsByTopicId = useDeleteTopicSectionByTopicId();
   const { mutateAsync: updateTopic } = useUpdateTopic();
   const { mutateAsync: duplicateTopic } = useDuplicateTopic();
   const { mutateAsync: bulkUpdateTopics } = useBulkUpdateTopicsStatus();
@@ -213,14 +212,13 @@ const TopicListPage = () => {
             return;
           }
 
-          await deleteTopicSectionsByTopicId.mutateAsync(topic.ID);
           await deleteTopic.mutateAsync(topic.ID);
 
           message.success(`Exam set "${topic.Name}" deleted successfully`);
           refetch();
         } catch (error) {
           console.error(error);
-          message.error(`Failed to delete exam set "${topic.Name}"`);
+          message.error(error?.response?.data?.message || `Failed to delete exam set "${topic.Name}"`);
         }
       },
     });
@@ -502,7 +500,7 @@ const TopicListPage = () => {
           setSelectedRowKeys([]);
           refetch();
         } catch (error) {
-          message.error('Failed to delete some exams');
+          message.error(error?.response?.data?.message || 'Failed to delete some exams');
         }
       },
     });
