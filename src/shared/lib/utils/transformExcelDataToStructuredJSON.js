@@ -458,7 +458,7 @@ function transformDropdownList(q, part) {
       TopicID: topicID,
       createdAt: part.createdAt || createdAt,
       updatedAt: part.updatedAt || updatedAt,
-      Questions: part.Questions.map((q) => transformQuestion(q, part)),
+      Questions: part.Questions.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((q) => transformQuestion(q, part)),
     })),
   };
 };
@@ -473,10 +473,10 @@ export const transformGrammarData = (data) => {
   const topicID = grammarSkill.TopicID || "unknown-topic-id";
   const topicName = grammarSkill.Name || "GRAMMAR AND VOCABULARY";
 
-  const fullParts = grammarSkill.Parts.map((part) => {
+  const fullParts = grammarSkill.Parts.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((part) => {
     const partID = part.ID;
 
-    const questions = part.Questions.map((q) => {
+    const questions = part.Questions.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((q) => {
       const question = {
         ID: q.ID,
         Type: q.Type,
@@ -556,10 +556,10 @@ export const transformReadingData = (data) => {
   const topicID = data.ID;
   const topicName = data.Name;
 
-  const parts = readingSkill.Parts.map((part) => {
+  const parts = readingSkill.Parts.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((part) => {
     const isSpecialPart3 = /^Part 3:/i.test(part.Content?.trim());
 
-    const questions = part.Questions.map((q) => {
+    const questions = part.Questions.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((q) => {
       const question = {
         ID: q.ID,
         Type: q.Type,
@@ -770,8 +770,8 @@ export const transformWritingData = (data) => {
   const topicID = data.ID;
   const topicName = data.Name;
 
-  const parts = writingSkill.Parts.map((part) => {
-    const questions = part.Questions.map((q) => {
+  const parts = writingSkill.Parts.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((part) => {
+    const questions = part.Questions.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((q) => {
       return {
         ID: q.ID,
         Type: q.Type, // luôn là "writing"
