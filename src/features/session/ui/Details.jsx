@@ -1,6 +1,7 @@
 import React from "react";
-import { Card, Spin, Tag, Typography, Descriptions, Divider } from "antd";
+import { Card, Spin, Tag, Typography, Divider } from "antd";
 import { TableType } from "@features/session/constant/TableEnum";
+import CopyableText from "@shared/ui/CopyableText";
 
 const { Text } = Typography;
 
@@ -49,7 +50,12 @@ const Details = ({ type, isLoading, data }) => {
   ];
 
   const col2 = [
-    { label: "Session key", value: data.sessionKey, bold: true },
+    { label: "Session key", value: data.sessionKey ? (
+      <CopyableText 
+        text={data.sessionKey} 
+        className="font-medium text-primaryTextColor" 
+      />
+    ) : "---", bold: true },
     { label: "Status", value: statusTag(data.status), isTag: true },
     { label: "End time", value: formatDateTime(data.endTime), bold: true },
   ];

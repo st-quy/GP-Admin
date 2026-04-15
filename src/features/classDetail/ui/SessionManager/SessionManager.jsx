@@ -10,6 +10,7 @@ import SessionTable from "./SessionTable/SessionTable";
 import { formatDateTime } from "@shared/lib/utils/formatString";
 import { statusOptions } from "@features/classDetail/constant/statusEnum";
 import useConfirm from "@shared/hook/useConfirm";
+import CopyableText from "@shared/ui/CopyableText";
 
 const SessionManager = () => {
   const { classId } = useParams();
@@ -92,7 +93,16 @@ const SessionManager = () => {
       dataIndex: "sessionKey",
       key: "sessionKey",
       className: "!text-center",
-      render: (text) => <span className="font-medium text-primaryTextColor">{text || "---"}</span>,
+      render: (text) => (
+        text ? (
+          <CopyableText 
+            text={text} 
+            className="font-medium text-primaryTextColor" 
+          />
+        ) : (
+          <span className="font-medium text-primaryTextColor">---</span>
+        )
+      ),
     },
     {
       title: "START TIME",
