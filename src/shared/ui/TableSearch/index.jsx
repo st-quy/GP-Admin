@@ -108,7 +108,6 @@ const TableSearch = ({
             loading={isLoading}
             rowSelection={rowSelection}
             className={isFigmaRedesign ? 'figma-table-overrides' : 'custom-modern-table'}
-            scroll={{ x: 'max-content' }}
             locale={{
               emptyText: <Empty description="No data found." />
             }}

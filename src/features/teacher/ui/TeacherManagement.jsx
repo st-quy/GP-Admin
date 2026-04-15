@@ -120,7 +120,6 @@ const TeacherManagement = () => {
     selectedRowKeys,
     onChange: (keys) => setSelectedRowKeys(keys),
     columnWidth: 60,
-    columnIndex: 0,
   };
 
   const bulkActions = [
@@ -318,7 +317,6 @@ const TeacherManagement = () => {
           columns={columns}
           dataSource={teachersData?.data?.teachers}
           rowKey={(record) => record.ID}
-          scroll={{ x: "max-content" }}
           pagination={false}
           loading={isLoading || isTeacherDetailLoading || !teachersData}
           rowSelection={rowSelection}

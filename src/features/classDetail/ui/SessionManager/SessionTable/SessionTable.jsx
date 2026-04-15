@@ -96,7 +96,6 @@ const SessionTable = ({ data, columns, isLoading, onBulkDelete, selectedRowKeys,
     selectedRowKeys,
     onChange: handleSelectionChange,
     columnWidth: 60,
-    columnIndex: 0,
   };
 
   const handleBulkDelete = () => {
@@ -148,7 +147,6 @@ const SessionTable = ({ data, columns, isLoading, onBulkDelete, selectedRowKeys,
           dataSource={paginatedData}
           rowKey="ID"
           pagination={false}
-          scroll={{ x: "max-content" }}
           className="w-full"
           loading={isLoading}
           rowSelection={rowSelection}
