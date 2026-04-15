@@ -101,7 +101,13 @@ const StudentSessionTable = ({
       key: "GrammarVocab",
       width: "240px",
       align: "center",
-      render: (text) => <span>{text || text === 0 ? text : "-"}</span>,
+      render: (text, record) => (
+        <span>
+          {text || text === 0
+            ? text + " | " + (record.GrammarVocabLevel || "-")
+            : "-"}
+        </span>
+      ),
     },
     {
       title: "LISTENING",
