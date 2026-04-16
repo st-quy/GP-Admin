@@ -99,20 +99,21 @@ const TableSearch = ({
         className={isFigmaRedesign ? 'figma-table-card' : 'shadow-md rounded-xl border border-gray-200 overflow-hidden bg-white'}
         bodyStyle={{ padding: '0' }}
       >
-        <div className='w-full'>
-          <Table
-            columns={columns}
-            dataSource={displayData}
-            rowKey='ID'
-            pagination={false}
-            loading={isLoading}
-            rowSelection={rowSelection}
-            className={isFigmaRedesign ? 'figma-table-overrides' : 'custom-modern-table'}
-            locale={{
-              emptyText: <Empty description="No data found." />
-            }}
-          />
-        </div>
+         <div className='w-full'>
+           <Table
+             columns={columns}
+             dataSource={displayData}
+             rowKey='ID'
+             pagination={false}
+             loading={isLoading}
+             rowSelection={rowSelection}
+             className={isFigmaRedesign ? 'figma-table-overrides' : 'custom-modern-table'}
+             scroll={{ x: "max-content" }}
+             locale={{
+               emptyText: <Empty description="No data found." />
+             }}
+           />
+         </div>
       </Card>
 
       {/* 3. Pagination Redesign (Right Anchored Group) */}

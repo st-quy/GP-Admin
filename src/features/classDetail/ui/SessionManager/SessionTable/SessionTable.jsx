@@ -141,17 +141,18 @@ const SessionTable = ({ data, columns, isLoading, onBulkDelete, selectedRowKeys,
           options={statusFilterOptions}
         />
       </div>
-      <div className="figma-table-card figma-table-overrides w-full">
-        <Table
-          columns={columns}
-          dataSource={paginatedData}
-          rowKey="ID"
-          pagination={false}
-          className="w-full"
-          loading={isLoading}
-          rowSelection={rowSelection}
-        />
-      </div>
+       <div className="figma-table-card figma-table-overrides w-full">
+         <Table
+           columns={columns}
+           dataSource={paginatedData}
+           rowKey="ID"
+           pagination={false}
+           className="w-full"
+           loading={isLoading}
+           rowSelection={rowSelection}
+           scroll={{ x: "max-content" }}
+         />
+       </div>
 
       <div className="figma-pagination-wrapper">
         <div className="figma-pagination-box">

@@ -210,21 +210,21 @@ const StudentMonitoring = ({
         onClearSelection={() => setSelectedRowKeys([])}
       />
 
-      <div className="figma-table-card figma-table-overrides w-full">
-        <Table
-          scroll={{ y: 5 * 70 }}
-          rowSelection={rowSelection}
-          // @ts-ignore
-          columns={columns}
-          loading={isLoading}
-          dataSource={filteredData.slice(
-            (currentPage - 1) * pageSize,
-            currentPage * pageSize,
-          )}
-          pagination={false}
-          className="w-full"
-        />
-      </div>
+       <div className="figma-table-card figma-table-overrides w-full">
+         <Table
+           scroll={{ x: "max-content", y: 5 * 70 }}
+           rowSelection={rowSelection}
+           // @ts-ignore
+           columns={columns}
+           loading={isLoading}
+           dataSource={filteredData.slice(
+             (currentPage - 1) * pageSize,
+             currentPage * pageSize,
+           )}
+           pagination={false}
+           className="w-full"
+         />
+       </div>
 
       <div className="figma-pagination-wrapper">
         <div className="figma-pagination-box">

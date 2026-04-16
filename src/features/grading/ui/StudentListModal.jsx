@@ -97,16 +97,17 @@ const StudentListModal = ({
     <Modal open={visible} onCancel={onClose} footer={null} width={1000} styles={{ body: { maxHeight: '70vh', overflow: 'hidden' } }}>
       <div className="px-12 pb-14 pt-8" id="grading-participants-table">
         <h2 className="text-3xl font-bold mb-4">Student List</h2>
-        <div ref={scrollRef} tabIndex={0} id="grading-participants-table-wrapper" style={{ maxHeight: '50vh', overflowY: 'auto', outline: 'none' }}>
-          <Table
-            dataSource={filterData}
-            // @ts-ignore
-            columns={columns}
-            pagination={false}
-            rowKey="ID"
-            sticky
-          />
-        </div>
+         <div ref={scrollRef} tabIndex={0} id="grading-participants-table-wrapper" style={{ maxHeight: '50vh', overflowY: 'auto', outline: 'none' }}>
+           <Table
+             dataSource={filterData}
+             // @ts-ignore
+             columns={columns}
+             pagination={false}
+             rowKey="ID"
+             sticky
+             scroll={{ x: "max-content" }}
+           />
+         </div>
       </div>
     </Modal>
   );

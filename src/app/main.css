@@ -27,6 +27,81 @@ body {
     padding: 0 20px !important;
 }
 
+/* Mobile sidebar styles */
+.mobile-sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 998;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.mobile-sidebar-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.mobile-menu-toggle {
+    position: fixed;
+    left: 16px;
+    bottom: 24px;
+    z-index: 1000;
+    background: #003087;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: left 0.3s ease, background 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+    background: #002b6c;
+}
+
+.mobile-menu-toggle.open {
+    left: 262px;
+}
+
+.mobile-menu-toggle svg {
+    font-size: 20px;
+    color: #fff;
+}
+
+/* Prevent body scroll when mobile menu is open */
+body.menu-open {
+    overflow: hidden;
+}
+
+@media (max-width: 991px) {
+    .mobile-menu-toggle {
+        display: flex;
+    }
+
+    .ant-layout-sider.mobile-sider {
+        position: fixed !important;
+        z-index: 999 !important;
+        top: 0 !important;
+        left: 0 !important;
+        height: 100vh !important;
+    }
+}
+
+@media (min-width: 992px) {
+    .mobile-menu-toggle,
+    .mobile-sidebar-overlay {
+        display: none !important;
+    }
+}
+
 /* APTIS-214: Figma Redesign Common Classes */
 
 .figma-page-container {

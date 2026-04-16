@@ -661,16 +661,17 @@ const QuestionBank = () => {
             }
           `}</style>
 
-          <div className="figma-table-card figma-table-overrides w-full">
-            <Table
-              rowKey='ID'
-              columns={columns}
-              dataSource={listPart}
-              loading={isLoading}
-              pagination={false}
-              rowSelection={rowSelection}
-            />
-          </div>
+           <div className="figma-table-card figma-table-overrides w-full">
+             <Table
+               rowKey='ID'
+               columns={columns}
+               dataSource={listPart}
+               loading={isLoading}
+               pagination={false}
+               rowSelection={rowSelection}
+               scroll={{ x: "max-content" }}
+             />
+           </div>
 
           <div className="figma-pagination-wrapper">
             <div className="figma-pagination-box">

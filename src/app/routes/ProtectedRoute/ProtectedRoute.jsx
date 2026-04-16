@@ -6,6 +6,7 @@ import {
   DatabaseOutlined,
   ExclamationCircleOutlined,
   HomeOutlined,
+  MenuOutlined,
   ReadOutlined,
 } from '@ant-design/icons';
 import {
@@ -31,6 +32,8 @@ export const ProtectedRoute = () => {
   const { isAuth, user } = useSelector((state) => state.auth);
   const dispatch = useDispatch();
   const [currentKey, setCurrentKey] = useState('dashboard');
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [windowWidth, setWindowWidth] = useState(() => window.innerWidth);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -52,10 +55,15 @@ export const ProtectedRoute = () => {
     };
   });
 
+  // Determine mobile state and collapsed state for sider
+  const isMobile = windowWidth < 992;
+  const collapsed = isMobile ? !isMobileMenuOpen : false;
+
   // Function to handle navigation
   const navigateTo = (key) => {
     setCurrentKey(key);
     navigate(`/${key}`);
+    setIsMobileMenuOpen(false);
   };
 
   useEffect(() => {
@@ -123,6 +131,36 @@ export const ProtectedRoute = () => {
     if (!isAuth) navigate('/login');
   }, [isAuth, navigate]);
 
+  // Window resize handler
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      setWindowWidth(width);
+      if (width >= 992) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Body scroll lock when mobile menu open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.classList.add('menu-open');
+    } else {
+      document.body.classList.remove('menu-open');
+    }
+    return () => {
+      document.body.classList.remove('menu-open');
+    };
+  }, [isMobileMenuOpen]);
+
+  // Close mobile menu on overlay click
+  const handleOverlayClick = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   const showLogoutConfirm = () => {
     Modal.confirm({
       title: 'Logout Confirmation',
@@ -140,7 +178,8 @@ export const ProtectedRoute = () => {
     });
   };
 
-  const siderStyle = {
+  // Base sider style (desktop)
+  const baseSiderStyle = {
     overflow: 'auto',
     height: '100vh',
     position: 'sticky',
@@ -151,42 +190,71 @@ export const ProtectedRoute = () => {
     scrollbarGutter: 'stable',
   };
 
-  return (
-    <Layout hasSider>
-      <Sider
-        className='bg-white shadow-xl min-h-screen'
-        breakpoint='lg'
-        collapsedWidth='0'
-        width={250}
-        style={siderStyle}
-      >
-        <div className='flex flex-col justify-between h-full'>
-          <div className='w-full px-2 flex flex-col justify-start items-center p-4'>
-            <img
-              src={LogoGreen}
-              className='cursor-pointer w-24 pb-8'
-              onClick={() => navigate('/')}
-            />
+  // Mobile-specific sider style overrides (position fixed)
+  const siderStyle = isMobile
+    ? {
+        ...baseSiderStyle,
+        position: 'fixed',
+        left: 0,
+        top: 0,
+        insetInlineStart: 0,
+      }
+    : baseSiderStyle;
 
-            <Menu
-              theme='light'
-              items={allowedOptions}
-              className='!border-none'
-              onClick={(e) => navigateTo(e.key)}
-              selectedKeys={[currentKey]}
-            />
+  return (
+    <>
+      <Layout hasSider>
+        <Sider
+          className={`bg-white shadow-xl min-h-screen ${isMobile ? 'mobile-sider' : ''}`}
+          collapsed={collapsed}
+          collapsedWidth={0}
+          width={250}
+          style={siderStyle}
+        >
+          <div className='flex flex-col justify-between h-full'>
+            <div className='w-full px-2 flex flex-col justify-start items-center p-4'>
+              <img
+                src={LogoGreen}
+                className='cursor-pointer w-24 pb-8'
+                onClick={() => navigate('/')}
+              />
+
+              <Menu
+                theme='light'
+                items={allowedOptions}
+                className='!border-none'
+                onClick={(e) => navigateTo(e.key)}
+                selectedKeys={[currentKey]}
+              />
+            </div>
+            <ProfileMenu />
           </div>
-          <ProfileMenu />
-        </div>
-      </Sider>
-      <Layout className='p-0'>
-        <Header className='bg-white px-4 shadow-md flex justify-start items-end h-10'>
-          {location.pathname !== '/' && <Breadcrumb paths={breadcrumbPaths} />}
-        </Header>
-        <Content className=''>
-          <Outlet />
-        </Content>
+        </Sider>
+        <Layout className='p-0'>
+          <Header className='bg-white px-4 shadow-md flex items-center h-10'>
+            {location.pathname !== '/' && <Breadcrumb paths={breadcrumbPaths} />}
+          </Header>
+          <Content className=''>
+            <Outlet />
+          </Content>
+        </Layout>
       </Layout>
-    </Layout>
+
+      {/* Mobile overlay */}
+      {isMobile && isMobileMenuOpen && (
+        <div className='mobile-sidebar-overlay active' onClick={handleOverlayClick} />
+      )}
+
+      {/* Mobile menu toggle button */}
+      {isMobile && (
+        <button
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className={`mobile-menu-toggle ${isMobileMenuOpen ? 'open' : ''}`}
+          aria-label='Toggle menu'
+        >
+          <MenuOutlined />
+        </button>
+      )}
+    </>
   );
 };
