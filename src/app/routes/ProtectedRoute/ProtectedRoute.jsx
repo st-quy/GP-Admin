@@ -144,15 +144,40 @@ export const ProtectedRoute = () => {
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  // Body scroll lock when mobile menu open
+  // Body scroll lock when mobile menu open - preserves scroll position
   useEffect(() => {
     if (isMobileMenuOpen) {
+      // Store current scroll position
+      const scrollY = window.scrollY;
       document.body.classList.add('menu-open');
+      // Fix body position to prevent jump
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = '0';
+      document.body.style.right = '0';
+      document.body.style.width = '100%';
+      document.body.dataset.scrollLockY = scrollY;
     } else {
       document.body.classList.remove('menu-open');
+      // Restore scroll position
+      const scrollY = parseInt(document.body.dataset.scrollLockY || '0', 10);
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
+      delete document.body.dataset.scrollLockY;
+      window.scrollTo(0, scrollY);
     }
     return () => {
       document.body.classList.remove('menu-open');
+      document.body.style.position = '';
+      document.body.style.top = '';
+      document.body.style.left = '';
+      document.body.style.right = '';
+      document.body.style.width = '';
+      document.body.style.overflow = '';
     };
   }, [isMobileMenuOpen]);
 

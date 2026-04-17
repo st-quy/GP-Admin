@@ -613,8 +613,8 @@ const TopicListPage = () => {
             </Col>
           </Row>
 
-          <div className='flex items-center justify-between mb-10'>
-            <div className='flex items-center gap-4'>
+          <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10'>
+            <div className='flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto'>
               <SearchInput
                 placeholder="Search topic name..."
                 value={search}

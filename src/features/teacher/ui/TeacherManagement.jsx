@@ -238,29 +238,29 @@ const TeacherManagement = () => {
         />
       )}
       
-      <div className='flex items-center justify-between mb-10'>
-        <div className='flex items-center gap-4'>
-          <SearchInput
-            placeholder="Search by name, ID"
-            value={searchTerm}
-            onSearchChange={onSearchChange}
-            isFigmaRedesign={true}
-            style={{ margin: 0 }}
-          />
-          <Select
-            placeholder="Select STATUS"
-            onChange={handleStatusFilter}
-            className="figma-status-select-sync"
-            options={[
-              { value: 'All', label: 'All' },
-              { value: 'Active', label: 'Active' },
-              { value: 'Inactive', label: 'Inactive' },
-            ]}
-            allowClear
-          />
-        </div>
-        <TeacherActionModal />
-      </div>
+       <div className='flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-10'>
+         <div className='flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full sm:w-auto'>
+           <SearchInput
+             placeholder="Search by name, ID"
+             value={searchTerm}
+             onSearchChange={onSearchChange}
+             isFigmaRedesign={true}
+             style={{ margin: 0 }}
+           />
+           <Select
+             placeholder="Select STATUS"
+             onChange={handleStatusFilter}
+             className="figma-status-select-sync"
+             options={[
+               { value: 'All', label: 'All' },
+               { value: 'Active', label: 'Active' },
+               { value: 'Inactive', label: 'Inactive' },
+             ]}
+             allowClear
+           />
+         </div>
+         <TeacherActionModal />
+       </div>
 
       <style>{`
         /* --- HIGH SPECIFICITY ALIGNMENT FIX --- */

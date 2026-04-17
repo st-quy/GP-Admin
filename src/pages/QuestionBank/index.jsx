@@ -534,7 +534,7 @@ const QuestionBank = () => {
         />
         
         <div className="py-8">
-          <div className="mb-10 flex flex-col md:flex-row justify-between items-start gap-4">
+          <div className="mb-10 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
               <h4 className="figma-title">Question Bank</h4>
               <p className="figma-subtitle">Manage and organize all your exam questions</p>
@@ -542,95 +542,93 @@ const QuestionBank = () => {
             <CreateButton />
           </div>
 
-          <div className="mb-10 flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <SearchInput
-                placeholder="Search question..."
-                value={search}
-                onSearchChange={onSearchChange}
-                isFigmaRedesign={true}
-                style={{ margin: 0 }}
+          <div className="mb-10 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <SearchInput
+              placeholder="Search question..."
+              value={search}
+              onSearchChange={onSearchChange}
+              isFigmaRedesign={true}
+              style={{ margin: 0 }}
+            />
+            <div className="skill-select-wrapper">
+              <Select
+                value={selectedSkill}
+                onChange={(val) => {
+                  setSelectedSkill(val);
+                  setPage(1);
+                }}
+                className="figma-skill-select"
+                options={SKILL_FILTER_OPTIONS}
               />
-              <div className="skill-select-wrapper">
-                <Select
-                  value={selectedSkill}
-                  onChange={(val) => {
-                    setSelectedSkill(val);
-                    setPage(1);
-                  }}
-                  className="figma-skill-select"
-                  options={SKILL_FILTER_OPTIONS}
-                />
-              </div>
-              <div className="status-select-wrapper">
-                <Select
-                  value={statusFilter}
-                  onChange={(val) => {
-                    setStatusFilter(val);
-                    setPage(1);
-                  }}
-                  className="figma-status-select"
-                  options={[
-                    { value: '', label: 'All Status' },
-                    { value: 'draft', label: 'Draft' },
-                    { value: 'published', label: 'Published' },
-                    { value: 'archived', label: 'Archived' },
-                  ]}
-                />
-              </div>
-              <Popover
-                placement="bottomLeft"
-                trigger="click"
-                overlayClassName="tags-filter-popover"
-                content={
-                  <div style={{ minWidth: 200, maxHeight: 300, overflowY: 'auto' }}>
-                    <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontWeight: 500 }}>Filter by Tags</span>
-                      <Button type="link" size="small" onClick={() => { setSelectedTags([]); setPage(1); }}>
-                        Clear
-                      </Button>
-                    </div>
-                    <Checkbox.Group
-                      value={selectedTags}
-                      onChange={(vals) => {
-                        setSelectedTags(vals);
-                        setPage(1);
-                      }}
-                      style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
-                    >
-                      {availableTags.map(tag => (
-                        <Checkbox key={tag} value={tag}>
-                          {tag}
-                        </Checkbox>
-                      ))}
-                      {availableTags.length === 0 && (
-                        <div style={{ color: '#999', padding: '8px 0' }}>No tags available</div>
-                      )}
-                    </Checkbox.Group>
-                  </div>
-                }
-              >
-                <Button
-                  className="tags-filter-btn"
-                  style={{
-                    height: 48,
-                    border: '1px solid #DFE4EA',
-                    borderRadius: 6,
-                    boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.1)',
-                    backgroundColor: '#ffffff',
-                    padding: '0 16px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                >
-                  <span style={{ color: selectedTags.length > 0 ? '#000' : '#999' }}>
-                    {selectedTags.length > 0 ? `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''} selected` : 'Filter by tags'}
-                  </span>
-                  <DownOutlined style={{ color: '#637381' }} />
-                </Button>
-              </Popover>
             </div>
+            <div className="status-select-wrapper">
+              <Select
+                value={statusFilter}
+                onChange={(val) => {
+                  setStatusFilter(val);
+                  setPage(1);
+                }}
+                className="figma-status-select"
+                options={[
+                  { value: '', label: 'All Status' },
+                  { value: 'draft', label: 'Draft' },
+                  { value: 'published', label: 'Published' },
+                  { value: 'archived', label: 'Archived' },
+                ]}
+              />
+            </div>
+            <Popover
+              placement="bottomLeft"
+              trigger="click"
+              overlayClassName="tags-filter-popover"
+              content={
+                <div style={{ minWidth: 200, maxHeight: 300, overflowY: 'auto' }}>
+                  <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontWeight: 500 }}>Filter by Tags</span>
+                    <Button type="link" size="small" onClick={() => { setSelectedTags([]); setPage(1); }}>
+                      Clear
+                    </Button>
+                  </div>
+                  <Checkbox.Group
+                    value={selectedTags}
+                    onChange={(vals) => {
+                      setSelectedTags(vals);
+                      setPage(1);
+                    }}
+                    style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
+                  >
+                    {availableTags.map(tag => (
+                      <Checkbox key={tag} value={tag}>
+                        {tag}
+                      </Checkbox>
+                    ))}
+                    {availableTags.length === 0 && (
+                      <div style={{ color: '#999', padding: '8px 0' }}>No tags available</div>
+                    )}
+                  </Checkbox.Group>
+                </div>
+              }
+            >
+              <Button
+                className="tags-filter-btn"
+                style={{
+                  height: 48,
+                  border: '1px solid #DFE4EA',
+                  borderRadius: 6,
+                  boxShadow: '0px 4px 4px rgba(0, 0, 0, 0.1)',
+                  backgroundColor: '#ffffff',
+                  padding: '0 16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span style={{ color: selectedTags.length > 0 ? '#000' : '#999' }}>
+                  {selectedTags.length > 0 ? `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''} selected` : 'Filter by tags'}
+                </span>
+                <DownOutlined style={{ color: '#637381' }} />
+              </Button>
+            </Popover>
           </div>
 
           <style>{`
