@@ -3,11 +3,11 @@ import axiosInstance from "@shared/config/axios";
 export const fetchDashboardStats = async () => {
   try {
     const [studentsRes, sessionsRes, classesRes, topicsRes, sectionsRes] = await Promise.all([
-      axiosInstance.get("/users/students?limit=9999"),
-      axiosInstance.get("/sessions/all?limit=9999"),
-      axiosInstance.get("/classes?limit=9999"),
-      axiosInstance.get("/topics?limit=9999"),
-      axiosInstance.get("/sections?limit=9999"),
+      axiosInstance.get("/users/students?pageSize=9999"),
+      axiosInstance.get("/sessions/all?pageSize=9999"),
+      axiosInstance.get("/classes?pageSize=9999"),
+      axiosInstance.get("/topics?pageSize=9999"),
+      axiosInstance.get("/sections?pageSize=9999"),
     ]);
 
     const students = studentsRes.data?.data?.students || [];
@@ -19,14 +19,17 @@ export const fetchDashboardStats = async () => {
     const activeTesting = sessions.filter(s => s.status === "ON_GOING").length;
     const gradingQueue = sessions.filter(s => s.status === "COMPLETE" && !s.isPublished).length;
 
+    const publishedExams = topics.filter(t => t.Status === "approved").length;
+    const publishedSections = sections.filter(s => s.Status === "published").length;
+
     return {
       studentCount: students.length,
       activeTesting,
       gradingQueue,
       totalSessions: sessions.length,
       totalClasses: classes.length,
-      totalExams: topics.length,
-      totalQuestionBank: sections.length
+      totalExams: publishedExams,
+      totalQuestionBank: publishedSections
     };
   } catch (error) {
     console.error("Error fetching dashboard stats:", error);
