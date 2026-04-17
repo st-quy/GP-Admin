@@ -188,9 +188,9 @@ const ClassManagement = () => {
             <p className='figma-subtitle'>Manage and organize both classes and individual sessions.</p>
           </div>
           
-          <div className='flex items-center gap-3'>
+          <div className='flex flex-col sm:flex-row items-start sm:items-center gap-3'>
             <Button
-              className='figma-outline-btn'
+              className='figma-outline-btn w-full sm:w-auto'
               onClick={handleExport}
               loading={exportLoading}
               icon={<ExportOutlined />}
@@ -199,7 +199,7 @@ const ClassManagement = () => {
             </Button>
 
             <Button
-              className='figma-outline-btn'
+              className='figma-outline-btn w-full sm:w-auto'
               onClick={handleImportClick}
               loading={importLoading}
               icon={<ImportOutlined />}
@@ -223,7 +223,7 @@ const ClassManagement = () => {
             />
 
             <Button
-              className='figma-primary-btn'
+              className='figma-primary-btn w-full sm:w-auto'
               onClick={() => setIsOpen('Create')}
               icon={<PlusOutlined />}
             >

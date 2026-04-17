@@ -118,7 +118,8 @@ body.menu-open {
     }
 
     .figma-skill-select.ant-select,
-    .figma-status-select.ant-select {
+    .figma-status-select.ant-select,
+    .figma-status-select-sync.ant-select {
         width: 100% !important;
         max-width: 180px !important;
     }
@@ -126,6 +127,11 @@ body.menu-open {
     .tags-filter-btn {
         width: 100% !important;
         justify-content: space-between;
+    }
+
+    .figma-primary-btn,
+    .figma-outline-btn {
+        width: 100% !important;
     }
 }
 
@@ -351,6 +357,11 @@ body.menu-open {
     .tags-filter-btn {
         width: 100% !important;
         justify-content: space-between;
+    }
+
+    .figma-primary-btn,
+    .figma-outline-btn {
+        width: 100% !important;
     }
 }
 
