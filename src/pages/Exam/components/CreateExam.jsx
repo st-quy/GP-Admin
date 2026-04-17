@@ -94,7 +94,6 @@ const CreateExamPage = () => {
 
     const [shuffleQuestions, setShuffleQuestions] = useState(false);
     const [shuffleAnswers, setShuffleAnswers] = useState(false);
-    const [questionScores, setQuestionScores] = useState({});
 
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -243,11 +242,6 @@ const CreateExamPage = () => {
         navigate(pendingPath.current || '/exam');
     };
 
-    const handleScoreChange = (questionId, score) => {
-        setQuestionScores(prev => ({ ...prev, [questionId]: score || 0 }));
-        setIsDirty(true);
-    };
-
     const handlePartSelect = (sections) => {
         setIsDirty(true);
         const oldSectionId = selectedSectionBySkill[selectedSkill];
@@ -388,9 +382,6 @@ const CreateExamPage = () => {
         }
 
         const questionCount = (selectedSection.Parts || []).reduce((acc, p) => acc + (p.Questions || []).length, 0);
-        const sectionTotalScore = (selectedSection.Parts || []).reduce((acc, p) => {
-            return acc + (p.Questions || []).reduce((qAcc, q) => qAcc + (questionScores[q.ID] ?? 1), 0);
-        }, 0);
 
         return (
             <div className="space-y-4">
@@ -406,7 +397,7 @@ const CreateExamPage = () => {
                     <div className="flex justify-between items-center mb-4">
                         <div>
                             <Text strong className="text-[#003087]">
-                                {questionCount} questions · Total: {sectionTotalScore.toFixed(1)} pts
+                                {questionCount} questions
                             </Text>
                         </div>
                         {!isViewMode && (
@@ -435,17 +426,6 @@ const CreateExamPage = () => {
                                                     {index + 1}
                                                 </div>
                                                 <Text className="text-[13px] flex-1 line-clamp-1">{q.Content}</Text>
-                                                {!isViewMode && (
-                                                    <input
-                                                        type="number"
-                                                        min="0"
-                                                        max="50"
-                                                        step="0.5"
-                                                        value={questionScores[q.ID] ?? 1}
-                                                        onChange={(e) => handleScoreChange(q.ID, parseFloat(e.target.value) || 1)}
-                                                        className="w-16 p-1 text-center border border-[#D1D5DB] rounded text-[13px]"
-                                                    />
-                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -485,25 +465,16 @@ const CreateExamPage = () => {
         const sectionsBySkill = {};
         const instructionsData = [];
         const selectedIds = [];
-        const scores = {};
         (data.Sections || []).forEach(section => {
             const skill = section.Skill?.Name;
             if (!skill) return;
             sectionsBySkill[skill] = section.ID;
             selectedIds.push(section.ID);
             instructionsData.push({ skill, section });
-            const config = section.TopicSection?.ScoreConfig || section.TopicSection?.scoreConfig;
-            if (config) {
-                try {
-                    const parsed = typeof config === 'string' ? JSON.parse(config) : config;
-                    Object.assign(scores, parsed);
-                } catch (e) {}
-            }
         });
         setSelectedSectionBySkill(sectionsBySkill);
         setInstructions(instructionsData);
         setSelectedParts(selectedIds);
-        setQuestionScores(scores);
         setIsDirty(false);
     }, [topicData]);
 
