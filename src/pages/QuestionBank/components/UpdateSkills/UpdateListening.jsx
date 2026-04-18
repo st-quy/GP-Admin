@@ -458,13 +458,7 @@ const UpdateListening = () => {
 
   const handlePublish = async () => {
     try {
-      const values = {
-        sectionName, part1Id, part2Id, part3Id, part4Id,
-        part1Name, part2Name, part3Name, part4Name,
-        part1, part2, part3, part4, sectionId,
-      };
-      const payload = buildListeningPayload(values);
-      payload.Status = 'published';
+      const payload = buildPayload('published');  // Use buildPayload which includes tags
 
       isPublishingRef.current = true;
       if (debounceTimerRef.current) {

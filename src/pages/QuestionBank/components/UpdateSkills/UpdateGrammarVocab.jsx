@@ -358,6 +358,7 @@ const UpdateGrammarVocab = () => {
       groupId: sectionId,
       SkillName: 'GRAMMAR AND VOCABULARY',
       SectionName: sectionName,
+      tags: tags,
       parts: {
         part1: {
           id: part1Id,
