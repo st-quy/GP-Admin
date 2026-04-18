@@ -42,6 +42,7 @@ const UpdateReading = () => {
   const payloadRef = useRef(null);
   const isPublishingRef = useRef(false);
   const [tags, setTags] = useState([]);
+  const [originalStatus, setOriginalStatus] = useState('draft');
   const { data: existingTags = [] } = useGetAllTags();
 
   /** WATCH PART 1 CONTENT + BLANKS */
@@ -241,6 +242,7 @@ const UpdateReading = () => {
         });
       });
       setTags(Array.from(allTags));
+      setOriginalStatus(data.Status || 'draft');
 
       setDataLoaded(true);
     }
@@ -274,14 +276,14 @@ const UpdateReading = () => {
       const payload = {
         SkillName: 'READING',
         SectionName: allValues.sectionName || 'Untitled Draft',
-        Status: 'draft',
+        Status: originalStatus,
         tags: tags,
         parts: fullPayload.parts,
       };
       scheduleAutosave(payload);
     } catch (e) {
     }
-  }, [scheduleAutosave, isSubmitting, isPending, tags]);
+  }, [scheduleAutosave, isSubmitting, isPending, tags, originalStatus]);
 
   // Autosave when matching mapping changes
   useEffect(() => {
@@ -293,7 +295,7 @@ const UpdateReading = () => {
         const payload = {
           SkillName: 'READING',
           SectionName: values.sectionName || 'Untitled Draft',
-          Status: 'draft',
+          Status: originalStatus,
           tags: tags,
           parts: fullPayload.parts,
         };
@@ -301,7 +303,7 @@ const UpdateReading = () => {
       } catch (e) {
       }
     }
-  }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending, tags]);
+  }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending, tags, originalStatus]);
 
   /* ---------------- BUTTONS ---------------- */
   const handleSaveAsDraft = async () => {
