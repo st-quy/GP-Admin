@@ -1,6 +1,10 @@
 import React from 'react';
 import { Card, Space, Button, Input, Form, Typography, Radio } from 'antd';
 import { PlusOutlined, CloseOutlined } from '@ant-design/icons';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const { Text } = Typography;
 
@@ -64,38 +68,36 @@ const DropdownBlankOptions = () => {
                             </Text>
 
                             {/* Option text */}
-                            <Form.Item
-                              name={[opt.name, 'value']}
-                              style={{ flex: 1 }}
-                              className='!mb-0'
-                              rules={[
-                                {
-                                  required: true,
-                                  message: 'Option text is required',
-                                },
-                              ]}
-                              getValueFromEvent={(e) =>
-                                e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
-                              }
-                            >
-                              <Input
-                                maxLength={255}
-                                placeholder='Enter option text'
-                                onChange={() => {
-                                  form.setFieldValue(
-                                    [
-                                      'part1',
-                                      'blanks',
-                                      blank.name,
-                                      'options',
-                                      opt.name,
-                                      'id',
-                                    ],
-                                    optionId
-                                  );
-                                }}
-                              />
-                            </Form.Item>
+                             <Form.Item
+                               name={[opt.name, 'value']}
+                               style={{ flex: 1 }}
+                               className='!mb-0'
+                               rules={[
+                                 {
+                                   required: true,
+                                   message: 'Option text is required',
+                                 },
+                               ]}
+                               getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
+                             >
+                               <Input
+                                 maxLength={MAX_QUESTION_INPUT_LENGTH}
+                                 placeholder='Enter option text'
+                                 onChange={() => {
+                                   form.setFieldValue(
+                                     [
+                                       'part1',
+                                       'blanks',
+                                       blank.name,
+                                       'options',
+                                       opt.name,
+                                       'id',
+                                     ],
+                                     optionId
+                                   );
+                                 }}
+                               />
+                             </Form.Item>
 
                             {/* Remove Option */}
                             <CloseOutlined
