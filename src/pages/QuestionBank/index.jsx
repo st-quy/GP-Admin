@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   Table,
   Button,
@@ -20,7 +20,13 @@ import {
   CloudUploadOutlined,
   FolderAddOutlined,
   CopyOutlined,
+  ExportOutlined,
+  ImportOutlined,
 } from '@ant-design/icons';
+import { ExcelApi } from '@shared/api/excel';
+import { transformExcelDataToStructuredJSON } from '@shared/lib/utils/transformExcelDataToStructuredJSON';
+import * as XLSX from 'xlsx';
+import PreviewExam from '@shared/ui/PreviewExam';
 import { useNavigate } from 'react-router-dom';
 
 import { useDeleteSection, useGetSections, useUpdateSectionStatus, useDuplicateSection, useBulkPublishSections, useBulkDeleteSections, useBulkDuplicateSections, useGetAllTags } from '@features/sections/hooks';
@@ -66,6 +72,12 @@ const validSkills = new Set([
 const QuestionBank = () => {
   const navigate = useNavigate();
   const { role } = useSelector((state) => state.auth);
+  const fileInputRef = useRef(null);
+  const [importLoading, setImportLoading] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
+  const [dataExam, setDataExam] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [fileData, setFileData] = useState(null);
     
   const isAdmin = Array.isArray(role) 
     ? role.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'superadmin')
@@ -246,6 +258,67 @@ const QuestionBank = () => {
       danger: true,
     },
   ];
+
+  const handleImportClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handlePreviewFile = (file) => {
+    setFileData(file);
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+
+      const worksheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[worksheetName];
+
+      const rawData = XLSX.utils.sheet_to_json(worksheet, {
+        header: 1,
+        defval: '',
+        range: 'A1:M76',
+      });
+
+      const trimmedData = rawData.map((row) => row.slice(0, 13));
+      const dataReal = transformExcelDataToStructuredJSON(trimmedData);
+      setDataExam(dataReal);
+      setIsModalOpen(true);
+    };
+
+    reader.readAsArrayBuffer(file);
+  };
+
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handlePreviewFile(file);
+  };
+
+  const handleExportExcel = async () => {
+    setExportLoading(true);
+    try {
+      const response = await ExcelApi.exportTemplate();
+      const blob = new Blob([response.data], {
+        type: response.headers['content-type'] || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'questions-template.xlsx';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      message.success('Export successful');
+    } catch (error) {
+      message.error('Export failed');
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   const rowSelection = {
     selectedRowKeys,
@@ -521,6 +594,37 @@ const QuestionBank = () => {
     </Dropdown>
   );
 
+  const ActionButtons = () => (
+    <div className="flex gap-2">
+      <Button
+        size="large"
+        icon={<ExportOutlined />}
+        onClick={handleExportExcel}
+        loading={exportLoading}
+        className="figma-outline-btn"
+      >
+        Export
+      </Button>
+      <Button
+        size="large"
+        icon={<ImportOutlined />}
+        onClick={handleImportClick}
+        loading={importLoading}
+        className="figma-outline-btn"
+      >
+        Import
+      </Button>
+      <input
+        type="file"
+        accept=".xlsx, .xls"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
+      <CreateButton />
+    </div>
+  );
+
   return (
     <div className="figma-page-container">
       <div className="figma-content-wrapper">
@@ -539,7 +643,7 @@ const QuestionBank = () => {
               <h4 className="figma-title">Question Bank</h4>
               <p className="figma-subtitle">Manage and organize all your exam questions</p>
             </div>
-            <CreateButton />
+            <ActionButtons />
           </div>
 
           <div className="mb-10 flex flex-col sm:flex-row items-start sm:items-center gap-4">
@@ -747,6 +851,17 @@ const QuestionBank = () => {
             </div>
           </div>
         </div>
+
+        {isModalOpen && (
+          <PreviewExam
+            isModalOpen={isModalOpen}
+            setIsModalOpen={setIsModalOpen}
+            dataExam={dataExam}
+            fileData={fileData}
+            setDataExam={setDataExam}
+            onImportSuccess={refetch}
+          />
+        )}
       </div>
     </div>
   );
