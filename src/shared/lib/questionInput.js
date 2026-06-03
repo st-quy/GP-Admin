@@ -1,8 +1,8 @@
 export const MAX_QUESTION_INPUT_LENGTH = 2000;
-export const QUESTION_INPUT_REGEX = /^[a-zA-Z0-9 ,.\-_()"':?!\n]*$/;
+export const QUESTION_INPUT_REGEX = /^[a-zA-Z0-9 ,.\-_()"':?!\n\[\]]*$/;
 
 export function sanitizeQuestionInput(value = '') {
-  return value.replace(/[^a-zA-Z0-9 ,.\-_()"':?!\n]/g, '');
+  return value.replace(/[^a-zA-Z0-9 ,.\-_()"':?!\n\[\]]/g, '');
 }
 
 export function questionInputRule(fieldName = 'This field') {
