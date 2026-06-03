@@ -10,7 +10,7 @@ const DropdownPreview = ({ content, blanks }) => {
   return parts.map((part, idx) => {
     if (/^\[(\d+)\]$/.test(part)) {
       const key = part.match(/\[(\d+)\]/)[1];
-      const blank = blanks.find((b) => b.key === key);
+      const blank = blanks.find((b) => String(b.key) === String(key));
 
       const value = blank?.correctAnswer || undefined;
 

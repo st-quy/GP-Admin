@@ -398,7 +398,7 @@ function buildDropdownContent(rawContent, blanks) {
   let result = rawContent;
 
   blanks.forEach((b) => {
-    const key = b.key;
+    const key = String(b.key);
 
     // format: (finds / sdsdsdsd)
     const optionsText = b.options.map((o) => o.value).join(' / ');
@@ -430,12 +430,12 @@ export const buildFullReadingPayload = (values) => {
   const finalContent = buildDropdownContent(p1.content, blanks);
 
   const p1Options = blanks.map((b) => ({
-    key: b.key,
+    key: String(b.key),
     value: (b.options || []).map((o) => o.value),
   }));
 
   const p1Correct = blanks.map((b) => ({
-    key: b.key,
+    key: String(b.key),
     value: (b.options || []).find((o) => o.id === b.correctAnswer)?.value || '',
   }));
 

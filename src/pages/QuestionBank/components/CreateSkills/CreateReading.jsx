@@ -70,11 +70,12 @@ const CreateReading = ({ draftId: propDraftId }) => {
             const opts = ac.options || [];
             const correctAnswers = ac.correctAnswer || [];
             const blanks = opts.map((opt, idx) => {
-              const correctVal = correctAnswers.find(ca => ca.key === opt.key)?.value || '';
+              const optKey = opt.key !== undefined && opt.key !== null ? String(opt.key) : String(idx);
+              const correctVal = correctAnswers.find(ca => String(ca.key) === optKey)?.value || '';
               const optValues = opt.value || [];
               const correctIdx = optValues.findIndex(v => v === correctVal);
               return {
-                key: opt.key || String(idx),
+                key: optKey,
                 options: optValues.map((v, i) => ({ id: i + 1, value: v })),
                 correctAnswer: correctIdx >= 0 ? correctIdx + 1 : null,
               };

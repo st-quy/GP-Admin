@@ -16,7 +16,7 @@ const DropdownEditor = () => {
     const existingBlanks = form.getFieldValue(['part1', 'blanks']) || [];
 
     const mergedBlanks = detectedKeys.map((key) => {
-      const found = existingBlanks.find((b) => b.key === key);
+      const found = existingBlanks.find((b) => String(b.key) === String(key));
       if (found) return found;
       return {
         key,

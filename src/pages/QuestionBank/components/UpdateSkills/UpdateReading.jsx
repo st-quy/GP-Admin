@@ -95,42 +95,41 @@ const UpdateReading = () => {
       let content =
         apiData.part1.AnswerContent?.content || apiData.part1.Content || '';
 
-      content = content.replace(/\([^()]*\)/g, '');
-
-      apiBlanks.forEach((opt) => {
-        const key = String(opt.key);
-        const rmPunct = new RegExp(`\\b${key}[\\.,);:!?-]`, 'g');
-        content = content.replace(rmPunct, key);
-
-        const bare = new RegExp(`\\b${key}\\b`, 'g');
-        content = content.replace(bare, `[${key}]`);
-      });
-
-      content = content.replace(/\([^()]*\)/g, '');
-
-      content = content
-        .replace(/\r\n/g, '\n')
-        .replace(/[ ]+\n/g, '\n')
-        .replace(/\n{2,}/g, '\n')
-        .trim();
-
       const transformedBlanks = apiBlanks.map((opt) => {
-        const correctObj = apiCorrect.find((a) => a.key === opt.key);
+        const optKey = opt.key !== undefined && opt.key !== null ? String(opt.key) : '';
+        const correctObj = apiCorrect.find((a) => String(a.key) === optKey);
         const correctValue = correctObj?.value;
 
         const options = (opt.value || []).map((v, idx) => ({
-          id: `${opt.key}-${idx}`,
+          id: `${optKey}-${idx}`,
           value: v,
         }));
 
         const correctOption = options.find((o) => o.value === correctValue);
 
         return {
-          key: opt.key,
+          key: optKey,
           options,
           correctAnswer: correctOption?.id || '',
         };
       });
+
+      // Reverse the buildDropdownContent transformation
+      // API returns: "0. (opt1 / opt2)text 1. (opt3 / opt4)"
+      // Form needs: "[0]text [1]"
+      transformedBlanks.forEach((b) => {
+        const optionsText = (b.options || []).map(o => o.value).join(' / ');
+        const formatted = `${b.key}. (${optionsText})`;
+        // Escape special regex characters in the formatted string
+        const escaped = formatted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        content = content.replace(new RegExp(escaped, 'g'), `[${b.key}]`);
+      });
+
+      content = content
+        .replace(/\r\n/g, '\n')
+        .replace(/[ ]+\n/g, '\n')
+        .replace(/\n{2,}/g, '\n')
+        .trim();
 
       transformed.part1 = {
         id: apiData.part1.PartID,
