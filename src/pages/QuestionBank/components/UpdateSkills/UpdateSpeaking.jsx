@@ -33,6 +33,7 @@ const UpdateSpeaking = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const [tags, setTags] = useState([]);
+  const [originalStatus, setOriginalStatus] = useState('draft');
   const { data: existingTags = [] } = useGetAllTags();
 
   const { data, isFetching } = useGetQuestionGroupDetail('SPEAKING', sectionId);
@@ -65,7 +66,7 @@ const UpdateSpeaking = () => {
 
   const handleValuesChange = (changedValues, allValues) => {
     imagesRef.current = { ...imagesRef.current };
-    const payload = buildPayload(allValues, imagesRef.current);
+    const payload = buildPayload(allValues, imagesRef.current, originalStatus);
     scheduleAutosave(payload);
   };
 
@@ -73,10 +74,10 @@ const UpdateSpeaking = () => {
   useEffect(() => {
     if (data) {
       const values = form.getFieldsValue(true);
-      const payload = buildPayload(values, imagesRef.current);
+      const payload = buildPayload(values, imagesRef.current, originalStatus);
       scheduleAutosave(payload);
     }
-  }, [tags]);
+  }, [tags, originalStatus]);
 
   useEffect(() => {
     if (!data) return;
@@ -136,6 +137,7 @@ const UpdateSpeaking = () => {
       });
     });
     setTags(Array.from(allTags));
+    setOriginalStatus(data.Status || 'draft');
 
     setIsLoading(false);
   }, [data]);

@@ -2,6 +2,11 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Row, Col, Input, Button, Typography, Space, Select, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
+
 const { Text } = Typography;
 
 const letterLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
@@ -108,15 +113,16 @@ const MatchingEditor = ({ errors = {} }) => {
                 <div className='w-full flex items-center gap-2'>
                   <Text className='min-w-10'>{idx + 1}</Text>
 
-                  <Input
-                    placeholder={`Content ${idx + 1}`}
-                    value={item.text}
-                    onChange={(e) => {
-                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
-                      updateLeftItem(idx, sanitized)
-                    }
-                    }
-                  />
+                   <Input
+                     placeholder={`Content ${idx + 1}`}
+                     value={item.text}
+                     maxLength={MAX_QUESTION_INPUT_LENGTH}
+                     onChange={(e) => {
+                       const sanitized = sanitizeQuestionInput(e.target.value)
+                       updateLeftItem(idx, sanitized)
+                     }
+                     }
+                   />
 
                   <Button
                     danger
@@ -165,15 +171,16 @@ const MatchingEditor = ({ errors = {} }) => {
                   >
                     {letterLabels[idx]}
                   </div>
-                  <Input
-                    placeholder={`Option ${letterLabels[idx]}`}
-                    value={item.text}
-                    onChange={(e) => {
-                      const sanitized = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')
-                      updateRightItem(idx, sanitized)
-                    }
-                    }
-                  />
+                   <Input
+                     placeholder={`Option ${letterLabels[idx]}`}
+                     value={item.text}
+                     maxLength={MAX_QUESTION_INPUT_LENGTH}
+                     onChange={(e) => {
+                       const sanitized = sanitizeQuestionInput(e.target.value)
+                       updateRightItem(idx, sanitized)
+                     }
+                     }
+                   />
 
                   <Button
                     danger

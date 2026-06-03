@@ -9,6 +9,10 @@ import { Card, Button, Input, Space, Form } from 'antd';
 import { PlusOutlined, DeleteOutlined, MenuOutlined } from '@ant-design/icons';
 
 import SortableOrderingItem from './SortableOrderingItem';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const OrderingEditor = ({ fields, helpers, listPath = [] }) => {
   const form = Form.useFormInstance();
@@ -92,13 +96,13 @@ const OrderingEditor = ({ fields, helpers, listPath = [] }) => {
 
                       <Form.Item
                         name={[field.name, 'text']}
-                        getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+                        getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
                         rules={[
                           { required: true, message: 'Sentence is required' },
                         ]}
                         style={{ flex: 1, margin: 0 }}
                       >
-                        <Input maxLength={255} placeholder={`Enter sentence ${index + 1}`} />
+                        <Input maxLength={MAX_QUESTION_INPUT_LENGTH} placeholder={`Enter sentence ${index + 1}`} />
                       </Form.Item>
 
                       <DeleteOutlined

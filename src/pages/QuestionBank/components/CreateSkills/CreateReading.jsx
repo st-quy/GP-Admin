@@ -16,6 +16,10 @@ import { useCreateQuestion } from '@features/questions/hooks';
 import { useNavigate, useParams } from 'react-router-dom';
 import { QuestionApi, SectionApi } from '@features/questions/api';
 import { useGetAllTags } from '@features/sections/hooks';
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
@@ -371,13 +375,13 @@ const CreateReading = ({ draftId: propDraftId }) => {
             className='w-full'
             name={'sectionName'}
             required
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Section name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter section name' />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} placeholder='Enter section name' />
           </Form.Item>
-          <Form.Item label='Description' name='description'>
-            <Input.TextArea rows={3} placeholder='-' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+          <Form.Item label='Description' name='description' getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}>
+            <Input.TextArea rows={3} placeholder='-' maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
           <Form.Item label='Tags'>
             <Select
@@ -401,10 +405,10 @@ const CreateReading = ({ draftId: propDraftId }) => {
           <Form.Item
             label='Part Name'
             name={['part1', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 1 Name' />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} placeholder='Enter Part 1 Name' />
           </Form.Item>
 
           <Form.Item label='Content' required>
@@ -458,19 +462,19 @@ const CreateReading = ({ draftId: propDraftId }) => {
           <Form.Item
             label='Part Name'
             name={['part2A', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2A Name' />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} placeholder='Enter Part 2A Name' />
           </Form.Item>
 
           <Form.Item
             label='Content'
             name={['part2A', 'intro']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
           <Form.List name={['part2A', 'items']}>
             {(fields, helpers) => (
@@ -484,19 +488,19 @@ const CreateReading = ({ draftId: propDraftId }) => {
           <Form.Item
             label='Part Name'
             name={['part2B', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 2B Name' />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} placeholder='Enter Part 2B Name' />
           </Form.Item>
 
           <Form.Item
             label='Content'
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
             name={['part2B', 'intro']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
           <Form.List name={['part2B', 'items']}>
             {(fields, helpers) => (
@@ -510,18 +514,18 @@ const CreateReading = ({ draftId: propDraftId }) => {
           <Form.Item
             label='Part Name'
             name={['part3', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 3 Name' />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} placeholder='Enter Part 3 Name' />
           </Form.Item>
           <Form.Item
             label='Content'
             name={['part3', 'content']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter content...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='Enter content...' maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <MatchingEditor />
@@ -555,18 +559,18 @@ const CreateReading = ({ draftId: propDraftId }) => {
           <Form.Item
             label='Part Name'
             name={['part4', 'name']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Part name is required' }]}
           >
-            <Input maxLength={255} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()\"':]/g, ''); }} placeholder='Enter Part 4 Name' />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} placeholder='Enter Part 4 Name' />
           </Form.Item>
           <Form.Item
             label='Content'
             name={['part4', 'content']}
-            getValueFromEvent={(e) => e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, '')}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' maxLength={510} onInput={(e) => { e.target.value = e.target.value.replace(/[^a-zA-Z0-9 ,.\-_:()"':]/g, ''); }} />
+            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <MatchingEditorPart4 />

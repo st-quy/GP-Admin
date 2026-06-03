@@ -1,12 +1,8 @@
 import React, { useState } from 'react';
-import { DeleteOutlined, EditOutlined, PlusOutlined, ExportOutlined, ImportOutlined } from '@ant-design/icons';
+import { DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import {
   useGetAllClass,
   useDeleteClassBulk,
-  handleImportClick,
-  fileInputRef,
-  handleExportExcel,
-  handlePreviewFile,
 } from '@features/classManagement/hooks';
 import CreateClassModal from '@features/classManagement/ui/Modal/CreateClass';
 import TableSearch from '@shared/ui/TableSearch';
@@ -21,11 +17,7 @@ import { message } from 'antd';
 import { useDebouncedValue } from '@shared/hook/useDebounceValue';
 
 const ClassManagement = () => {
-  const [dataExam, setDataExam] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [fileData, setFileData] = useState(null);
-  const [importLoading, setImportLoading] = useState(false);
-  const [exportLoading, setExportLoading] = useState(false);
   const [isOpen, setIsOpen] = useState('');
   const [dataClass, setClassData] = useState(null);
   
@@ -55,12 +47,6 @@ const ClassManagement = () => {
 
   const classList = response?.data || [];
   const totalItems = response?.total || 0;
-
-  const handleExport = async () => {
-    setExportLoading(true);
-    await handleExportExcel(setExportLoading);
-    setExportLoading(false);
-  };
 
   const handleUpdateClass = (record) => () => {
     setIsOpen('Update');
@@ -189,39 +175,6 @@ const ClassManagement = () => {
           </div>
           
           <div className='flex flex-col sm:flex-row items-start sm:items-center gap-3'>
-            <Button
-              className='figma-outline-btn w-full sm:w-auto'
-              onClick={handleExport}
-              loading={exportLoading}
-              icon={<ExportOutlined />}
-            >
-              Export
-            </Button>
-
-            <Button
-              className='figma-outline-btn w-full sm:w-auto'
-              onClick={handleImportClick}
-              loading={importLoading}
-              icon={<ImportOutlined />}
-            >
-              Import
-            </Button>
-            
-            <input
-              type='file'
-              accept='.xlsx, .xls'
-              ref={fileInputRef}
-              onChange={(e) => {
-                setFileData(e.target.files[0]);
-                handlePreviewFile(
-                  e.target.files[0],
-                  setIsModalOpen,
-                  setDataExam
-                );
-              }}
-              style={{ display: 'none' }}
-            />
-
             <Button
               className='figma-primary-btn w-full sm:w-auto'
               onClick={() => setIsOpen('Create')}

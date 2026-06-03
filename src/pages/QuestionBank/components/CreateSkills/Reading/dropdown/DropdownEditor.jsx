@@ -2,6 +2,11 @@
 import React, { useEffect } from 'react';
 import { Button, Space, Typography, Input, Form } from 'antd';
 
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
+
 const { TextArea } = Input;
 const { Text } = Typography;
 
@@ -65,7 +70,8 @@ const DropdownEditor = () => {
         <TextArea
           rows={6}
           placeholder='Type reading text... Example: Dear [0], thank you for [1].'
-          onChange={(e) => handleChange(e.target.value)}
+          maxLength={MAX_QUESTION_INPUT_LENGTH}
+          onChange={(e) => handleChange(sanitizeQuestionInput(e.target.value))}
         />
       </Form.Item>
     </div>

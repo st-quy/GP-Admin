@@ -36,11 +36,11 @@ const ListeningTest = ({ dataExam }) => {
             return {
               ...question,
               ID: `${question.ID}-${subQuestion.ID}`,
-              Content: subQuestion.content,
+              Content: subQuestion.content || question.Content,
               Type: subQuestion.type,
               AnswerContent: JSON.stringify([
                 {
-                  title: subQuestion.content,
+                  title: subQuestion.content || question.Content,
                   options,
                   correctAnswer: subQuestion.correctAnswer,
                 },
@@ -57,10 +57,15 @@ const ListeningTest = ({ dataExam }) => {
         Array.isArray(answerContent.options) &&
         answerContent.correctAnswer
       ) {
-        const options = answerContent.options.map((option, index) => ({
-          key: String.fromCharCode(65 + index),
-          value: option,
-        }));
+        const options = answerContent.options.map((option, index) => {
+          if (typeof option === 'object' && option.key && option.value) {
+            return option;
+          }
+          return {
+            key: String.fromCharCode(65 + index),
+            value: option,
+          };
+        });
 
         return {
           ...question,
@@ -112,6 +117,7 @@ const ListeningTest = ({ dataExam }) => {
           ...question,
           Type: "dropdown-list",
           AnswerContent: {
+            title: question.Content,
             ...answerContent,
             correctAnswer: formattedCorrectAnswer,
             type: "dropdown-list",
@@ -145,6 +151,7 @@ const ListeningTest = ({ dataExam }) => {
         return {
           ...question,
           AnswerContent: {
+            title: question.Content,
             ...answerContent,
             correctAnswer: formattedCorrectAnswer,
           },

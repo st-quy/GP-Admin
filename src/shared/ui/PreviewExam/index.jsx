@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import { Button, Drawer, Steps } from "antd";
+import { Button, Drawer, Steps, message } from "antd";
 import SpeakingPreview from "./Speaking";
 import ListeningTest from "./Listening/listening-test";
 import GrammarVocabPreview from "./GrammarVocab";
 import ReadingTest from "./Reading/reading-test";
 import WritingTest from "./Writing/writing-test";
 import { handleFileChange } from "@features/classManagement/hooks";
+import { ExcelApi } from "@features/classManagement/api";
 
 const PreviewExam = ({
   isModalOpen,
@@ -13,12 +14,36 @@ const PreviewExam = ({
   dataExam,
   fileData,
   setDataExam,
+  onImportSuccess,
 }) => {
   const [current, setCurrent] = useState(0);
+  const [importLoading, setImportLoading] = useState(false);
   const contentRef = useRef(null);
 
   const next = () => setCurrent((c) => c + 1);
   const prev = () => setCurrent((c) => c - 1);
+
+  const handleImport = async () => {
+    if (!fileData) {
+      message.error("No file selected");
+      return;
+    }
+    setImportLoading(true);
+    try {
+      const response = await ExcelApi.importExcel(fileData);
+      if (response.data?.status === 200) {
+        message.success("Import successfully");
+        setDataExam(null);
+        setIsModalOpen(false);
+        onImportSuccess?.();
+      }
+    } catch (error) {
+      const errorMsg = error?.response?.data?.message || error.message || "Import failed";
+      message.error(errorMsg);
+    } finally {
+      setImportLoading(false);
+    }
+  };
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
@@ -65,11 +90,8 @@ const PreviewExam = ({
           {current === steps.length - 1 && (
             <Button
               type="primary"
-              onClick={() => {
-                setDataExam(null);
-                setIsModalOpen(false);
-                // handleFileChange(fileData);
-              }}
+              loading={importLoading}
+              onClick={handleImport}
             >
               Import
             </Button>

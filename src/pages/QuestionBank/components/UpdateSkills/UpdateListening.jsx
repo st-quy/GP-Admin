@@ -60,6 +60,7 @@ const UpdateListening = () => {
   const payloadRef = useRef(null);
   const isPublishingRef = useRef(false);
   const [tags, setTags] = useState([]);
+  const [originalStatus, setOriginalStatus] = useState('draft');
   const { data: existingTags = [] } = useGetAllTags();
 
   // ===============================
@@ -114,6 +115,7 @@ const UpdateListening = () => {
     const d = detail;
 
     setSectionName(d.SectionName);
+    setOriginalStatus(d.Status || 'draft');
 
     const allTags = new Set();
     Object.keys(d).filter(k => typeof k === 'string' && k.startsWith('part')).forEach(key => {
@@ -435,12 +437,12 @@ const UpdateListening = () => {
   useEffect(() => {
     if (!isFetching && detail) {
       try {
-        const payload = buildPayload('draft');
+        const payload = buildPayload(originalStatus);
         scheduleAutosave(payload);
       } catch (e) {
       }
     }
-  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isFetching, detail, tags]);
+  }, [sectionName, part1Name, part1, part2Name, part2, part3Name, part3, part4Name, part4, isFetching, detail, tags, originalStatus]);
 
   const handleSaveAsDraft = async () => {
     try {
@@ -458,13 +460,7 @@ const UpdateListening = () => {
 
   const handlePublish = async () => {
     try {
-      const values = {
-        sectionName, part1Id, part2Id, part3Id, part4Id,
-        part1Name, part2Name, part3Name, part4Name,
-        part1, part2, part3, part4, sectionId,
-      };
-      const payload = buildListeningPayload(values);
-      payload.Status = 'published';
+      const payload = buildPayload('published');  // Use buildPayload which includes tags
 
       isPublishingRef.current = true;
       if (debounceTimerRef.current) {

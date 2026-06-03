@@ -34,6 +34,7 @@ const UpdateWriting = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const [tags, setTags] = useState([]);
+  const [originalStatus, setOriginalStatus] = useState('draft');
   const { data: existingTags = [] } = useGetAllTags();
 
   // --- MAP API → FORM VALUES ---
@@ -91,6 +92,7 @@ const UpdateWriting = () => {
       });
     });
     setTags(Array.from(allTags));
+    setOriginalStatus(detail.Status || 'draft');
   }, [detail]);
 
   const scheduleAutosave = useCallback((payload) => {
@@ -119,7 +121,7 @@ const UpdateWriting = () => {
       const payload = {
         SkillName: 'WRITING',
         SectionName: allValues.sectionName || 'Untitled Draft',
-        Status: 'draft',
+        Status: originalStatus,
         tags: tags,
         parts: fullPayload.parts,
       };
@@ -127,7 +129,7 @@ const UpdateWriting = () => {
     } catch (e) {
       // Skip if form not ready
     }
-  }, [scheduleAutosave, tags]);
+  }, [scheduleAutosave, tags, originalStatus]);
 
   const handleSaveAsDraft = async () => {
     const values = form.getFieldsValue(true);

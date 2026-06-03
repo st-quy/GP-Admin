@@ -19,6 +19,11 @@ import MatchingEditor from '../CreateSkills/Reading/matching/MatchingEditor';
 import MatchingEditorPart4 from '../CreateSkills/Reading/matching/MatchingEditorPart4';
 import OrderingEditor from '../CreateSkills/Reading/ordering/OrderingEditor';
 
+import {
+  MAX_QUESTION_INPUT_LENGTH,
+  sanitizeQuestionInput,
+} from '@shared/lib/questionInput';
+
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
 const UpdateReading = () => {
@@ -37,6 +42,7 @@ const UpdateReading = () => {
   const payloadRef = useRef(null);
   const isPublishingRef = useRef(false);
   const [tags, setTags] = useState([]);
+  const [originalStatus, setOriginalStatus] = useState('draft');
   const { data: existingTags = [] } = useGetAllTags();
 
   /** WATCH PART 1 CONTENT + BLANKS */
@@ -235,6 +241,7 @@ const UpdateReading = () => {
         });
       });
       setTags(Array.from(allTags));
+      setOriginalStatus(data.Status || 'draft');
 
       setDataLoaded(true);
     }
@@ -268,14 +275,14 @@ const UpdateReading = () => {
       const payload = {
         SkillName: 'READING',
         SectionName: allValues.sectionName || 'Untitled Draft',
-        Status: 'draft',
+        Status: originalStatus,
         tags: tags,
         parts: fullPayload.parts,
       };
       scheduleAutosave(payload);
     } catch (e) {
     }
-  }, [scheduleAutosave, isSubmitting, isPending, tags]);
+  }, [scheduleAutosave, isSubmitting, isPending, tags, originalStatus]);
 
   // Autosave when matching mapping changes
   useEffect(() => {
@@ -287,7 +294,7 @@ const UpdateReading = () => {
         const payload = {
           SkillName: 'READING',
           SectionName: values.sectionName || 'Untitled Draft',
-          Status: 'draft',
+          Status: originalStatus,
           tags: tags,
           parts: fullPayload.parts,
         };
@@ -295,7 +302,7 @@ const UpdateReading = () => {
       } catch (e) {
       }
     }
-  }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending, tags]);
+  }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending, tags, originalStatus]);
 
   /* ---------------- BUTTONS ---------------- */
   const handleSaveAsDraft = async () => {
@@ -383,9 +390,10 @@ const UpdateReading = () => {
           <Form.Item
             label='Name'
             name='sectionName'
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
           <Form.Item label='Tags'>
             <Select
@@ -413,9 +421,10 @@ const UpdateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part1', 'name']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.Item
@@ -480,17 +489,19 @@ const UpdateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part2A', 'name']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.Item
             label='Introduction'
             name={['part2A', 'intro']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.List name={['part2A', 'items']}>
@@ -513,17 +524,19 @@ const UpdateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part2B', 'name']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.Item
             label='Introduction'
             name={['part2B', 'intro']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.List name={['part2B', 'items']}>
@@ -546,17 +559,19 @@ const UpdateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part3', 'name']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.Item
             label='Content'
             name={['part3', 'content']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.Item name={['part3']}>
@@ -607,17 +622,19 @@ const UpdateReading = () => {
           <Form.Item
             label='Part Name'
             name={['part4', 'name']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input />
+            <Input maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.Item
             label='Content'
             name={['part4', 'content']}
+            getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input.TextArea />
+            <Input.TextArea maxLength={MAX_QUESTION_INPUT_LENGTH} />
           </Form.Item>
 
           <Form.Item name={['part4']}>

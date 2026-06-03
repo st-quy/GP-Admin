@@ -45,6 +45,7 @@ const UpdateGrammarVocab = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const [tags, setTags] = useState([]);
+  const [originalStatus, setOriginalStatus] = useState('draft');
   const { data: existingTags = [] } = useGetAllTags();
 
   /* ============================
@@ -77,6 +78,7 @@ const UpdateGrammarVocab = () => {
     if (!data) return;
 
     setSectionName(data.SectionName);
+    setOriginalStatus(data.Status || 'draft');
 
     const allTags = new Set();
     Object.keys(data).filter(k => typeof k === 'string' && k.startsWith('part')).forEach(key => {
@@ -279,10 +281,10 @@ const UpdateGrammarVocab = () => {
   // Autosave on state changes
   useEffect(() => {
     if (data) {
-      const payload = buildPayload('draft');
+      const payload = buildPayload(originalStatus);
       scheduleAutosave(payload);
     }
-  }, [part1, part2Groups, sectionName, part1Name, part2Name, data, buildPayload, scheduleAutosave, tags]);
+  }, [part1, part2Groups, sectionName, part1Name, part2Name, data, buildPayload, scheduleAutosave, tags, originalStatus]);
 
   const handleSaveAsDraft = async () => {
     try {
@@ -358,6 +360,8 @@ const UpdateGrammarVocab = () => {
       groupId: sectionId,
       SkillName: 'GRAMMAR AND VOCABULARY',
       SectionName: sectionName,
+      Status: 'published',
+      tags: tags,
       parts: {
         part1: {
           id: part1Id,
