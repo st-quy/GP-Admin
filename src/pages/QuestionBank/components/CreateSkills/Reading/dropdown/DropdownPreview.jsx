@@ -19,9 +19,9 @@ const DropdownPreview = ({ content, blanks }) => {
           key={idx}
           style={{ minWidth: 150, margin: '0 4px' }}
           value={value}
-          options={blank?.options?.map((o, index) => ({
+          options={blank?.options?.map((o) => ({
             label: o.value,
-            value: `${blank.key}-${index}`, // dùng ID chuẩn
+            value: o.id,
           }))}
         />
       );
