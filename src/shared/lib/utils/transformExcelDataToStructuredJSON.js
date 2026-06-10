@@ -536,17 +536,28 @@ export const transformGrammarData = (data) => {
         const rawContent = q.AnswerContent?.content || "";
         const content = rawContent.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-        const leftItems = [];
-        const rightItems = [];
+        let leftItems = (q.AnswerContent?.leftItems || []).map((item, index) => ({
+          num: String(index + 1),
+          text: typeof item === "string" ? item : item?.text || item?.left || "",
+        })).filter((item) => item.text);
 
-        const leftMatches = [...content.matchAll(/(?:^|\n)\s*(\d+)\.\s*(.+?)(?=\n|$)/g)];
-        for (const match of leftMatches) {
-          leftItems.push({ num: match[1], text: match[2].trim() });
+        let rightItems = (q.AnswerContent?.rightItems || []).map((item, index) => ({
+          letter: String.fromCharCode(65 + index),
+          text: typeof item === "string" ? item : item?.text || item?.right || "",
+        })).filter((item) => item.text);
+
+        if (!leftItems.length) {
+          const leftMatches = [...content.matchAll(/(?:^|\n)\s*(\d+)\.\s*(.+?)(?=\n|$)/g)];
+          for (const match of leftMatches) {
+            leftItems.push({ num: match[1], text: match[2].trim() });
+          }
         }
 
-        const rightMatches = [...content.matchAll(/(?:^|\n)\s*([A-Z])\.\s*(.+?)(?=\n|$)/g)];
-        for (const match of rightMatches) {
-          rightItems.push({ letter: match[1], text: match[2].trim() });
+        if (!rightItems.length) {
+          const rightMatches = [...content.matchAll(/(?:^|\n)\s*([A-Z])\.\s*(.+?)(?=\n|$)/g)];
+          for (const match of rightMatches) {
+            rightItems.push({ letter: match[1], text: match[2].trim() });
+          }
         }
 
         const letterToIndex = {};
@@ -554,23 +565,54 @@ export const transformGrammarData = (data) => {
           letterToIndex[item.letter] = idx;
         });
 
-        let correctAnswer = [];
-        const answerStr = q.AnswerContent?.correctAnswer || "";
-        const answerLines = answerStr.split(/\r?\n/);
+        const resolveLeft = (value) => {
+          if (value === null || value === undefined) return "";
+          const text = String(value).trim();
+          const byNumber = leftItems.find((item) => item.num === text);
+          const byText = leftItems.find((item) => item.text === text);
+          return byNumber?.text || byText?.text || text;
+        };
 
-        answerLines.forEach((line) => {
-          const trimmed = line.trim();
-          if (!trimmed) return;
-          const [leftNum, rightLetter] = trimmed.split(/\s*\|\s*/).map(s => s.trim());
-          const leftItem = leftItems.find(li => li.num === leftNum);
-          const rightIdx = letterToIndex[rightLetter];
-          if (leftItem && rightIdx !== undefined) {
-            correctAnswer.push({
-              left: leftItem.text,
-              right: rightItems[rightIdx].text,
-            });
+        const resolveRight = (value) => {
+          if (value === null || value === undefined) return "";
+          const text = String(value).trim();
+          const byLetter = rightItems[letterToIndex[text]];
+          const byText = rightItems.find((item) => item.text === text);
+          return byLetter?.text || byText?.text || text;
+        };
+
+        const correctAnswer = [];
+        const appendCorrectAnswer = (left, right) => {
+          const resolvedLeft = resolveLeft(left);
+          const resolvedRight = resolveRight(right);
+          if (resolvedLeft && resolvedRight) {
+            correctAnswer.push({ left: resolvedLeft, right: resolvedRight });
           }
-        });
+        };
+
+        const answerRaw = q.AnswerContent?.correctAnswer || [];
+        if (typeof answerRaw === "string") {
+          answerRaw
+            .split(/\r?\n/)
+            .map((line) => line.trim())
+            .filter(Boolean)
+            .forEach((line) => {
+              const [left, right] = line.split(/\s*\|\s*/).map((s) => s.trim());
+              appendCorrectAnswer(left, right);
+            });
+        } else if (Array.isArray(answerRaw)) {
+          answerRaw.forEach((item) => {
+            if (item?.left !== undefined || item?.right !== undefined) {
+              appendCorrectAnswer(item.left, item.right);
+            } else if (item?.key !== undefined || item?.value !== undefined) {
+              appendCorrectAnswer(item.key, item.value);
+            }
+          });
+        } else if (answerRaw && typeof answerRaw === "object") {
+          Object.entries(answerRaw).forEach(([left, right]) => {
+            appendCorrectAnswer(left, right);
+          });
+        }
 
         question.AnswerContent = {
           leftItems: leftItems.map(li => li.text),
@@ -719,20 +761,32 @@ export const transformReadingData = (data) => {
       // ✅ CASE ORDERING
       else if (type === "ordering") {
         const correctAnswerRaw = raw.correctAnswer ?? q.AnswerContent?.correctAnswer ?? [];
-        
-        // Build options from content (A. text, B. text, etc.) - return plain strings
+
+        // Prefer structured options from API, then fall back to legacy Excel content lines (A. text, B. text, etc.)
+        const rawOptions = raw.options ?? q.AnswerContent?.options ?? [];
         const normalized = ((raw.content ?? q.Content) || "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
         const optionLines = normalized.split("\n").filter(line => /^[A-Z]\.\s*/.test(line.trim()));
-        const options = optionLines.map((line) => {
-          return line.replace(/^[A-Z]\.\s*/, "").trim();
-        });
+        const options = (Array.isArray(rawOptions) && rawOptions.length > 0
+          ? rawOptions.map((item) => {
+            if (typeof item === "string") return item;
+            return item?.content ?? item?.text ?? item?.key ?? item?.value ?? "";
+          })
+          : optionLines.map((line) => line.replace(/^[A-Z]\.\s*/, "").trim())
+        ).map((option) => String(option).trim()).filter(Boolean);
 
         let correctAnswer = [];
         if (Array.isArray(correctAnswerRaw)) {
-          correctAnswer = correctAnswerRaw.map((item) => ({
-            key: item.key,
-            value: Number(item.value),
-          }));
+          correctAnswer = correctAnswerRaw
+            .map((item, index) => {
+              if (typeof item === "string") {
+                return { key: item.trim(), value: index + 1 };
+              }
+
+              const key = item?.key ?? item?.content ?? item?.text ?? "";
+              const value = Number(item?.value ?? item?.order ?? index + 1);
+              return { key: String(key).trim(), value };
+            })
+            .filter((item) => item.key && !Number.isNaN(item.value));
         } else if (typeof correctAnswerRaw === "string") {
           correctAnswerRaw
             .split(/\r?\n/)

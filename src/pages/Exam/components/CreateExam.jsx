@@ -13,7 +13,6 @@ import {
   FormOutlined,
   InfoCircleOutlined,
   ArrowRightOutlined,
-  SwapOutlined,
 } from '@ant-design/icons';
 import {
   Card,
@@ -30,7 +29,6 @@ import {
   Row,
   Col,
   ConfigProvider,
-  Switch,
   Tag,
 } from 'antd';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
@@ -118,9 +116,6 @@ const CreateExamPage = () => {
   const [leaveConfirmOpen, setLeaveConfirmOpen] = useState(false);
   const pendingPath = useRef(null);
 
-  const [shuffleQuestions, setShuffleQuestions] = useState(false);
-  const [shuffleAnswers, setShuffleAnswers] = useState(false);
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
   );
@@ -195,14 +190,11 @@ const CreateExamPage = () => {
 
   const handleSaveExam = async () => {
     try {
-      const values = await form.validateFields(['name', 'duration']);
+      const values = await form.validateFields(['name']);
       let topicResponse;
       const topicPayload = {
         Name: values.name.trim(),
         Status: 'draft',
-        Duration: values.duration,
-        ShuffleQuestions: shuffleQuestions,
-        ShuffleAnswers: shuffleAnswers,
       };
 
       if (topicId) {
@@ -239,9 +231,6 @@ const CreateExamPage = () => {
       const topicPayload = {
         Name: values.name.trim(),
         Status: 'submited',
-        Duration: values.duration,
-        ShuffleQuestions: shuffleQuestions,
-        ShuffleAnswers: shuffleAnswers,
       };
 
       let topicResponse;
@@ -371,23 +360,6 @@ const CreateExamPage = () => {
 
     value = value.replace(/^\s+/, '');
     form.setFieldsValue({ name: value });
-    setIsDirty(true);
-  };
-
-  const onDurationChange = (e) => {
-    let value = e.target.value;
-
-    if (/[^0-9]/.test(value)) {
-      message.warning('Only numbers are allowed for duration.');
-      value = value.replace(/[^0-9]/g, '');
-    }
-
-    if (value.length > 4) {
-      message.error('Max duration limit reached (9999 minutes).');
-      value = value.slice(0, 4);
-    }
-
-    form.setFieldsValue({ duration: value });
     setIsDirty(true);
   };
 
@@ -544,7 +516,6 @@ const CreateExamPage = () => {
 
     form.setFieldsValue({
       name: data.Name,
-      duration: data.Duration,
       creator: data.creator
         ? `${data.creator.firstName} ${data.creator.lastName}`
         : 'Unknown',
@@ -552,9 +523,6 @@ const CreateExamPage = () => {
         ? `${data.updater.firstName} ${data.updater.lastName}`
         : 'None',
     });
-
-    setShuffleQuestions(!!data.ShuffleQuestions);
-    setShuffleAnswers(!!data.ShuffleAnswers);
 
     const sectionsBySkill = {};
     const instructionsData = [];
@@ -637,28 +605,7 @@ const CreateExamPage = () => {
                       />
                     </Form.Item>
                   </Col>
-                  <Col span={8}>
-                    <Form.Item
-                      label={
-                        <span className='text-[14px] font-medium text-[#374151]'>
-                          Duration (minutes) *
-                        </span>
-                      }
-                      name='duration'
-                      rules={[
-                        { required: true, message: 'Please enter duration' },
-                      ]}
-                    >
-                      <Input
-                        type='text'
-                        placeholder='e.g. 60'
-                        disabled={isViewMode}
-                        onChange={onDurationChange}
-                        className='w-full !h-[50px] border-[#D1D5DB]'
-                      />
-                    </Form.Item>
-                  </Col>
-                  <Col span={8}>
+                  <Col span={12}>
                     <Form.Item
                       label={
                         <span className='text-[14px] font-medium text-[#374151]'>
@@ -670,7 +617,7 @@ const CreateExamPage = () => {
                       <Input disabled className='!h-[50px] border-[#D1D5DB]' />
                     </Form.Item>
                   </Col>
-                  <Col span={8}>
+                  <Col span={12}>
                     <Form.Item
                       label={
                         <span className='text-[14px] font-medium text-[#374151]'>
@@ -684,44 +631,6 @@ const CreateExamPage = () => {
                   </Col>
                 </Row>
 
-                {!isViewMode && (
-                  <div className='mt-6 p-4 bg-[#F0F5FF] rounded-lg border border-[#D0D5DD]'>
-                    <div className='flex items-center gap-2 mb-3'>
-                      <SwapOutlined
-                        style={{ color: '#003087', fontSize: '16px' }}
-                      />
-                      <span className='text-[16px] font-semibold text-[#111827]'>
-                        Exam Options
-                      </span>
-                    </div>
-                    <div className='flex flex-wrap items-center gap-6'>
-                      <div className='flex items-center gap-3'>
-                        <Switch
-                          checked={shuffleQuestions}
-                          onChange={(v) => {
-                            setShuffleQuestions(v);
-                            setIsDirty(true);
-                          }}
-                        />
-                        <span className='text-[14px] font-medium text-[#374151]'>
-                          Shuffle Questions
-                        </span>
-                      </div>
-                      <div className='flex items-center gap-3'>
-                        <Switch
-                          checked={shuffleAnswers}
-                          onChange={(v) => {
-                            setShuffleAnswers(v);
-                            setIsDirty(true);
-                          }}
-                        />
-                        <span className='text-[14px] font-medium text-[#374151]'>
-                          Shuffle Answers
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )}
               </Card>
 
               <Card

@@ -367,10 +367,11 @@ export const buildListeningPayload = (values) => {
     partId: part1Id,
     name: part1Name,
     sequence: 1,
-    questions: part1.map((q) => ({
+    questions: part1.map((q, idx) => ({
       questionId: q.questionId,
       partId: part1Id,
       Type: 'multiple-choice',
+      Sequence: q.sequence ?? idx + 1,
       Content: q.instruction,
       AudioKeys: q.audioUrl,
       AnswerContent: {
@@ -395,6 +396,7 @@ export const buildListeningPayload = (values) => {
         questionId: part2.questionId,
         partId: part2Id,
         Type: 'dropdown-list',
+        Sequence: 1,
         Content: part2.instruction,
         AudioKeys: part2.audioUrl,
         AnswerContent: {
@@ -424,6 +426,7 @@ export const buildListeningPayload = (values) => {
         questionId: part3.questionId,
         partId: part3Id,
         Type: 'dropdown-list',
+        Sequence: 1,
         Content: part3.instruction,
         AudioKeys: part3.audioUrl,
         AnswerContent: {
@@ -448,10 +451,11 @@ export const buildListeningPayload = (values) => {
     partId: part4Id,
     name: part4Name,
     sequence: 4,
-    questions: part4.map((g) => ({
+    questions: part4.map((g, idx) => ({
       questionId: g.questionId,
       partId: part4Id,
       Type: 'listening-questions-group',
+      Sequence: g.sequence ?? idx + 1,
       Content: g.instruction,
       AudioKeys: g.audioUrl,
       AnswerContent: {

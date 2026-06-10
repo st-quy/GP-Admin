@@ -137,6 +137,7 @@ const UpdateListening = () => {
         return {
           id: idx + 1,
           questionId: q.ID,
+          sequence: idx + 1,
           instruction: q.Content || '',
           audioUrl: extractAudioUrl(q.AudioKeys),
           options: [
@@ -155,6 +156,7 @@ const UpdateListening = () => {
       setPart1(
         Array.from({ length: 13 }, (_, i) => ({
           id: i + 1,
+          sequence: i + 1,
           instruction: '',
           audioUrl: '',
           options: [
@@ -256,6 +258,7 @@ const UpdateListening = () => {
         return {
           id: gIdx + 1,
           questionId: q.ID,
+          sequence: gIdx + 1,
           instruction: q.Content || '',
           audioUrl: extractAudioUrl(q.AudioKeys),
           subQuestions: ac.map((sc) => ({
@@ -276,6 +279,7 @@ const UpdateListening = () => {
       setPart4([
         {
           id: 1,
+          sequence: 1,
           instruction: '',
           audioUrl: '',
           subQuestions: [
@@ -293,6 +297,7 @@ const UpdateListening = () => {
         },
         {
           id: 2,
+          sequence: 2,
           instruction: '',
           audioUrl: '',
           subQuestions: [
