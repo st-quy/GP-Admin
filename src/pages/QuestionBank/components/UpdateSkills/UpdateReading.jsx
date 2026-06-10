@@ -26,6 +26,9 @@ import {
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
+const escapeRegex = (value) =>
+  String(value).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
 const UpdateReading = () => {
   const navigate = useNavigate();
   const { id: sectionId } = useParams();
@@ -95,8 +98,12 @@ const UpdateReading = () => {
 
     /* ---------------- PART 1 ---------------- */
     if (apiData.part1) {
-      const apiBlanks = apiData.part1.AnswerContent?.options || [];
-      const apiCorrect = apiData.part1.AnswerContent?.correctAnswer || [];
+      const apiBlanks =
+        apiData.part1.AnswerContent?.options || apiData.part1.Blanks || [];
+      const apiCorrect =
+        apiData.part1.AnswerContent?.correctAnswer ||
+        apiData.part1.CorrectAnswers ||
+        [];
 
       let content =
         apiData.part1.AnswerContent?.content || apiData.part1.Content || '';
@@ -120,15 +127,14 @@ const UpdateReading = () => {
         };
       });
 
-      // Reverse the buildDropdownContent transformation
-      // API returns: "0. (opt1 / opt2)text 1. (opt3 / opt4)"
-      // Form needs: "[0]text [1]"
+      // Reverse imported dropdown text into editor token format.
+      // API may contain either "1. (a / b / c)" or the exact generated text.
       transformedBlanks.forEach((b) => {
         const optionsText = (b.options || []).map(o => o.value).join(' / ');
         const formatted = `${b.key}. (${optionsText})`;
-        // Escape special regex characters in the formatted string
-        const escaped = formatted.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        content = content.replace(new RegExp(escaped, 'g'), `[${b.key}]`);
+        const exact = new RegExp(escapeRegex(formatted), 'g');
+        const loose = new RegExp(`\\b${escapeRegex(b.key)}\\.\\s*\\([^)]*\\)`, 'g');
+        content = content.replace(exact, `[${b.key}]`).replace(loose, `[${b.key}]`);
       });
 
       content = content
