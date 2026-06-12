@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import PartIntro from '@features/speaking/ui/part-intro'
 import QuestionDisplay from '@features/speaking/ui/question-display'
+import { sortBySequence } from '@shared/lib/sortExamData'
 import { useEffect, useRef, useState } from 'react'
 
 const Part = ({ data, onNextPart }) => {
@@ -12,7 +13,8 @@ const Part = ({ data, onNextPart }) => {
   const navigate = useNavigate()
   const isPart4 = data.Sequence === 4
 
-  const questions = (data.Questions || []).sort((a, b) => a.Sequence - b.Sequence)
+  const questions = sortBySequence(data.Questions || [])
+  const sortedData = { ...data, Questions: questions }
   const totalQuestions = questions.length
   const currentQuestion = questions[currentQuestionIndex]
 
@@ -51,7 +53,7 @@ const Part = ({ data, onNextPart }) => {
   return (
     <div className="flex min-h-screen w-full flex-col rounded-xl bg-white">
       <QuestionDisplay
-        data={data}
+        data={sortedData}
         currentQuestion={currentQuestion}
         currentQuestionIndex={currentQuestionIndex}
         totalQuestions={totalQuestions}

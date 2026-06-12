@@ -1,4 +1,5 @@
 export const MAX_QUESTION_INPUT_LENGTH = 2000;
+export const MAX_READING_PASSAGE_LENGTH = 24000;
 export const QUESTION_INPUT_REGEX = /^[a-zA-Z0-9 ,.\-_()"':?!\n\[\]]*$/;
 
 export function sanitizeQuestionInput(value = '') {
@@ -16,13 +17,15 @@ export function questionInputRule(fieldName = 'This field') {
 
       if (normalized.length > MAX_QUESTION_INPUT_LENGTH) {
         return Promise.reject(
-          new Error(`${fieldName} must be at most ${MAX_QUESTION_INPUT_LENGTH} characters`)
+          new Error(
+            `${fieldName} must be at most ${MAX_QUESTION_INPUT_LENGTH} characters`,
+          ),
         );
       }
 
       if (!QUESTION_INPUT_REGEX.test(normalized)) {
         return Promise.reject(
-          new Error(`${fieldName} contains invalid characters`)
+          new Error(`${fieldName} contains invalid characters`),
         );
       }
 

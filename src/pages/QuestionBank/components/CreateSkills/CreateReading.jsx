@@ -18,6 +18,7 @@ import { QuestionApi, SectionApi } from '@features/questions/api';
 import { useGetAllTags } from '@features/sections/hooks';
 import {
   MAX_QUESTION_INPUT_LENGTH,
+  MAX_READING_PASSAGE_LENGTH,
   sanitizeQuestionInput,
 } from '@shared/lib/questionInput';
 
@@ -525,7 +526,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
             getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter content...' maxLength={MAX_QUESTION_INPUT_LENGTH} />
+            <Input.TextArea rows={6} placeholder='Enter content...' maxLength={MAX_READING_PASSAGE_LENGTH} showCount />
           </Form.Item>
 
           <MatchingEditor />
@@ -570,7 +571,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
             getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true, message: 'Content is required' }]}
           >
-            <Input.TextArea rows={3} placeholder='Enter reading paragraph...' maxLength={MAX_QUESTION_INPUT_LENGTH} />
+            <Input.TextArea rows={10} placeholder='Enter reading paragraph...' maxLength={MAX_READING_PASSAGE_LENGTH} showCount />
           </Form.Item>
 
           <MatchingEditorPart4 />

@@ -21,6 +21,7 @@ import OrderingEditor from '../CreateSkills/Reading/ordering/OrderingEditor';
 
 import {
   MAX_QUESTION_INPUT_LENGTH,
+  MAX_READING_PASSAGE_LENGTH,
   sanitizeQuestionInput,
 } from '@shared/lib/questionInput';
 
@@ -577,7 +578,7 @@ const UpdateReading = () => {
             getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input.TextArea maxLength={MAX_QUESTION_INPUT_LENGTH} />
+            <Input.TextArea rows={6} maxLength={MAX_READING_PASSAGE_LENGTH} showCount />
           </Form.Item>
 
           <Form.Item name={['part3']}>
@@ -640,7 +641,7 @@ const UpdateReading = () => {
             getValueFromEvent={(e) => sanitizeQuestionInput(e.target.value)}
             rules={[{ required: true }]}
           >
-            <Input.TextArea maxLength={MAX_QUESTION_INPUT_LENGTH} />
+            <Input.TextArea rows={10} maxLength={MAX_READING_PASSAGE_LENGTH} showCount />
           </Form.Item>
 
           <Form.Item name={['part4']}>

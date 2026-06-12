@@ -10,6 +10,7 @@ import MinioUploadDragger from '@shared/components/MinioUploadDragger';
 
 import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
 import { yupSync } from '@shared/lib/utils';
+import { sortBySequence } from '@shared/lib/sortExamData';
 import {
   MAX_QUESTION_INPUT_LENGTH,
   sanitizeQuestionInput,
@@ -59,7 +60,7 @@ const CreateSpeaking = ({ draftId: propDraftId }) => {
           const p = d[key];
           // API returns lowercase: name, questions, image
           // or uppercase: PartName, Questions, Image (from buildSpeakingDetail)
-          const questions = (p.questions || p.Questions || []).map((q) => {
+          const questions = sortBySequence(p.questions || p.Questions || []).map((q) => {
             if (typeof q === 'string') {
               return { value: q, type: 'speaking' };
             }

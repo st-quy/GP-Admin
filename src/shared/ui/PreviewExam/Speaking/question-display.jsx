@@ -1,5 +1,8 @@
+import { sortBySequence } from "@shared/lib/sortExamData";
+
 const QuestionDisplay = ({ data }) => {
-  const imageUrl = data?.Questions[0]?.ImageKeys;
+  const questions = sortBySequence(data?.Questions || []);
+  const imageUrl = questions[0]?.ImageKeys;
   const isPart4 = data.Content?.toLowerCase().startsWith("part 4");
   return (
     <div className="flex w-full bg-white gap-6 items-center">
@@ -24,7 +27,7 @@ const QuestionDisplay = ({ data }) => {
             </span>
           </div>
           <div className="grid grid-cols-1 gap-2 lg:gap-4">
-            {data.Questions.map((question, index) => (
+            {questions.map((question, index) => (
               <div
                 key={index}
                 className="group relative rounded-xl bg-white p-3 shadow-md transition-all duration-300 hover:shadow-lg lg:p-4"

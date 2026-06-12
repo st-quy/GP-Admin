@@ -5,6 +5,12 @@ import { transformReadingData } from "@shared/lib/utils/transformExcelDataToStru
 const { Option } = Select;
 const { Title, Text } = Typography;
 
+const getCorrectAnswerValue = (correctAnswers, key) => {
+  if (!Array.isArray(correctAnswers)) return "";
+  const match = correctAnswers.find((item) => String(item?.key) === String(key));
+  return match?.value ?? match?.right ?? "";
+};
+
 const ReadingTest = ({ dataExam }) => {
   const testData = transformReadingData(dataExam);
   
@@ -26,7 +32,7 @@ const ReadingTest = ({ dataExam }) => {
             leftItems: parsedAnswerContent.leftItems,
             rightItems: parsedAnswerContent.rightItems,
             type: "right-left",
-            correctAnswers: currentQuestion.AnswerContent.correctAnswer || [],
+            correctAnswers: parsedAnswerContent.correctAnswer || [],
           };
         }
 
@@ -41,7 +47,7 @@ const ReadingTest = ({ dataExam }) => {
             question: currentQuestion.Content,
             answers,
             type: "paragraph",
-            correctAnswers: currentQuestion.AnswerContent.correctAnswer || [],
+            correctAnswers: parsedAnswerContent.correctAnswer || [],
           };
         }
 
@@ -50,7 +56,7 @@ const ReadingTest = ({ dataExam }) => {
           question: currentQuestion.Content,
           answers: parsedAnswerContent,
           type: "unknown",
-          correctAnswers: currentQuestion.AnswerContent.correctAnswer || [],
+          correctAnswers: parsedAnswerContent.correctAnswer || [],
         };
       } catch (error) {
         console.error("Error parsing question data:", error);
@@ -150,6 +156,7 @@ const ReadingTest = ({ dataExam }) => {
             {cleanedQuestion.split(/(\d+\.)/).map((part, index) => {
               if (part.match(/^\d+\.$/)) {
                 const number = part.replace(".", "");
+                const correctValue = getCorrectAnswerValue(processedData.correctAnswers, number);
 
                 return (
                   <React.Fragment key={index}>
@@ -158,7 +165,7 @@ const ReadingTest = ({ dataExam }) => {
                       value={
                         number === "0"
                           ? processedData.answers[0]?.[0]
-                          : processedData.correctAnswers?.[number]?.value || ""
+                          : correctValue
                       }
                       className="mx-2 my-2 inline-block"
                       size="large"
@@ -256,11 +263,12 @@ const ReadingTest = ({ dataExam }) => {
             {cleanedQuestion.split(/(\d+\.)/).map((part, index) => {
               if (part.match(/^\d+\.$/)) {
                 const number = part.replace(".", "");
+                const correctValue = getCorrectAnswerValue(processedData.correctAnswers, number);
                 return (
                   <React.Fragment key={index}>
                     {hasSlashFormat ? "" : part}
                     <Select
-                      value={processedData.correctAnswers?.[number]?.right || ""}
+                      value={correctValue}
                       className="mx-2 inline-block w-32"
                       style={{ marginBottom: 10, fontSize: "16px" }}
                       size="large"

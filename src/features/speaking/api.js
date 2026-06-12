@@ -1,5 +1,6 @@
 /* eslint-disable no-undef */
 import axiosInstance from '@shared/config/axios'
+import { normalizeExamDataSequence } from '@shared/lib/sortExamData'
 import { message } from 'antd'
 
 const fetchTopicData = async partNumber => {
@@ -12,7 +13,8 @@ const fetchTopicData = async partNumber => {
       params: { skillName: 'SPEAKING' }
     })
 
-    const parts = response.data?.Sections?.[0]?.Parts || []
+    const data = normalizeExamDataSequence(response.data)
+    const parts = data?.Sections?.[0]?.Parts || []
     const selectedPart = parts.find(part => part.Sequence === partNumber)
 
     return selectedPart || null

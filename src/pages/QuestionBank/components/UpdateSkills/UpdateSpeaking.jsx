@@ -14,6 +14,7 @@ import { QuestionApi } from '@features/questions/api';
 
 import { createSpeakingSchema } from '../../schemas/createQuestionSchema';
 import { yupSync } from '@shared/lib/utils';
+import { sortBySequence } from '@shared/lib/sortExamData';
 import {
   MAX_QUESTION_INPUT_LENGTH,
   sanitizeQuestionInput,
@@ -83,7 +84,7 @@ const UpdateSpeaking = () => {
     if (!data) return;
 
     const mapQuestions = (part) =>
-      (part?.questions || []).map((q, idx) => ({
+      sortBySequence(part?.questions || []).map((q, idx) => ({
         id: q.ID,
         value: q.Content || '',
         type: q.Type || 'speaking',
