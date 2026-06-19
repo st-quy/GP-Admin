@@ -249,6 +249,9 @@ const UpdateReading = () => {
       const allTags = new Set();
       Object.keys(data).filter(k => typeof k === 'string' && k.startsWith('part')).forEach(key => {
         const part = data[key];
+        // Reading API returns Tags directly on the part object (not nested in questions[])
+        (part?.Tags || []).forEach(t => allTags.add(t));
+        // Also check questions[] for backward compatibility
         (part?.questions || []).forEach(q => {
           (q.Tags || []).forEach(t => allTags.add(t));
         });
