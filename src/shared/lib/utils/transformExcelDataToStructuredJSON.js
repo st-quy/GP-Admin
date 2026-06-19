@@ -657,7 +657,7 @@ export const transformReadingData = (data) => {
   const topicName = data.Name;
 
   const parts = readingSkill.Parts.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((part) => {
-    const isSpecialPart3 = /^Part 3:/i.test(part.Content?.trim());
+    const isSpecialPart3 = part.Sequence === 4 || /^Part 3:/i.test(part.Content?.trim());
 
     const questions = part.Questions.slice().sort((a, b) => (a.Sequence || 0) - (b.Sequence || 0)).map((q) => {
       const question = {
@@ -817,41 +817,52 @@ export const transformReadingData = (data) => {
       // ✅ CASE MATCHING
       else if (type === "matching") {
         const content = raw.content ?? q.Content;
-        const normalizedContent = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
-        // Extract left items (Paragraph X)
-        const leftItems = [];
-        const leftMatches = normalizedContent.matchAll(/(?:^|\n)\s*(\d+)\.\s*(Paragraph\s+\d+)/g);
-        for (const match of leftMatches) {
-          leftItems.push({ num: match[1], text: match[2] });
+        let leftItems =
+          Array.isArray(raw.leftItems) && raw.leftItems.length > 0
+            ? raw.leftItems
+            : [];
+        let rightItems =
+          Array.isArray(raw.rightItems) && raw.rightItems.length > 0
+            ? raw.rightItems
+            : [];
+
+        if (leftItems.length === 0 || rightItems.length === 0) {
+          const normalizedContent = content.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+          // Extract left items (Paragraph X)
+          const leftMatches = normalizedContent.matchAll(/(?:^|\n)\s*(\d+)\.\s*(Paragraph\s+\d+)/g);
+          for (const match of leftMatches) {
+            leftItems.push({ num: match[1], text: match[2] });
+          }
+
+          // Extract right items (A. Option text)
+          const rightMatches = normalizedContent.matchAll(/(?:^|\n)\s*([A-Z])\.\s*(.+?)(?=\n[A-Z]\.|$)/g);
+          for (const match of rightMatches) {
+            rightItems.push({ letter: match[1], text: match[2].trim() });
+          }
         }
-
-        // Extract right items (A. Option text)
-        const rightItems = [];
-        const rightMatches = normalizedContent.matchAll(/(?:^|\n)\s*([A-Z])\.\s*(.+?)(?=\n[A-Z]\.|$)/g);
-        for (const match of rightMatches) {
-          rightItems.push({ letter: match[1], text: match[2].trim() });
-        }
-
-        const letterToIndex = {};
-        rightItems.forEach((item, idx) => {
-          letterToIndex[item.letter] = idx;
-        });
 
         let correctAnswer = [];
         const answerRaw = raw.correctAnswer ?? raw.AnswerContent?.correctAnswer ?? [];
 
         if (typeof answerRaw === "string") {
+          const letterToIndex = {};
+          rightItems.forEach((item, idx) => {
+            const letter = typeof item === "string" ? String.fromCharCode(65 + idx) : item.letter;
+            letterToIndex[letter] = idx;
+          });
+
           answerRaw.split(/\r?\n/).forEach((line) => {
             const trimmed = line.trim();
             if (!trimmed) return;
             const [leftNum, rightLetter] = trimmed.split(/\s*\|\s*/).map(s => s.trim());
-            const leftItem = leftItems.find(li => li.num === leftNum);
+            const leftItem = leftItems.find(li => typeof li === "string" ? li.includes(leftNum) : li.num === leftNum);
             const rightIdx = letterToIndex[rightLetter];
             if (leftItem && rightIdx !== undefined) {
               correctAnswer.push({
-                left: leftItem.text,
-                right: rightItems[rightIdx].text,
+                left: typeof leftItem === "string" ? leftItem : leftItem.text,
+                right: typeof rightItems[rightIdx] === "string" ? rightItems[rightIdx] : rightItems[rightIdx].text,
               });
             }
           });
@@ -865,8 +876,8 @@ export const transformReadingData = (data) => {
 
         question.AnswerContent = {
           content,
-          leftItems: leftItems.map(li => li.text),
-          rightItems: rightItems.map(ri => ri.text),
+          leftItems: leftItems.map(li => typeof li === "string" ? li : li.text),
+          rightItems: rightItems.map(ri => typeof ri === "string" ? ri : ri.text),
           correctAnswer,
           partID: part.ID,
           type,
