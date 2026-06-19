@@ -283,6 +283,7 @@ const UpdateReading = () => {
 
   const handleValuesChange = useCallback((changedValues, allValues) => {
     if (isPublishingRef.current) return;
+    if (isFirstLoadRef.current) return;
     try {
       const fullPayload = buildFullReadingPayload(allValues);
       const payload = {
@@ -367,18 +368,24 @@ const UpdateReading = () => {
   /* ---------------- SUBMIT ---------------- */
   const handleSubmit = async () => {
     try {
-      const values = await form.validateFields();
-      const payload = buildFullReadingPayload(values);
-      payload.Status = 'published';
-      payload.tags = tags;
-
-      // Clear any pending autosave to prevent overwriting publish
+      // Block autosave BEFORE validation to prevent race conditions
       isPublishingRef.current = true;
       if (debounceTimerRef.current) {
         clearTimeout(debounceTimerRef.current);
         debounceTimerRef.current = null;
       }
       payloadRef.current = null;
+
+      // Capture form values BEFORE validateFields() — deep clone to prevent
+      // Ant Design's form store from potentially stripping unregistered
+      // properties (e.g. 'id' on leftItems/rightItems) during validation.
+      const values = JSON.parse(JSON.stringify(form.getFieldsValue(true)));
+
+      await form.validateFields();
+
+      const payload = buildFullReadingPayload(values);
+      payload.Status = 'published';
+      payload.tags = tags;
 
       setIsSubmitting(true);
       updateReading(
@@ -390,11 +397,13 @@ const UpdateReading = () => {
           },
           onError: (err) => {
             message.error(err?.response?.data?.message || 'Update failed');
+            isPublishingRef.current = false;
           },
         }
       );
     } catch (err) {
       console.error(err);
+      isPublishingRef.current = false;
       if (err?.errorFields) {
         message.error(`Validation failed: ${err.errorFields.map(f => f.name.join('.')).join(', ')}`);
       } else {

@@ -510,16 +510,24 @@ export const buildFullReadingPayload = (values) => {
   ====================================================== */
   const p3 = values.part3 || {};
 
-  const p3Left = (p3.leftItems || []).map((i) => i.text.trim());
-  const p3Right = (p3.rightItems || []).map((i) => i.text.trim());
+  // Enrich items with synthetic IDs if 'id' is missing (Ant Design form
+  // store may strip unregistered properties)
+  const p3RightItemsEnriched = (p3.rightItems || []).map((r, i) => ({
+    ...r,
+    id: r.id !== undefined && r.id !== null ? r.id : (i + 1),
+  }));
+
+  const p3Left = (p3.leftItems || []).map((i) => (i.text || '').trim());
+  const p3Right = p3RightItemsEnriched.map((i) => (i.text || '').trim());
 
   const p3Correct = (p3.mapping || [])
     .map((m, idx) => {
       if (!m) return null;
       const leftIdx = m.leftIndex !== undefined && m.leftIndex !== null ? m.leftIndex : idx;
+      const rightItem = p3RightItemsEnriched.find((r) => String(r.id) === String(m.rightId));
       return {
         key: String(leftIdx + 1),
-        value: (p3.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
+        value: rightItem?.text?.trim() || '',
       };
     })
     .filter(Boolean);
@@ -545,16 +553,28 @@ export const buildFullReadingPayload = (values) => {
   ====================================================== */
   const p4 = values.part4 || {};
 
-  const p4Left = (p4.leftItems || []).map((i) => i.text.trim());
-  const p4Right = (p4.rightItems || []).map((i) => i.text.trim());
+  // Enrich items with synthetic IDs if 'id' is missing (Ant Design form
+  // store may strip unregistered properties)
+  const p4LeftItemsEnriched = (p4.leftItems || []).map((l, i) => ({
+    ...l,
+    id: l.id !== undefined && l.id !== null ? l.id : (i + 1),
+  }));
+  const p4RightItemsEnriched = (p4.rightItems || []).map((r, i) => ({
+    ...r,
+    id: r.id !== undefined && r.id !== null ? r.id : (i + 1),
+  }));
+
+  const p4Left = p4LeftItemsEnriched.map((i) => (i.text || '').trim());
+  const p4Right = p4RightItemsEnriched.map((i) => (i.text || '').trim());
 
   const p4Correct = (p4.mapping || [])
     .map((m, idx) => {
       if (!m) return null;
       const leftIdx = m.leftIndex !== undefined && m.leftIndex !== null ? m.leftIndex : idx;
+      const rightItem = p4RightItemsEnriched.find((r) => String(r.id) === String(m.rightId));
       return {
-        left: (p4.leftItems || [])[leftIdx]?.text?.trim() || '',
-        right: (p4.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
+        left: p4LeftItemsEnriched[leftIdx]?.text?.trim() || '',
+        right: rightItem?.text?.trim() || '',
       };
     })
     .filter(Boolean);

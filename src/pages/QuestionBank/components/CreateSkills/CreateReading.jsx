@@ -300,7 +300,13 @@ const CreateReading = ({ draftId: propDraftId }) => {
 
   const handlePublish = async () => {
     try {
-      const values = await form.validateFields();
+      // Capture form values BEFORE validateFields() — deep clone to prevent
+      // Ant Design's form store from potentially stripping unregistered
+      // properties (e.g. 'id' on leftItems/rightItems) during validation.
+      const values = JSON.parse(JSON.stringify(form.getFieldsValue(true)));
+
+      await form.validateFields();
+
       const fullPayload = buildFullReadingPayload(values);
       const payload = {
         SkillName: 'READING',
