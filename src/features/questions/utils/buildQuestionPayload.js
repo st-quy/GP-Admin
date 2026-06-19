@@ -517,6 +517,7 @@ export const buildFullReadingPayload = (values) => {
     key: String((m.leftIndex ?? 0) + 1),
     value: (p3.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
   }));
+  p3Correct.sort((a, b) => Number(a.key) - Number(b.key));
 
   result.parts.push({
     PartID: p3.id || null,
@@ -545,6 +546,7 @@ export const buildFullReadingPayload = (values) => {
     left: (p4.leftItems || [])[m.leftIndex ?? 0]?.text?.trim() || '',
     right: (p4.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
   }));
+  p4Correct.sort((a, b) => p4Left.indexOf(a.left) - p4Left.indexOf(b.left));
 
   result.parts.push({
     PartID: p4.id || null,
