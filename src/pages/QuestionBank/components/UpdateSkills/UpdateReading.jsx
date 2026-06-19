@@ -581,7 +581,7 @@ const UpdateReading = () => {
             <Input.TextArea rows={6} maxLength={MAX_READING_PASSAGE_LENGTH} showCount />
           </Form.Item>
 
-          <Form.Item name={['part3']}>
+          <Form.Item>
             <MatchingEditor />
           </Form.Item>
           <Form.Item noStyle shouldUpdate>
@@ -644,7 +644,7 @@ const UpdateReading = () => {
             <Input.TextArea rows={10} maxLength={MAX_READING_PASSAGE_LENGTH} showCount />
           </Form.Item>
 
-          <Form.Item name={['part4']}>
+          <Form.Item>
             <MatchingEditorPart4 />
           </Form.Item>
           <Form.Item noStyle shouldUpdate>
