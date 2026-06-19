@@ -513,10 +513,16 @@ export const buildFullReadingPayload = (values) => {
   const p3Left = (p3.leftItems || []).map((i) => i.text.trim());
   const p3Right = (p3.rightItems || []).map((i) => i.text.trim());
 
-  const p3Correct = (p3.mapping || []).map((m) => ({
-    key: String((m.leftIndex ?? 0) + 1),
-    value: (p3.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
-  }));
+  const p3Correct = (p3.mapping || [])
+    .map((m, idx) => {
+      if (!m) return null;
+      const leftIdx = m.leftIndex !== undefined && m.leftIndex !== null ? m.leftIndex : idx;
+      return {
+        key: String(leftIdx + 1),
+        value: (p3.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
+      };
+    })
+    .filter(Boolean);
   p3Correct.sort((a, b) => Number(a.key) - Number(b.key));
 
   result.parts.push({
@@ -542,10 +548,16 @@ export const buildFullReadingPayload = (values) => {
   const p4Left = (p4.leftItems || []).map((i) => i.text.trim());
   const p4Right = (p4.rightItems || []).map((i) => i.text.trim());
 
-  const p4Correct = (p4.mapping || []).map((m) => ({
-    left: (p4.leftItems || [])[m.leftIndex ?? 0]?.text?.trim() || '',
-    right: (p4.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
-  }));
+  const p4Correct = (p4.mapping || [])
+    .map((m, idx) => {
+      if (!m) return null;
+      const leftIdx = m.leftIndex !== undefined && m.leftIndex !== null ? m.leftIndex : idx;
+      return {
+        left: (p4.leftItems || [])[leftIdx]?.text?.trim() || '',
+        right: (p4.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
+      };
+    })
+    .filter(Boolean);
   p4Correct.sort((a, b) => p4Left.indexOf(a.left) - p4Left.indexOf(b.left));
 
   result.parts.push({

@@ -18,21 +18,10 @@ const MatchingEditorPart4 = ({ errors = {} }) => {
   /* ------------------------------------------
    * LOCAL STATE
    * ------------------------------------------ */
-  const [leftItems, setLeftItems] = useState([]);
-  const [rightItems, setRightItems] = useState([]);
-  const [mapping, setMapping] = useState([]);
-
-  /* ------------------------------------------
-   * LOAD INITIAL DATA FROM FORM
-   * ------------------------------------------ */
-  useEffect(() => {
-    const part = form.getFieldValue('part4') || {};
-    if (part.leftItems?.length || part.rightItems?.length || part.mapping?.length) {
-      setLeftItems(part.leftItems || []);
-      setRightItems(part.rightItems || []);
-      setMapping(part.mapping || []);
-    }
-  }, []);
+  const part = form.getFieldValue('part4') || {};
+  const [leftItems, setLeftItems] = useState(part.leftItems || []);
+  const [rightItems, setRightItems] = useState(part.rightItems || []);
+  const [mapping, setMapping] = useState(part.mapping || []);
 
   /* ------------------------------------------
    * SYNC LOCAL STATE → FORM FIELD

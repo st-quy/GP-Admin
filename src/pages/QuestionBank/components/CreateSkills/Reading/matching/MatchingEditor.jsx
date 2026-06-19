@@ -14,19 +14,10 @@ const letterLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 const MatchingEditor = ({ errors = {} }) => {
   const form = Form.useFormInstance();
 
-  const [leftItems, setLeftItems] = useState([]);
-  const [rightItems, setRightItems] = useState([]);
-  const [mapping, setMapping] = useState([]);
-
-  // Load from form on mount
-  useEffect(() => {
-    const part = form.getFieldValue('part3') || {};
-    if (part.leftItems?.length || part.rightItems?.length || part.mapping?.length) {
-      setLeftItems(part.leftItems || []);
-      setRightItems(part.rightItems || []);
-      setMapping(part.mapping || []);
-    }
-  }, []);
+  const part = form.getFieldValue('part3') || {};
+  const [leftItems, setLeftItems] = useState(part.leftItems || []);
+  const [rightItems, setRightItems] = useState(part.rightItems || []);
+  const [mapping, setMapping] = useState(part.mapping || []);
 
   // Sync local state → form (preserve existing fields)
   useEffect(() => {
