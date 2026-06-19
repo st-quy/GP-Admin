@@ -128,39 +128,57 @@ const CreateReading = ({ draftId: propDraftId }) => {
           }
 
           if (partKey === 'part4') {
+            const leftItems = (ac.leftItems || []).map((t, i) => ({
+              id: i + 1,
+              text: typeof t === 'string' ? t.replace(/^\s*\d+\.\s*/, '') : t.text || '',
+            }));
+            const rightItems = (ac.rightItems || []).map((t, i) => ({
+              id: i + 1,
+              text: typeof t === 'string' ? t : t.text || '',
+            }));
+            const mapping = (ac.correctAnswer || []).map((a) => {
+              const leftIndex = Number(a.key) - 1;
+              const rightItem = rightItems.find((r) => r.text === a.value);
+              return {
+                leftIndex,
+                rightId: rightItem?.id || null,
+              };
+            });
             return {
               part3: {
                 name: p.PartName || '',
                 content: ac.content || p.Content || '',
-                leftItems: (ac.leftItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
-                rightItems: (ac.rightItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
-                mapping: (ac.correctAnswer || []).map((m, i) => {
-                  const leftIdx = (ac.leftItems || []).indexOf(m.left);
-                  const rightIdx = (ac.rightItems || []).findIndex(t => (typeof t === 'string' ? t : t.text) === m.right);
-                  return {
-                    leftIndex: leftIdx >= 0 ? leftIdx : i,
-                    rightId: rightIdx >= 0 ? rightIdx + 1 : null,
-                  };
-                }),
+                leftItems,
+                rightItems,
+                mapping,
               },
             };
           }
 
           if (partKey === 'part5') {
+            const leftItems = (ac.leftItems || []).map((t, i) => ({
+              id: i + 1,
+              text: typeof t === 'string' ? t : t.text || '',
+            }));
+            const rightItems = (ac.rightItems || []).map((t, i) => ({
+              id: i + 1,
+              text: typeof t === 'string' ? t : t.text || '',
+            }));
+            const mapping = (ac.correctAnswer || []).map((a) => {
+              const leftIndex = leftItems.findIndex((l) => l.text === a.left);
+              const rightItem = rightItems.find((r) => r.text === a.right);
+              return {
+                leftIndex,
+                rightId: rightItem?.id || null,
+              };
+            });
             return {
               part4: {
                 name: p.PartName || '',
                 content: ac.content || p.Content || '',
-                leftItems: (ac.leftItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
-                rightItems: (ac.rightItems || []).map((t, i) => ({ id: i + 1, text: typeof t === 'string' ? t : t.text || '' })),
-                mapping: (ac.correctAnswer || []).map((m, i) => {
-                  const leftIdx = (ac.leftItems || []).indexOf(m.left);
-                  const rightIdx = (ac.rightItems || []).findIndex(t => (typeof t === 'string' ? t : t.text) === m.right);
-                  return {
-                    leftIndex: leftIdx >= 0 ? leftIdx : i,
-                    rightId: rightIdx >= 0 ? rightIdx + 1 : null,
-                  };
-                }),
+                leftItems,
+                rightItems,
+                mapping,
               },
             };
           }

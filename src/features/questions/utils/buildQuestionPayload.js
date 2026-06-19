@@ -15,7 +15,7 @@ export const buildDropdownPayload = ({
 
   const correctAnswer = dropdownBlanks.map((blank) => {
     const correctOpt = (blank.options || []).find(
-      (o) => o.id === blank.correctAnswer
+      (o) => String(o.id) === String(blank.correctAnswer)
     );
     return {
       key: String(blank.key),
@@ -136,7 +136,7 @@ export const buildMatchingPayload = ({
       const mapRow = (mapping || []).find((m) => m.leftIndex === leftIndex);
       if (!mapRow || !mapRow.rightId) return null;
 
-      const rightItem = normalizedRight.find((r) => r.id === mapRow.rightId);
+      const rightItem = normalizedRight.find((r) => String(r.id) === String(mapRow.rightId));
       if (!rightItem || !rightItem.text.trim()) return null;
 
       return {
@@ -207,7 +207,7 @@ export const buildGrammarMatchingPayload = ({
       const mapRow = (mapping || []).find((m) => m.leftIndex === leftIndex);
       if (!mapRow || !mapRow.rightId) return null;
 
-      const rightItem = normalizedRight.find((r) => r.id === mapRow.rightId);
+      const rightItem = normalizedRight.find((r) => String(r.id) === String(mapRow.rightId));
       if (!rightItem || !rightItem.text.trim()) return null;
 
       return {
@@ -436,7 +436,7 @@ export const buildFullReadingPayload = (values) => {
 
   const p1Correct = blanks.map((b) => ({
     key: String(b.key),
-    value: (b.options || []).find((o) => o.id === b.correctAnswer)?.value || '',
+    value: (b.options || []).find((o) => String(o.id) === String(b.correctAnswer))?.value || '',
   }));
 
   result.parts.push({
@@ -515,7 +515,7 @@ export const buildFullReadingPayload = (values) => {
 
   const p3Correct = (p3.mapping || []).map((m) => ({
     key: String((m.leftIndex ?? 0) + 1),
-    value: (p3.rightItems || []).find((r) => r.id === m.rightId)?.text?.trim() || '',
+    value: (p3.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
   }));
 
   result.parts.push({
@@ -543,7 +543,7 @@ export const buildFullReadingPayload = (values) => {
 
   const p4Correct = (p4.mapping || []).map((m) => ({
     left: (p4.leftItems || [])[m.leftIndex ?? 0]?.text?.trim() || '',
-    right: (p4.rightItems || []).find((r) => r.id === m.rightId)?.text?.trim() || '',
+    right: (p4.rightItems || []).find((r) => String(r.id) === String(m.rightId))?.text?.trim() || '',
   }));
 
   result.parts.push({
