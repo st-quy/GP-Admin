@@ -15,6 +15,11 @@ import { calculatePoints } from "@shared/utils/calculatePoints";
 const { Option } = Select;
 const { Title, Text } = Typography;
 
+const normalizeText = (str) => {
+  if (typeof str !== 'string') return '';
+  return str.replace(/^[A-Z]\s*[-.]\s*/i, '').trim().toLowerCase();
+};
+
 const buildReadingItems = (parts, userAnswers) => {
   if (!Array.isArray(parts)) return [];
 
@@ -328,7 +333,10 @@ const ReadingTest = () => {
 
               // CASE 1: { left, right } already matches UI keys
               if (item.left != null && item.right != null) {
-                obj[item.left] = item.right;
+                const matchedRight = (ac.rightItems || []).find(
+                  (r) => normalizeText(r) === normalizeText(item.right)
+                );
+                obj[item.left] = matchedRight || item.right;
                 return;
               }
 
@@ -345,13 +353,19 @@ const ReadingTest = () => {
                       ac.leftItems[index - 1] ?? ac.leftItems[index];
 
                     if (leftItem) {
-                      obj[leftItem] = item.value;
+                      const matchedRight = (ac.rightItems || []).find(
+                        (r) => normalizeText(r) === normalizeText(item.value)
+                      );
+                      obj[leftItem] = matchedRight || item.value;
                       return;
                     }
                   }
                 }
 
-                obj[keyStr] = item.value;
+                const matchedRight = (ac.rightItems || []).find(
+                  (r) => normalizeText(r) === normalizeText(item.value)
+                );
+                obj[keyStr] = matchedRight || item.value;
               }
             });
 
@@ -371,9 +385,15 @@ const ReadingTest = () => {
             correct.forEach((item) => {
               if (!item) return;
               if (item.left != null && item.right != null) {
-                obj[item.left] = item.right;
+                const matchedRight = (ac.rightItems || []).find(
+                  (r) => normalizeText(r) === normalizeText(item.right)
+                );
+                obj[item.left] = matchedRight || item.right;
               } else if (item.key != null && item.value != null) {
-                obj[item.key] = item.value;
+                const matchedRight = (ac.rightItems || []).find(
+                  (r) => normalizeText(r) === normalizeText(item.value)
+                );
+                obj[item.key] = matchedRight || item.value;
               }
             });
           } else if (typeof correct === "object") {

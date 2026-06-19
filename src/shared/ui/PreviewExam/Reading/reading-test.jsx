@@ -11,6 +11,11 @@ const getCorrectAnswerValue = (correctAnswers, key) => {
   return match?.value ?? match?.right ?? "";
 };
 
+const normalizeText = (str) => {
+  if (typeof str !== 'string') return '';
+  return str.replace(/^[A-Z]\s*[-.]\s*/i, '').trim().toLowerCase();
+};
+
 const ReadingTest = ({ dataExam }) => {
   const testData = transformReadingData(dataExam);
   
@@ -106,7 +111,11 @@ const ReadingTest = ({ dataExam }) => {
                     <span className="font-bold">{index + 1}.</span>
                     <Select
                       key={index}
-                      value={processedData.correctAnswers?.[index]?.right || ""}
+                      value={
+                        processedData.rightItems.find(
+                          (item) => normalizeText(item) === normalizeText(processedData.correctAnswers?.[index]?.right)
+                        ) || ""
+                      }
                       className="w-full"
                       placeholder="Select a heading"
                       size="large"
@@ -218,7 +227,11 @@ const ReadingTest = ({ dataExam }) => {
                   </div>
                   <div className="pl-8">
                     <Select
-                      value={processedData.correctAnswers?.[index]?.value || ""}
+                      value={
+                        processedData.rightItems.find(
+                          (item) => normalizeText(item) === normalizeText(processedData.correctAnswers?.[index]?.value)
+                        ) || ""
+                      }
                       className="w-full"
                       size="large"
                       style={{ fontSize: "16px" }}

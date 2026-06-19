@@ -5,6 +5,11 @@ import { Card, Typography } from 'antd';
 const { Text, Title } = Typography;
 const letterLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
+const normalizeText = (str) => {
+  if (typeof str !== 'string') return '';
+  return str.replace(/^[A-Z]\s*[-.]\s*/i, '').trim().toLowerCase();
+};
+
 const ReadingMatchingFullBlock = ({ part, title }) => {
   if (!part) return null;
 
@@ -42,7 +47,9 @@ const ReadingMatchingFullBlock = ({ part, title }) => {
       <Card size='small' title='Correct Mapping' style={{ marginTop: 16 }}>
         {part.Mapping?.map((m, idx) => {
           // BE trả về rightValue => ta tìm index
-          const rightIndex = part.RightItems.indexOf(m.rightValue);
+          const rightIndex = part.RightItems.findIndex(
+            (item) => normalizeText(item) === normalizeText(m.rightValue)
+          );
           const letter = rightIndex >= 0 ? letterLabels[rightIndex] : '?';
 
           return (

@@ -24,6 +24,11 @@ import {
 
 const AUTOSAVE_DEBOUNCE_MS = 2000;
 
+const normalizeText = (str) => {
+  if (typeof str !== 'string') return '';
+  return str.replace(/^[A-Z]\s*[-.]\s*/i, '').trim().toLowerCase();
+};
+
 const CreateReading = ({ draftId: propDraftId }) => {
   const navigate = useNavigate();
   const { draftId: urlDraftId } = useParams();
@@ -138,7 +143,7 @@ const CreateReading = ({ draftId: propDraftId }) => {
             }));
             const mapping = (ac.correctAnswer || []).map((a) => {
               const leftIndex = Number(a.key) - 1;
-              const rightItem = rightItems.find((r) => r.text === a.value);
+              const rightItem = rightItems.find((r) => normalizeText(r.text) === normalizeText(a.value));
               return {
                 leftIndex,
                 rightId: rightItem?.id || null,
@@ -165,8 +170,8 @@ const CreateReading = ({ draftId: propDraftId }) => {
               text: typeof t === 'string' ? t : t.text || '',
             }));
             const mapping = (ac.correctAnswer || []).map((a) => {
-              const leftIndex = leftItems.findIndex((l) => l.text === a.left);
-              const rightItem = rightItems.find((r) => r.text === a.right);
+              const leftIndex = leftItems.findIndex((l) => normalizeText(l.text) === normalizeText(a.left));
+              const rightItem = rightItems.find((r) => normalizeText(r.text) === normalizeText(a.right));
               return {
                 leftIndex,
                 rightId: rightItem?.id || null,
