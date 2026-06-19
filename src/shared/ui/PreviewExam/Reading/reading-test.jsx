@@ -79,17 +79,17 @@ const ReadingTest = ({ dataExam }) => {
       let currentParagraph = "";
 
       for (let i = 0; i < contentLines.length; i++) {
-        const line = contentLines[i];
-        if (line.startsWith("Paragraph")) {
-          const cleanedLine = line
-            .replace(/^Paragraph\s*\d+\s*-\s*/, "")
-            .trim();
+        const line = contentLines[i].trim();
+        if (!line) continue;
+
+        const match = line.match(/^(Paragraph\s*\d+|[1-9]\d?)\s*[-.:]?\s*(.*)/i);
+        if (match) {
           if (currentParagraph) {
             paragraphs.push(currentParagraph);
           }
-          currentParagraph = cleanedLine;
-        } else if (line.trim() && currentParagraph !== "") {
-          currentParagraph += " " + line.trim();
+          currentParagraph = match[2].trim();
+        } else if (currentParagraph !== "") {
+          currentParagraph += " " + line;
         }
       }
       if (currentParagraph) {
