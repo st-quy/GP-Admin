@@ -50,6 +50,7 @@ const UpdateReading = () => {
   const debounceTimerRef = useRef(null);
   const payloadRef = useRef(null);
   const isPublishingRef = useRef(false);
+  const isFirstLoadRef = useRef(true);
   const [tags, setTags] = useState([]);
   const [originalStatus, setOriginalStatus] = useState('draft');
   const { data: existingTags = [] } = useGetAllTags();
@@ -296,22 +297,34 @@ const UpdateReading = () => {
     }
   }, [scheduleAutosave, isSubmitting, isPending, tags, originalStatus]);
 
+  // Disable autosave during initial load phase
+  useEffect(() => {
+    if (dataLoaded) {
+      const timer = setTimeout(() => {
+        isFirstLoadRef.current = false;
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [dataLoaded]);
+
   // Autosave when matching mapping changes
   useEffect(() => {
     if (isPublishingRef.current) return;
-    if (dataLoaded && (part3Mapping || part4Mapping)) {
-      const values = form.getFieldsValue(true);
-      try {
-        const fullPayload = buildFullReadingPayload(values);
-        const payload = {
-          SkillName: 'READING',
-          SectionName: values.sectionName || 'Untitled Draft',
-          Status: originalStatus,
-          tags: tags,
-          parts: fullPayload.parts,
-        };
-        scheduleAutosave(payload);
-      } catch (e) {
+    if (dataLoaded && !isFirstLoadRef.current) {
+      if (part3Mapping || part4Mapping) {
+        const values = form.getFieldsValue(true);
+        try {
+          const fullPayload = buildFullReadingPayload(values);
+          const payload = {
+            SkillName: 'READING',
+            SectionName: values.sectionName || 'Untitled Draft',
+            Status: originalStatus,
+            tags: tags,
+            parts: fullPayload.parts,
+          };
+          scheduleAutosave(payload);
+        } catch (e) {
+        }
       }
     }
   }, [part3Mapping, part4Mapping, dataLoaded, isSubmitting, isPending, tags, originalStatus]);
