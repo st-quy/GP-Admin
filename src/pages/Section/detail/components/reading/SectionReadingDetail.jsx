@@ -30,22 +30,22 @@ const SectionReadingDetail = ({ id }) => {
       {/* PART 1 — Fill-in-blank dropdown */}
       {part1 && <ReadingPart1Dropdown part={part1} />}
 
-      {/* PART 2A — Ordering */}
+      {/* PART 2 — Ordering */}
       {part2A && (
-        <ReadingOrderingBlock title='PART 2A — Ordering' part={part2A} />
+        <ReadingOrderingBlock title='PART 2 — Ordering' part={part2A} />
       )}
 
-      {/* PART 2B — Ordering */}
+      {/* PART 3 — Ordering */}
       {part2B && (
-        <ReadingOrderingBlock title='PART 2B — Ordering' part={part2B} />
+        <ReadingOrderingBlock title='PART 3 — Ordering' part={part2B} />
       )}
 
-      {/* PART 3 — Dropdown Matching */}
-      {part3 && <ReadingMatchingBlock title='PART 3 — Matching' part={part3} />}
+      {/* PART 4 — Dropdown Matching */}
+      {part3 && <ReadingMatchingBlock title='PART 4 — Matching' part={part3} />}
 
-      {/* PART 4 — Full Matching */}
+      {/* PART 5 — Full Matching */}
       {part4 && (
-        <ReadingMatchingFullBlock title='PART 4 — Full Matching' part={part4} />
+        <ReadingMatchingFullBlock title='PART 5 — Full Matching' part={part4} />
       )}
     </Space>
   );
