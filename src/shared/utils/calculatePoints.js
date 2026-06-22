@@ -126,7 +126,29 @@ export function calculatePoints({ items, skillName, pointsPerQuestion = 1 }) {
       let pointAdded = 0;
 
       correctAnswers.forEach((correct) => {
-        const student = studentAnswers.find((s) => s.key === correct.key);
+        let student = studentAnswers.find((s) => s.key === correct.key);
+
+        if (!student) {
+          const numericKey = Number(correct.key);
+          if (
+            Number.isInteger(numericKey) &&
+            numericKey > 0 &&
+            correctContent &&
+            Array.isArray(correctContent.leftItems)
+          ) {
+            const leftItemText = correctContent.leftItems[numericKey - 1];
+            if (leftItemText) {
+              const normalizedLeftItem = String(leftItemText).split(".")[0].trim();
+              const fullLeftItem = String(leftItemText).trim();
+              student = studentAnswers.find(
+                (s) =>
+                  String(s.key).trim() === normalizedLeftItem ||
+                  String(s.key).trim() === fullLeftItem ||
+                  String(leftItemText).trim().startsWith(String(s.key).trim())
+              );
+            }
+          }
+        }
 
         if (student && student.value === correct.value) {
           isCorrect = true;
