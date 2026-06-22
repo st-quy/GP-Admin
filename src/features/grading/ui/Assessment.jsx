@@ -36,9 +36,14 @@ const Assessment = ({
       const parts = data?.data?.data?.topic?.Parts;
       if (parts && parts.length > 0) {
         const currentPart = `PART ${activeTab}`;
-        const currentPartIndex = parts.findIndex((p) =>
+        let currentPartIndex = parts.findIndex((p) =>
           p.Content?.toLowerCase().includes(currentPart.toLowerCase())
         );
+        if (currentPartIndex === -1) {
+          currentPartIndex = parts.findIndex((p) =>
+            p.Sequence === Number(activeTab)
+          );
+        }
         if (currentPartIndex >= 0) {
           setPartData(parts[currentPartIndex]);
         } else {

@@ -100,8 +100,9 @@ const GradingPage = () => {
     try {
       const partData = data.data.data.topic.Parts.find(
         (p) =>
-          p.Content &&
-          p.Content.toLowerCase().includes(`part ${part}`.toLowerCase())
+          (p.Content &&
+            p.Content.toLowerCase().includes(`part ${part}`.toLowerCase())) ||
+          p.Sequence === Number(part)
       );
 
       if (partData && partData.Questions) {
